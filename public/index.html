@@ -1255,6 +1255,16 @@ $('frame').addEventListener('load', () => {
     (t.onWriteParsed || t.onRender).call(t, () => { S.lastData = Date.now(); }); // để phát hiện màn hình đứng
     fitTmux();
     touchScroll(w, t);
+    // Bôi đen bằng chuột trong tmux: tmux gửi chữ đã chọn qua mã OSC 52, xterm.js không tự xử lý → ghi vào clipboard
+    t.parser?.registerOscHandler(52, data => {
+      const b64 = data.slice(data.indexOf(';') + 1);
+      if (!b64 || b64 === '?') return true;
+      try {
+        const text = new TextDecoder().decode(Uint8Array.from(atob(b64), c => c.charCodeAt(0)));
+        navigator.clipboard.writeText(text).then(() => toast('Đã chép'), () => toast('Trình duyệt chặn chép, dùng nút 📋 Chép'));
+      } catch {}
+      return true;
+    });
     watchDisconnect(t);
     // Thiết bị nào đang được chạm / gõ thì khung tmux vừa thiết bị đó (thiết bị khác có thể đã ép khung)
     w.document.addEventListener('pointerdown', fitTmux, true);
