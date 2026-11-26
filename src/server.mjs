@@ -100,7 +100,7 @@ async function sessions() {
   let panes;
   try {
     panes = (await tmux('list-panes', '-a', '-F',
-      '#{session_name}\t#{window_active}#{pane_active}\t#{pane_pid}\t#{pane_current_path}\t#{session_attached}\t#{session_activity}')).stdout;
+      '#{session_name}\t#{window_active}#{pane_active}\t#{pane_pid}\t#{pane_current_path}\t#{session_attached}\t#{session_activity}\t#{window_activity}')).stdout;
   } catch { return []; } // chưa có tmux server = chưa có phiên
   // Tìm tổ tiên của mọi tiến trình agent để biết pane nào đang chạy agent nào
   const parent = new Map(), agentOf = new Map(), agentPidOf = new Map(), found = [];
@@ -123,9 +123,9 @@ async function sessions() {
 
   const by = new Map();
   for (const l of panes.trim().split('\n')) {
-    const [name, active, pid, dir, attached, activity] = l.split('\t');
+    const [name, active, pid, dir, attached, activity, output] = l.split('\t');
     const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
-    if (active === '11') s.dir = dir;
+    if (active === '11') { s.dir = dir; s.output = Number(output); } // lần cuối cửa sổ đang mở có chữ mới
     if (!s.agent && agentOf.has(pid)) { s.agent = agentOf.get(pid); s.agentPid = agentPidOf.get(pid); }
     if (s.agent === 'claude' && s.agentPid && !s.convId) {
       const j = await claudeSessionInfo(s.agentPid); // hội thoại đang chạy trong phiên + tên của nó trong Claude

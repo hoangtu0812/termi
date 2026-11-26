@@ -1330,7 +1330,9 @@ document.addEventListener('visibilitychange', () => {
 function checkStale() {
   const x = cur();
   if (!x || st().t === 'sessions' && !wide() || S.termName !== x.name || !S.lastData || retryTimer) return;
-  if (x.activity * 1000 > S.lastData + 5000 && Date.now() - S.lastData > 5000) { S.lastData = Date.now(); reconnectNow(); }
+  // tmux có chữ mới mà terminal ở đây không nhận được → kết nối đã đứng. Dùng thời điểm có chữ (window_activity),
+  // không dùng session_activity: cái đó tăng cả khi bấm chuột / gõ phím không ra chữ → nạp lại vô cớ, màn hình chớp
+  if (x.output * 1000 > S.lastData + 5000 && Date.now() - S.lastData > 5000) { S.lastData = Date.now(); reconnectNow(); }
 }
 addEventListener('online', () => { if (!$('t-down').hidden) reconnectNow(); });
 
