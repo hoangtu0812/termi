@@ -1,6 +1,6 @@
 {
   "name": "termi",
-  "version": "0.6.0",
+  "version": "0.7.0",
   "description": "Điều khiển Claude Code, tmux và git trên Mac mini từ điện thoại",
   "private": true,
   "type": "module",
