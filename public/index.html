@@ -397,6 +397,20 @@ document.getElementById('b-theme').onclick = () => {
 lightQuery.addEventListener('change', applyTheme);
 applyTheme();
 
+// ---------- Giữ màn hình sáng khi đang mở app ----------
+// Screen Wake Lock: hệ điều hành tự nhả khi app bị ẩn/khoá máy, nên mở lại thì xin lại
+let wakeLock = null;
+async function keepAwake() {
+  if (wakeLock || !('wakeLock' in navigator) || document.visibilityState !== 'visible') return;
+  try {
+    wakeLock = await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release', () => { wakeLock = null; });
+  } catch {} // trình duyệt từ chối (chế độ tiết kiệm pin...) thì thôi, màn hình tắt như bình thường
+}
+document.addEventListener('visibilitychange', keepAwake);
+addEventListener('pointerdown', keepAwake); // vài trình duyệt chỉ cho xin sau khi người dùng chạm
+keepAwake();
+
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const short = d => (d || '').replace(/^\/Users\/[^/]+/, '~');
 // Ô dùng direction:rtl để cắt phần đầu đường dẫn; ký tự LRM giữ dấu / đúng chỗ
