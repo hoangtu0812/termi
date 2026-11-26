@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -19,6 +19,7 @@ test('nhận ra tiến trình agent', () => {
   const who = c => Object.keys(AGENTS).find(id => AGENTS[id].proc(c));
   assert.equal(who('/Users/a/.local/share/claude/versions/2.1.332'), 'claude');
   assert.equal(who('/Users/a/.local/bin/codex'), 'codex');
+  assert.equal(who('/usr/lib/node_modules/@openai/codex/bin/codex.js'), 'codex'); // Linux, cài qua npm
   assert.equal(who('/opt/homebrew/bin/agy'), 'agy');
   assert.equal(who('/Applications/Claude.app/Contents/MacOS/Claude'), undefined);
   assert.equal(who('/bin/zsh'), undefined);
@@ -86,4 +87,10 @@ test('xếp làn cây commit: rẽ nhánh rồi merge', () => {
 test('index.html: không có </script> lọt trong code JS (sẽ cắt ngang thẻ script)', async () => {
   const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
   assert.equal(html.match(/<\/script>/gi).length, html.match(/^<script[\s>]/gim).length); // thẻ thật đứng đầu dòng
+});
+
+test('đường dẫn sang máy khác', () => {
+  assert.deepEqual(matchPeer('/m/desktop-37bc1du/api/sessions?x=1'), { id: 'desktop-37bc1du', rest: '/api/sessions?x=1' });
+  assert.deepEqual(matchPeer('/m/Desktop-ABC'), { id: 'desktop-abc', rest: '/' });
+  for (const bad of ['/api/m/x', '/m/', '/m/a.b/api', '/m/evil.com/api', '/mx/a/api']) assert.equal(matchPeer(bad), null, bad);
 });

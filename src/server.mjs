@@ -1,6 +1,8 @@
 // termi: phiên tmux/Claude, terminal, file, git và thông báo đẩy cho điện thoại. Không dependency.
 // Chỉ nghe trên 127.0.0.1; ra ngoài qua `tailscale serve` (xem install.sh).
 import http from 'node:http';
+import https from 'node:https';
+import tls from 'node:tls';
 import crypto from 'node:crypto';
 import { execFile } from 'node:child_process';
 import { createWriteStream } from 'node:fs';
@@ -33,11 +35,12 @@ export const validHost = h => typeof h === 'string' && /^(localhost|127\.0\.0\.1
 
 // Các coding agent hỗ trợ. proc nhận ra tiến trình qua đường dẫn file chạy (cột comm của ps).
 // shortcut: agent chạy bằng node (comm = node) sẽ không nhận ra; khi cần thì so thêm tham số dòng lệnh
+const bin = c => path.basename(c).replace(/\.[cm]?js$/, ''); // codex cài qua npm chạy dạng node …/codex.js
 export const AGENTS = {
   claude: { name: 'Claude', cmd: 'claude', resume: id => `claude --resume ${id}`,
-    proc: c => path.basename(c) === 'claude' || c.includes('/.local/share/claude/versions/') },
-  codex: { name: 'Codex', cmd: 'codex', resume: id => `codex resume ${id}`, proc: c => path.basename(c) === 'codex' },
-  agy: { name: 'Antigravity', cmd: 'agy', proc: c => path.basename(c) === 'agy' },
+    proc: c => bin(c) === 'claude' || c.includes('/.local/share/claude/versions/') },
+  codex: { name: 'Codex', cmd: 'codex', resume: id => `codex resume ${id}`, proc: c => bin(c) === 'codex' },
+  agy: { name: 'Antigravity', cmd: 'agy', proc: c => bin(c) === 'agy' },
 };
 
 // shortcut: đọc trạng thái agent bằng cách nhìn chữ trên màn hình; agent đổi giao diện thì phải sửa regex (hoặc chuyển sang hooks)
@@ -87,12 +90,15 @@ async function sessions() {
   } catch { return []; } // chưa có tmux server = chưa có phiên
   // Tìm tổ tiên của mọi tiến trình agent để biết pane nào đang chạy agent nào
   const parent = new Map(), agentOf = new Map(), found = [];
-  const procs = (await run('ps', ['-ax', '-o', 'pid=,ppid=,comm='], { maxBuffer: 8e6 })).stdout;
+  // args (dòng lệnh) thay vì comm: trên Linux comm chỉ là tên rút gọn, không có đường dẫn
+  const procs = (await run('ps', ['-ax', '-o', 'pid=,ppid=,args='], { maxBuffer: 16e6 })).stdout;
   for (const l of procs.split('\n')) {
     const m = l.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
     if (!m) continue;
     parent.set(m[1], m[2]);
-    const agent = Object.keys(AGENTS).find(id => AGENTS[id].proc(m[3]));
+    const args = m[3].split(/\s+/);
+    const exe = /^(node|bun|deno)$/.test(path.basename(args[0])) ? args[1] || '' : args[0]; // agent viết bằng JS
+    const agent = Object.keys(AGENTS).find(id => AGENTS[id].proc(exe));
     if (agent) found.push([m[1], agent]);
   }
   for (let [p, agent] of found) for (let i = 0; p && p !== '1' && i < 64; i++) { if (!agentOf.has(p)) agentOf.set(p, agent); p = parent.get(p); }
@@ -272,10 +278,10 @@ const vapid = await loadJson('vapid.json', () => {
     priv: privateKey.export({ format: 'pem', type: 'pkcs8' }) };
 });
 let subs = await loadJson('subs.json', () => []);
-let lastAlert = { title: 'termi', body: '', session: '' };
+let lastAlert = { title: 'termi', body: '', session: '', machine: '' };
 
-async function push(title, body, session) {
-  lastAlert = { title, body, session, t: Date.now() };
+async function push(title, body, session, machine = '') {
+  lastAlert = { title, body, session, machine, t: Date.now() };
   const gone = new Set();
   await Promise.all(subs.map(async sub => {
     const u = new URL(sub.endpoint);
@@ -293,18 +299,55 @@ async function push(title, body, session) {
   if (gone.size) { subs = subs.filter(s => !gone.has(s.endpoint)); await saveJson('subs.json', subs); }
 }
 
-// Theo dõi chuyển trạng thái của Claude để báo: xong việc, hoặc đang chờ bạn xác nhận
+// Theo dõi chuyển trạng thái của agent (máy này và các máy khác có termi) để báo:
+// xong việc, hoặc đang chờ bạn xác nhận. Nhờ vậy chỉ cần bật thông báo ở một máy.
 const prevState = new Map();
 async function watch() {
   if (!subs.length) return;
-  for (const s of await sessions()) {
-    const prev = prevState.get(s.name);
-    prevState.set(s.name, s.state);
-    if (prev === undefined) continue;
-    const who = AGENTS[s.agent]?.name || 'Agent';
-    if (s.state === 'waiting' && prev !== 'waiting') await push(`${s.name}: ${who} cần bạn xác nhận`, s.preview, s.name);
-    else if (s.state === 'idle' && prev === 'working') await push(`${s.name}: ${who} đã xong`, s.preview, s.name);
+  const all = (await sessions()).map(s => ({ ...s, m: '' }));
+  for (const p of (await machines()).filter(x => !x.self && x.termi)) {
+    const list = await fetch(`https://${p.dns}/api/sessions`, { signal: AbortSignal.timeout(4000) }).then(r => r.json(), () => []);
+    if (Array.isArray(list)) all.push(...list.map(s => ({ ...s, m: p.id })));
   }
+  for (const s of all) {
+    const key = `${s.m}/${s.name}`, prev = prevState.get(key);
+    prevState.set(key, s.state);
+    if (prev === undefined) continue;
+    const who = AGENTS[s.agent]?.name || 'Agent', label = s.m ? `[${s.m}] ${s.name}` : s.name;
+    if (s.state === 'waiting' && prev !== 'waiting') await push(`${label}: ${who} cần bạn xác nhận`, s.preview, s.name, s.m);
+    else if (s.state === 'idle' && prev === 'working') await push(`${label}: ${who} đã xong`, s.preview, s.name, s.m);
+  }
+}
+
+// ---------- Nhiều máy trong tailnet ----------
+// Máy khác chạy termi riêng (sau tailscale serve); máy này chuyển tiếp /m/<máy>/... sang đó.
+const TAILSCALE = process.env.TERMI_TAILSCALE || 'tailscale';
+let machineCache = { t: 0, list: [] };
+async function machines() {
+  if (Date.now() - machineCache.t < 20_000) return machineCache.list;
+  const self = { id: '', name: os.hostname().replace(/\.local$/, ''), os: process.platform, online: true, termi: true, self: true };
+  let st;
+  try { st = JSON.parse((await run(TAILSCALE, ['status', '--json'], { maxBuffer: 8e6, timeout: 5000 })).stdout); }
+  catch { return (machineCache = { t: Date.now(), list: [self] }).list; } // không có tailscale (vd. trong WSL): chỉ máy này
+  self.name = st.Self?.HostName || self.name;
+  const dnsOf = p => (p.DNSName || '').replace(/\.$/, '');
+  const peers = await Promise.all(Object.values(st.Peer || {})
+    .filter(p => ['windows', 'linux', 'macOS'].includes(p.OS) && dnsOf(p) && !p.Tags?.length)
+    .map(async p => {
+      const dns = dnsOf(p);
+      const termi = !!p.Online && await fetch(`https://${dns}/api/agents`, { signal: AbortSignal.timeout(2500) }).then(r => r.ok, () => false);
+      return { id: dns.split('.')[0].toLowerCase(), dns, name: p.HostName, os: p.OS, online: !!p.Online, termi };
+    }));
+  peers.sort((a, b) => b.termi - a.termi || b.online - a.online || a.name.localeCompare(b.name));
+  return (machineCache = { t: Date.now(), list: [self, ...peers] }).list;
+}
+// Chỉ chuyển tiếp tới máy có trong tailnet và đang chạy termi (không cho chuyển tiếp đi nơi khác)
+async function peerDns(id) {
+  return (await machines()).find(m => !m.self && m.termi && m.id === id)?.dns;
+}
+export function matchPeer(url) {
+  const m = /^\/m\/([a-z0-9-]{1,63})(\/.*)?$/i.exec(url);
+  return m && { id: m[1].toLowerCase(), rest: m[2] || '/' };
 }
 
 // ---------- API ----------
@@ -319,6 +362,7 @@ const routes = {
   },
   'GET /api/history': () => history(),
   'GET /api/agents': () => installedAgents(),
+  'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
 
   async 'POST /api/sessions'(_, b) {
     if (!validName(b.name)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
@@ -470,11 +514,16 @@ function proxyHttp(req, res) {
   req.pipe(up);
 }
 
-function proxyUpgrade(req, socket, head) {
-  if (!validHost(req.headers.host) || !isTermPath(new URL(req.url, 'http://x').pathname)) return socket.destroy();
-  const up = net.connect(TTYD_PORT, '127.0.0.1', () => {
-    let raw = `${req.method} ${req.url} HTTP/1.1\r\n`;
-    for (let i = 0; i < req.rawHeaders.length; i += 2) raw += `${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}\r\n`;
+// Nối WebSocket tới ttyd máy này (net) hoặc termi máy khác (tls). Sang máy khác thì đổi Host/Origin
+// thành tên máy đích, vì ttyd bên đó kiểm tra origin.
+function pipeUpgrade(req, socket, head, connect, path, host) {
+  const up = connect(() => {
+    let raw = `${req.method} ${path} HTTP/1.1\r\n`;
+    for (let i = 0; i < req.rawHeaders.length; i += 2) {
+      const k = req.rawHeaders[i].toLowerCase();
+      const v = k === 'host' ? host : k === 'origin' && host !== req.headers.host ? `https://${host}` : req.rawHeaders[i + 1];
+      raw += `${req.rawHeaders[i]}: ${v}\r\n`;
+    }
     up.write(raw + '\r\n');
     if (head.length) up.write(head);
     socket.pipe(up).pipe(socket);
@@ -483,8 +532,43 @@ function proxyUpgrade(req, socket, head) {
   socket.on('error', () => up.destroy());
 }
 
+async function proxyUpgrade(req, socket, head) {
+  if (!validHost(req.headers.host)) return socket.destroy();
+  const peer = matchPeer(req.url);
+  if (peer) {
+    const dns = await peerDns(peer.id);
+    if (!dns || !isTermPath(new URL(peer.rest, 'http://x').pathname)) return socket.destroy();
+    return pipeUpgrade(req, socket, head, cb => tls.connect({ host: dns, port: 443, servername: dns }, cb), peer.rest, dns);
+  }
+  if (!isTermPath(new URL(req.url, 'http://x').pathname)) return socket.destroy();
+  pipeUpgrade(req, socket, head, cb => net.connect(TTYD_PORT, '127.0.0.1', cb), req.url, req.headers.host);
+}
+
+// HTTP sang termi máy khác. Bỏ x-termi-build: phiên bản giao diện máy kia không liên quan tới trang đang mở
+function proxyPeer(req, res, dns, rest) {
+  const headers = { ...req.headers, host: dns };
+  if (headers.origin) headers.origin = `https://${dns}`;
+  const up = https.request({ host: dns, port: 443, servername: dns, path: rest, method: req.method, headers }, r => {
+    const h = { ...r.headers };
+    delete h['x-termi-build'];
+    res.writeHead(r.statusCode, h);
+    r.pipe(res);
+  });
+  up.on('error', () => {
+    if (!res.headersSent) res.writeHead(502, { 'content-type': 'application/json' });
+    res.end(JSON.stringify({ error: 'Không kết nối được tới máy kia' }));
+  });
+  req.pipe(up);
+}
+
 async function handle(req, res) {
   if (!validHost(req.headers.host)) throw fail(421, 'Host không hợp lệ');
+  const peer = matchPeer(req.url);
+  if (peer) {
+    const dns = await peerDns(peer.id);
+    if (!dns) throw fail(404, 'Không tìm thấy máy, hoặc máy đó chưa chạy termi');
+    return proxyPeer(req, res, dns, peer.rest);
+  }
   const url = new URL(req.url, 'http://x');
   if (isTermPath(url.pathname)) return proxyHttp(req, res);
   const st = req.method === 'GET' && STATIC[url.pathname];
@@ -524,6 +608,6 @@ if (import.meta.main) {
     res.writeHead(e.status || 500, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: e.status ? e.message : 'Lỗi máy chủ' }));
   })).on('upgrade', proxyUpgrade)
-    .listen(PORT, '127.0.0.1', () => console.log(`termi: http://127.0.0.1:${PORT}  roots=${ROOTS.join(', ')}`));
+    .listen(PORT, process.env.TERMI_HOST || '127.0.0.1', () => console.log(`termi: http://127.0.0.1:${PORT}  roots=${ROOTS.join(', ')}`));
   setInterval(() => watch().catch(e => console.error('watch', e.message)), 3000);
 }

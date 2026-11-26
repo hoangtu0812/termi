@@ -54,6 +54,8 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .btn.danger { color:var(--del); }
 
 /* ---------- Danh sách phiên ---------- */
+.machines { padding:8px 8px 0; }
+.machines select { width:100%; }
 #sessions { flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:4px; }
 .sess { display:flex; flex-direction:column; gap:4px; text-align:left; width:100%; padding:10px 12px; border-radius:var(--r); border:1px solid transparent; background:transparent; }
 .sess.cur { background:var(--card); border-color:var(--line2); }
@@ -225,6 +227,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
       <button class="ibtn" id="b-bell" title="Thông báo" aria-label="Bật thông báo" data-i="bell"></button>
       <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
     </div>
+    <div class="machines" id="machines" hidden><select class="sel" id="machine" aria-label="Chọn máy"></select></div>
     <div id="sessions"></div>
     <div class="side-foot"><button class="btn pri" id="b-new"><span data-i="plus"></span>Phiên mới</button></div>
   </aside>
@@ -436,8 +439,11 @@ const AGENT_NAMES = { claude:'Claude', codex:'Codex', agy:'Antigravity' };
 const agentName = a => AGENT_NAMES[a] || 'agent';
 const wide = () => matchMedia('(min-width: 900px)').matches;
 
+// Máy đang chọn (m trong URL): mọi API/terminal đi qua /m/<máy>; danh sách máy và thông báo luôn ở máy này
+const base = () => st().m ? '/m/' + encodeURIComponent(st().m) : '';
+const HUB_ONLY = /^\/api\/(machines|push\/)/;
 async function api(path, body) {
-  const r = await fetch(path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
+  const r = await fetch(HUB_ONLY.test(path) ? path : base() + path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
   checkBuild(r.headers.get('x-termi-build'));
   const j = await r.json().catch(() => ({ error: r.statusText }));
   if (!r.ok) throw new Error(j.error || r.status);
@@ -472,6 +478,12 @@ const cur = () => S.list.find(x => x.name === st().s);
 
 function render() {
   const s = st();
+  if ((s.m || '') !== S.machine) {
+    S.machine = s.m || '';
+    Object.assign(S, { list: [], dirs: null, termName: null, seen: {}, git: null });
+    $('machine').value = S.machine;
+    poll();
+  }
   if (s.v && !$('v-body').childElementCount) return go({ v: null });
   let tab = s.t || (s.s ? 'term' : 'sessions');
   if (wide() && tab === 'sessions') tab = 'term';
@@ -503,7 +515,7 @@ function renderSessions() {
   }
   box.replaceChildren(...S.list.map(x => {
     const b = el('button', 'sess' + (x.name === sel ? ' cur' : ''));
-    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state));
+    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, x.agent));
     b.append(top, el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`));
     if (x.preview) b.append(el('div', 'pv', x.preview));
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
@@ -627,7 +639,7 @@ function ensureTerm(name, force) {
   S.termName = name;
   $('t-down').hidden = true;
   // fontSize trên URL: ttyd ưu tiên tham số URL hơn cấu hình server gửi xuống mỗi lần (kết nối lại)
-  $('frame').src = `/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
+  $('frame').src = `${base()}/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 }
 const termWin = () => { try { return $('frame').contentWindow; } catch { return null; } };
 
@@ -643,7 +655,7 @@ function setFont(n) {
 
 $('frame').addEventListener('load', () => {
   const w = termWin();
-  if (!w?.location.pathname.startsWith('/term')) return;
+  if (!w?.location.pathname.includes('/term/')) return;
   let tries = 0;
   const wait = setInterval(() => { // ttyd tạo terminal sau khi trang tải xong
     const t = w.term;
@@ -770,7 +782,7 @@ $('f-photo').onchange = $('f-input').onchange = safely(async e => {
     const a = { name: f.name, url: f.type.startsWith('image/') ? URL.createObjectURL(f) : null, path: null };
     S.atts.push(a); renderAtts();
     try {
-      const r = await fetch('/api/upload', { method:'POST', headers:{ 'x-termi':'1', 'x-filename':encodeURIComponent(f.name) }, body:f });
+      const r = await fetch(base() + '/api/upload', { method:'POST', headers:{ 'x-termi':'1', 'x-filename':encodeURIComponent(f.name) }, body:f });
       const j = await r.json();
       if (!r.ok) throw new Error(j.error);
       a.path = j.path;
@@ -842,7 +854,7 @@ function openViewer(title, node, insertPath, alt) {
   go({ v: 1 });
 }
 $('v-close').onclick = () => history.back();
-const rawUrl = p => location.origin + '/api/raw?path=' + encodeURIComponent(p);
+const rawUrl = p => location.origin + base() + '/api/raw?path=' + encodeURIComponent(p);
 const openFile = safely(async p => {
   const r = await api('/api/file?path=' + encodeURIComponent(p));
   if (r.image) {
@@ -1047,6 +1059,20 @@ $('b-bell').onclick = safely(async () => {
 navigator.serviceWorker?.register('/sw.js').then(pushState).catch(() => {});
 
 addEventListener('resize', () => { const t = wide() ? 'w' : 'n'; if (S.layout && S.layout !== t) render(); S.layout = t; });
+// ---- Chọn máy (các máy cùng tài khoản Tailscale có chạy termi) ----
+async function loadMachines() {
+  const list = await api('/api/machines').catch(() => []);
+  $('machines').hidden = list.length < 2;
+  $('machine').replaceChildren(...list.map(m => Object.assign(el('option', null,
+    m.self ? `💻 ${m.name} (máy này)` : `🖥 ${m.name}${m.termi ? '' : m.online ? ' · chưa cài termi' : ' · offline'}`),
+    { value: m.id, disabled: !m.termi })));
+  $('machine').value = st().m || '';
+}
+$('machine').onchange = e => go({ m: e.target.value || null, s: null, d: null, g: null, v: null, t: wide() ? null : 'sessions' });
+loadMachines();
+setInterval(() => document.visibilityState === 'visible' && loadMachines(), 60_000);
+
+S.machine = st().m || '';
 poll().then(render);
 </script>
 </body>

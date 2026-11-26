@@ -55,6 +55,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 
 | | Tính năng | Chi tiết |
 |---|---|---|
+| 🖥️ | **Nhiều máy** | Điều khiển mọi máy cùng tài khoản Tailscale có chạy termi (Mac, Linux, Windows qua WSL) từ một app: chọn máy ở đầu sidebar; thông báo từ mọi máy về một chỗ. |
 | 🤖 | **Nhiều agent** | Claude Code, Codex, Antigravity (`agy`): chọn agent khi tạo phiên (chỉ hiện agent có cài), tự nhận ra phiên đang chạy agent nào, trạng thái và thông báo cho từng agent. |
 | 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
 | 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
@@ -121,6 +122,32 @@ Script in ra địa chỉ dạng `https://<máy>.<tailnet>.ts.net`. Mở địa 
 
 Gỡ cài đặt: `npm run service:uninstall` (các phiên tmux vẫn được giữ).
 
+## Thêm máy Windows hoặc Linux
+
+Mỗi máy chạy termi riêng; termi trên máy bạn hay mở (ví dụ Mac mini) chuyển tiếp sang các máy khác qua Tailscale, nên trên điện thoại vẫn chỉ dùng **một app**.
+
+**Windows** (termi chạy trong WSL2, vì cần `tmux`):
+
+```powershell
+# PowerShell (Admin): cài WSL + Ubuntu, khởi động lại máy nếu được yêu cầu
+wsl --install -d Ubuntu
+```
+
+```bash
+# Trong Ubuntu (WSL): bật systemd
+printf '[boot]\nsystemd=true\n' | sudo tee /etc/wsl.conf
+# PowerShell: wsl --shutdown   rồi mở lại Ubuntu
+
+# Cài agent bạn dùng (claude, codex…) trong WSL, rồi:
+git clone https://github.com/hoangtu0812/termi.git ~/termi && ~/termi/scripts/install-linux.sh
+```
+
+Tailscale cài trên Windows như bình thường; script tự gọi `tailscale.exe` để mở termi ra tailnet. Dự án nên để trong WSL (`~/…`) cho nhanh.
+
+**Linux:** cài Tailscale, rồi chạy `scripts/install-linux.sh`.
+
+Sau đó trên app, ô chọn máy ở đầu sidebar sẽ hiện máy mới (máy chưa cài termi hiện mờ).
+
 ## Sử dụng nhanh
 
 1. Bấm **+ Phiên mới**, chọn thư mục, tick *Chạy Claude ngay*.
@@ -146,7 +173,8 @@ termi/
 │   ├── manifest.json
 │   └── icon.svg
 ├── scripts/
-│   ├── install.sh        # Tạo dịch vụ launchd + tailscale serve
+│   ├── install.sh        # macOS: dịch vụ launchd + tailscale serve
+│   ├── install-linux.sh  # Linux/WSL: dịch vụ systemd --user + tailscale serve
 │   └── attach.sh         # ttyd gọi để gắn vào phiên tmux theo tên
 ├── test/
 │   └── server.test.mjs   # node:test, không cần thư viện
@@ -178,6 +206,7 @@ Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết 
 termi cho quyền điều khiển shell trên máy của bạn, nên được thiết kế để **chỉ chạy trong tailnet riêng**:
 
 - Server và ttyd chỉ nghe trên `127.0.0.1`; đường vào duy nhất là `tailscale serve`. **Không bật Tailscale Funnel.**
+- Chuyển tiếp sang máy khác (`/m/<máy>/…`) chỉ tới máy có trong tailnet của bạn và đang chạy termi, qua HTTPS của Tailscale.
 - Chặn DNS rebinding (chỉ nhận Host là localhost hoặc `*.ts.net`) và CSRF (mọi POST phải có header `X-Termi`); ttyd bật kiểm tra origin.
 - Mọi đường dẫn đều được `realpath` và phải nằm trong `TERMI_ROOTS`; tên phiên, branch và commit được kiểm tra bằng regex; lệnh gọi qua `execFile`.
 - Chỉ phục vụ trực tiếp file ảnh, kèm header `Content-Security-Policy: sandbox`, để file trong repo (kể cả SVG) không chạy được script trên origin của app.
@@ -189,6 +218,8 @@ termi cho quyền điều khiển shell trên máy của bạn, nên được th
 - Khởi động lại Mac sẽ mất các phiên tmux (hội thoại vẫn mở lại được bằng 🕘 hoặc `claude --resume`).
 - Cây git hiện 200 commit gần nhất, tối đa 10 làn.
 - Trên iOS, thông báo chỉ hoạt động khi mở termi từ biểu tượng ở màn hình chính.
+- Windows: WSL phải đang chạy thì máy đó mới hiện trong ô chọn máy (WSL có thể tự tắt khi không dùng).
+- Antigravity (`agy`): chưa hỗ trợ mở lại hội thoại cũ; nhận diện dựa trên tên lệnh `agy`.
 
 ---
 
