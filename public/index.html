@@ -42,10 +42,10 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 #main { display:flex; flex-direction:column; min-width:0; min-height:0; padding-top:env(safe-area-inset-top); }
 #tabbar { display:none; }
 
-.bar { display:flex; align-items:center; gap:8px; padding:10px 12px; min-height:56px; border-bottom:1px solid var(--line); }
-.brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; flex:1; letter-spacing:-.01em; }
+.bar { display:flex; align-items:center; gap:6px; padding:4px 8px 4px 12px; min-height:48px; border-bottom:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:16px; flex:1; letter-spacing:-.01em; }
 .brand img { width:26px; height:26px; border-radius:7px; }
-.ibtn { display:inline-grid; place-items:center; width:38px; height:38px; border-radius:10px; border:0; background:transparent; color:var(--dim); }
+.ibtn { display:inline-grid; place-items:center; width:36px; height:36px; border-radius:10px; border:0; background:transparent; color:var(--dim); }
 .ibtn.on { color:var(--acc); }
 .btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:38px; padding:0 14px; border-radius:10px; border:1px solid var(--line2); background:var(--card); font-size:14px; font-weight:500; white-space:nowrap; }
 .btn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
@@ -75,8 +75,8 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 
 /* ---------- Thanh trên của phần chính ---------- */
 #top .title { flex:1; min-width:0; display:flex; flex-direction:column; }
-#top .title b { font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-#top .title span { font-size:12px; }
+#top .title b { font-size:15px; line-height:1.25; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#top .title span { font-size:11.5px; overflow:hidden; text-overflow:ellipsis; }
 .seg { display:flex; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
 .seg button { display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--dim); padding:6px 12px; border-radius:7px; font-size:14px; font-weight:500; }
 .seg button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
@@ -527,7 +527,10 @@ function renderTop() {
   $('t-name').textContent = s.s || 'termi';
   $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent) : el('span', 'state'), { id: 't-state' }));
   $('text').placeholder = `Nhắn cho ${x?.agent ? agentName(x.agent) : 'agent'}…`;
-  if (x) $('t-state').append(' · ' + short(x.dir));
+  // Dòng phụ chỉ ghi máy (nếu là máy khác) và tên thư mục cuối; đường dẫn đầy đủ trong tooltip
+  const m = st().m && [...$('machine').options].find(o => o.value === st().m);
+  if (x) $('t-state').append(' · ' + (m ? m.textContent.replace(/^\S+\s/, '').split(' · ')[0] + ' · ' : '') + (x.dir.split('/').pop() || x.dir));
+  $('t-state').title = x?.dir || '';
   $('b-menu').hidden = !x;
 }
 async function poll() {
