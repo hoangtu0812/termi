@@ -5,7 +5,9 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LA="$HOME/Library/LaunchAgents"
-ROOTS="${TERMI_ROOTS:-$HOME:/Volumes/ST1000LM 03}"
+# Thư mục được phép truy cập: TERMI_ROOTS, hoặc giữ giá trị của lần cài trước (nâng cấp), hoặc ~
+PREV_ROOTS=$(plutil -extract EnvironmentVariables.TERMI_ROOTS raw "$LA/vn.termi.server.plist" 2>/dev/null || true)
+ROOTS="${TERMI_ROOTS:-${PREV_ROOTS:-$HOME}}"
 PATHS="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
 TS=/opt/homebrew/bin/tailscale
 xml() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' <<<"$1"; }

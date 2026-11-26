@@ -1,6 +1,6 @@
 {
   "name": "termi",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Điều khiển Claude Code, tmux và git trên Mac mini từ điện thoại",
   "private": true,
   "type": "module",
@@ -10,9 +10,16 @@
     "service:install": "scripts/install.sh",
     "service:uninstall": "scripts/install.sh uninstall",
     "claude-usage": "node scripts/claude-statusline.mjs install",
-    "claude-usage:off": "node scripts/claude-statusline.mjs uninstall"
+    "claude-usage:off": "node scripts/claude-statusline.mjs uninstall",
+    "release:asset": "npm pack && gh release upload v$npm_package_version termi-$npm_package_version.tgz --clobber && rm termi-$npm_package_version.tgz"
   },
   "engines": {
     "node": ">=24"
-  }
+  },
+  "files": [
+    "src/",
+    "public/",
+    "scripts/",
+    "README.md"
+  ]
 }

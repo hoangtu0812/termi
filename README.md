@@ -102,26 +102,27 @@ flowchart LR
 
 ## Cài đặt
 
+Không cần clone code: script tải bản phát hành mới nhất, cài công cụ còn thiếu (tmux, ttyd, Node) và dịch vụ tự chạy.
+
 ```bash
-# 1. Công cụ
-brew install tmux ttyd lazygit mosh
+# Repo riêng tư: cần GitHub CLI đã đăng nhập (brew install gh && gh auth login)
+gh api repos/hoangtu0812/termi/contents/scripts/get.sh -H 'Accept: application/vnd.github.raw' | bash
 
-# 2. Lấy code
-git clone <repo> termi && cd termi
-
-# 3. Chọn thư mục termi được phép truy cập (mặc định trong script là ~ và một ổ ngoài)
-export TERMI_ROOTS="$HOME:/Volumes/Data"
-
-# 4. Cài dịch vụ launchd + mở ra tailnet
-npm run service:install
+# Repo công khai: một dòng, không cần đăng nhập
+curl -fsSL https://raw.githubusercontent.com/hoangtu0812/termi/main/scripts/get.sh | bash
 ```
+
+- Chạy lại đúng lệnh đó để **nâng cấp**. Mã chạy nằm ở `~/.termi/app/<phiên bản>` (ổ trong máy), `~/.termi/app/current` trỏ tới bản đang dùng; 2 bản gần nhất được giữ lại.
+- Chọn thư mục termi được phép truy cập (mặc định `~`): đặt `TERMI_ROOTS="$HOME:/Volumes/Data"` trước lệnh. Khi nâng cấp, giá trị cũ được giữ.
+- Cài một bản cụ thể: `TERMI_VERSION=v0.6.0`.
+- Cùng lệnh này chạy được trên **Linux** và **Windows (WSL2)**, xem mục bên dưới.
 
 Script in ra địa chỉ dạng `https://<máy>.<tailnet>.ts.net`. Mở địa chỉ đó trên điện thoại (đã bật Tailscale), rồi:
 
 - **Android (Chrome):** ⋮ → *Thêm vào màn hình chính*
 - **iOS (Safari):** Chia sẻ → *Thêm vào MH chính* (bắt buộc nếu muốn nhận thông báo)
 
-Gỡ cài đặt: `npm run service:uninstall` (các phiên tmux vẫn được giữ).
+Gỡ cài đặt: `~/.termi/app/current/scripts/install.sh uninstall` (các phiên tmux vẫn được giữ).
 
 ## Thêm máy Windows hoặc Linux
 
@@ -140,7 +141,7 @@ printf '[boot]\nsystemd=true\n' | sudo tee /etc/wsl.conf
 # PowerShell: wsl --shutdown   rồi mở lại Ubuntu
 
 # Cài agent bạn dùng (claude, codex…) trong WSL, rồi:
-git clone https://github.com/hoangtu0812/termi.git ~/termi && ~/termi/scripts/install-linux.sh
+gh api repos/hoangtu0812/termi/contents/scripts/get.sh -H 'Accept: application/vnd.github.raw' | bash
 ```
 
 Tailscale cài trên Windows như bình thường; script tự gọi `tailscale.exe` để mở termi ra tailnet. Dự án nên để trong WSL (`~/…`) cho nhanh.
@@ -196,6 +197,14 @@ termi/
 ```
 
 ## Phát triển
+
+Làm việc trên mã nguồn (clone repo) và cài dịch vụ chạy thẳng từ thư mục đó:
+
+```bash
+git clone https://github.com/hoangtu0812/termi.git && cd termi && npm run service:install
+```
+
+Phát hành: tăng `version` trong `package.json`, tạo bản phát hành `v<version>` trên GitHub, rồi `npm run release:asset` để đính file cài `termi-<version>.tgz` (script cài tải đúng file này).
 
 ```bash
 npm test     # chạy test (node --test)

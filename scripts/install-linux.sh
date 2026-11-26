@@ -57,7 +57,9 @@ fi
 
 # 5. Dịch vụ systemd --user
 NODE="$(command -v node)"
-ROOTS="${TERMI_ROOTS:-$HOME}"
+# Thư mục được phép truy cập: TERMI_ROOTS, hoặc giữ giá trị của lần cài trước (nâng cấp), hoặc ~
+PREV_ROOTS=$(grep -o '"TERMI_ROOTS=[^"]*"' "$UNIT_DIR/termi-server.service" 2>/dev/null | sed 's/^"TERMI_ROOTS=//; s/"$//' || true)
+ROOTS="${TERMI_ROOTS:-${PREV_ROOTS:-$HOME}}"
 ENV_PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
 # termi hỏi Tailscale xem chủ máy là ai (chỉ chủ máy được vào); trong WSL thì hỏi tailscale.exe của Windows
 TS_BIN="tailscale"
