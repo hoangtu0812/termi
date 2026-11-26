@@ -17,5 +17,15 @@ self.addEventListener('notificationclick', e => {
   })());
 });
 
-self.addEventListener('install', () => self.skipWaiting());
+// Không tới được máy chủ: trả trang "đang kết nối" đã lưu sẵn thay cho trang lỗi của trình duyệt.
+// Chỉ áp dụng cho việc mở trang; API, terminal… luôn đi thẳng mạng, không lưu đệm.
+const OFFLINE = '/offline.html';
+self.addEventListener('install', e => {
+  self.skipWaiting();
+  e.waitUntil(caches.open('termi-offline').then(c => c.add(OFFLINE)));
+});
+self.addEventListener('fetch', e => {
+  if (e.request.mode !== 'navigate') return;
+  e.respondWith(fetch(e.request).catch(async () => (await caches.match(OFFLINE)) || Response.error()));
+});
 self.addEventListener('activate', e => e.waitUntil(clients.claim()));

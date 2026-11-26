@@ -841,6 +841,9 @@ async function upload(req) {
 const STATIC = {
   '/': ['index.html', 'text/html'], '/manifest.json': ['manifest.json', 'application/manifest+json'],
   '/icon.svg': ['icon.svg', 'image/svg+xml'], '/sw.js': ['sw.js', 'text/javascript'],
+  '/offline.html': ['offline.html', 'text/html'], '/icon-192.png': ['icon-192.png', 'image/png'],
+  '/icon-512.png': ['icon-512.png', 'image/png'], '/icon-maskable.png': ['icon-maskable.png', 'image/png'],
+  '/apple-touch-icon.png': ['apple-touch-icon.png', 'image/png'],
 };
 
 async function readBody(req) {

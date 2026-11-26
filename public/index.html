@@ -14,7 +14,8 @@ document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : mat
 <meta name="theme-color" content="#111318">
 <link rel="manifest" href="/manifest.json">
 <link rel="icon" href="/icon.svg">
-<link rel="apple-touch-icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png">
 <title>termi</title>
 <style>
 :root {
@@ -114,6 +115,12 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .seg button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
 
 #panes { flex:1; min-height:0; position:relative; }
+.stabs { display:flex; gap:4px; padding:6px 8px 0; overflow-x:auto; scrollbar-width:none; border-bottom:1px solid var(--line); flex:none; }
+.stabs::-webkit-scrollbar { display:none; }
+.stab { flex:none; display:inline-flex; align-items:center; gap:2px; max-width:220px; height:34px; padding:0 10px 0 6px; border:1px solid transparent; border-bottom:0; border-radius:9px 9px 0 0; background:transparent; color:var(--dim); font-size:13px; }
+.stab .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:6px; }
+.stab.on { background:var(--card); border-color:var(--line); color:var(--fg); font-weight:600; }
+.stab .av.sm { margin-right:6px; }
 .pane { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
 /* Chia đôi trên màn hình rộng: terminal trái, File/Git phải */
 @media (min-width:1200px) {
@@ -226,6 +233,30 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 .dv .frow .pm { font:12px var(--mono); flex:none; } .dv .frow .pm:not(.pa):not(.pd) { color:var(--faint); }
 .pmbar { display:inline-flex; gap:2px; flex:none; } .pmbar i { width:7px; height:7px; border-radius:2px; background:var(--hover); }
 .pmbar i.a { background:var(--add); } .pmbar i.d { background:var(--del); }
+/* Diff hai cột */
+.dsplit { font:12.5px/1.5 var(--mono); padding-bottom:40px; }
+.ds-file { position:sticky; top:0; z-index:1; padding:8px 12px; color:var(--blue); font-weight:600; background:var(--panel); border-top:1px solid var(--line); border-bottom:1px solid var(--line); }
+.ds-hunk { padding:2px 12px; color:var(--faint); background:var(--hover); }
+.ds-row { display:grid; grid-template-columns:1fr 1fr; }
+.ds-cell { min-width:0; padding:0 10px; white-space:pre-wrap; overflow-wrap:anywhere; }
+.ds-cell:first-child { border-right:1px solid var(--line); }
+.ds-cell.d { color:var(--del); background:#ef6b7318; } .ds-cell.a { color:var(--add); background:#4fbf7f18; } .ds-cell.empty { background:var(--hover); }
+/* Màu cú pháp (highlight.js): tự định nghĩa để hợp giao diện sáng/tối */
+.hljs-keyword, .hljs-selector-tag, .hljs-literal, .hljs-doctag { color:#c678dd; }
+.hljs-string, .hljs-regexp, .hljs-addition, .hljs-selector-attr { color:#98c379; }
+.hljs-number, .hljs-symbol, .hljs-bullet { color:#d19a66; }
+.hljs-comment, .hljs-quote { color:var(--faint); font-style:italic; }
+.hljs-title, .hljs-section, .hljs-title.function_ { color:#61afef; }
+.hljs-built_in, .hljs-type, .hljs-title.class_ { color:#e5c07b; }
+.hljs-attr, .hljs-attribute, .hljs-variable, .hljs-template-variable, .hljs-tag, .hljs-name, .hljs-selector-class, .hljs-selector-id { color:#e06c75; }
+.hljs-meta, .hljs-link { color:#56b6c2; } .hljs-deletion { color:var(--del); } .hljs-emphasis { font-style:italic; } .hljs-strong { font-weight:700; }
+:root[data-theme=light] .hljs-keyword, :root[data-theme=light] .hljs-selector-tag, :root[data-theme=light] .hljs-literal { color:#a626a4; }
+:root[data-theme=light] .hljs-string, :root[data-theme=light] .hljs-regexp, :root[data-theme=light] .hljs-addition { color:#50a14f; }
+:root[data-theme=light] .hljs-number, :root[data-theme=light] .hljs-symbol { color:#986801; }
+:root[data-theme=light] .hljs-title, :root[data-theme=light] .hljs-section { color:#4078f2; }
+:root[data-theme=light] .hljs-built_in, :root[data-theme=light] .hljs-type { color:#c18401; }
+:root[data-theme=light] .hljs-attr, :root[data-theme=light] .hljs-attribute, :root[data-theme=light] .hljs-variable, :root[data-theme=light] .hljs-tag, :root[data-theme=light] .hljs-name { color:#e45649; }
+:root[data-theme=light] .hljs-meta { color:#0184bc; }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
@@ -346,6 +377,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
       <button class="ibtn" id="b-menu" aria-label="Tuỳ chọn phiên" data-i="more"></button>
     </div>
 
+    <div class="stabs" id="stabs" hidden></div>
     <div id="panes">
       <div class="pane scroll" id="p-none"></div>
 
@@ -781,6 +813,42 @@ function renderTop() {
   if (x) $('t-state').append(' · ' + (m ? m.textContent.replace(/^\S+\s/, '').split(' · ')[0] + ' · ' : '') + (x.dir.split('/').pop() || x.dir));
   $('t-state').title = x?.dir || '';
   $('b-menu').hidden = !x;
+  renderTabs();
+}
+
+// ---- Chuyển phiên nhanh. Thứ tự theo tên: cố định, không nhảy chỗ khi trạng thái đổi ----
+const ordered = () => [...S.list].sort((a, b) => a.name.localeCompare(b.name));
+function switchSession(step) {
+  const list = ordered(), i = list.findIndex(x => x.name === st().s);
+  if (list.length < 2 || i < 0) return;
+  const next = list[(i + step + list.length) % list.length];
+  go({ s: next.name, d: null, g: null, v: null });
+  toast(`${next.name} · ${(i + step + list.length) % list.length + 1}/${list.length}`);
+}
+// Máy tính: hàng tab phiên dưới thanh tiêu đề
+function renderTabs() {
+  const show = wide() && S.list.length > 1 && !!cur();
+  $('stabs').hidden = !show;
+  if (!show) return;
+  $('stabs').replaceChildren(...ordered().map(x => {
+    const b = el('button', 'stab' + (x.name === st().s ? ' on' : '')); b.type = 'button';
+    b.append(agentAvatar(x.agent, true), el('span', 'n', x.name), el('span', 'state st-' + x.state, ''));
+    b.lastChild.append(el('span', 'dot'));
+    b.title = `${x.name} · ${STATE[x.state] || ''} · ${x.dir}`;
+    b.onclick = () => go({ s: x.name, d: null, g: null, v: null });
+    return b;
+  }));
+}
+// Điện thoại: vuốt ngang trên thanh tiêu đề để sang phiên trước / sau
+{
+  let x0 = null, y0 = 0;
+  $('top').addEventListener('touchstart', e => { if (e.touches.length === 1) { x0 = e.touches[0].clientX; y0 = e.touches[0].clientY; } }, { passive: true });
+  $('top').addEventListener('touchend', e => {
+    if (x0 === null) return;
+    const dx = e.changedTouches[0].clientX - x0, dy = e.changedTouches[0].clientY - y0;
+    x0 = null;
+    if (Math.abs(dx) > 60 && Math.abs(dy) < 40 && st().s) switchSession(dx < 0 ? 1 : -1);
+  }, { passive: true });
 }
 async function poll() {
   try {
@@ -1221,7 +1289,7 @@ function openViewer(title, node, insertPath, alt) {
   $('v-insert').onclick = () => { insertText(insertPath); go({ t: 'term', v: null }); };
   $('v-alt').hidden = !alt;
   if (alt) {
-    const nodes = [node, alt[1]], labels = [alt[0], 'Xem trước'];
+    const nodes = [node, alt[1]], labels = [alt[0], alt[2] || 'Xem trước'];
     let i = 0;
     $('v-alt').textContent = labels[0];
     $('v-alt').onclick = () => {
@@ -1241,7 +1309,8 @@ const openFile = safely(async p => {
     return openViewer(short(p), img, p);
   }
   const raw = el('pre', null, r.binary ? '(file nhị phân, không hiển thị được)' : r.text);
-  if (!r.text || !/\.(md|markdown)$/i.test(p)) return openViewer(short(p), raw, p);
+  if (!r.text) return openViewer(short(p), raw, p);
+  if (!/\.(md|markdown)$/i.test(p)) return openViewer(short(p), await codeNode(r.text, p).catch(() => raw), p);
   let md;
   try { md = await markdownNode(r.text, p); } catch (e) { toast(e.message, true); return openViewer(short(p), raw, p); }
   openViewer(short(p), md, p, ['Xem mã', raw]);
@@ -1320,7 +1389,12 @@ function plusMinusBar(add, del) {
 }
 const openDiff = safely(async (title, qs) => {
   const r = await api('/api/show?' + new URLSearchParams(qs));
-  const box = el('div', 'dv'), diff = diffNode(r.text);
+  // Máy tính: mặc định hai cột cũ/mới, có nút chuyển về một cột
+  if (wide()) openViewer(title, diffBox(r, true), null, ['Một cột', diffBox(r, false), 'Hai cột']);
+  else openViewer(title, diffBox(r, false));
+});
+function diffBox(r, split) {
+  const box = el('div', 'dv'), diff = split ? diffSplitNode(r.text) : diffNode(r.text);
   if (r.commit) {
     const h = el('div', 'chead');
     h.append(el('b', null, r.commit.subject));
@@ -1344,8 +1418,60 @@ const openDiff = safely(async (title, qs) => {
     }));
   }
   box.append(diff);
-  openViewer(title, box);
+  return box;
+}
+
+// Diff hai cột: dòng xoá bên trái, dòng thêm bên phải, các dòng sửa đặt cạnh nhau
+function diffSplitNode(text) {
+  const box = el('div', 'dsplit'), rows = [];
+  let dels = [], adds = [];
+  const flush = () => {
+    for (let i = 0; i < Math.max(dels.length, adds.length); i++) rows.push(['chg', dels[i] ?? null, adds[i] ?? null]);
+    dels = []; adds = [];
+  };
+  for (const l of text.split('\n')) {
+    if (l.startsWith('diff --git ')) { flush(); rows.push(['file', l.slice(l.lastIndexOf(' b/') + 3)]); }
+    else if (/^(index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary)/.test(l)) flush();
+    else if (l.startsWith('@@')) { flush(); rows.push(['hunk', l]); }
+    else if (l[0] === '-') dels.push(l.slice(1));
+    else if (l[0] === '+') adds.push(l.slice(1));
+    else { flush(); rows.push(['ctx', l.slice(1), l.slice(1)]); }
+  }
+  flush();
+  box.append(...rows.map(([kind, a, b]) => {
+    if (kind === 'file') { const d = el('div', 'ds-file', a); d.dataset.file = a; return d; }
+    if (kind === 'hunk') return el('div', 'ds-hunk', a);
+    const row = el('div', 'ds-row');
+    const cell = (v, cls) => el('div', 'ds-cell' + (v === null ? ' empty' : kind === 'chg' ? ' ' + cls : ''), v ?? '');
+    row.append(cell(a, 'd'), cell(b, 'a'));
+    return row;
+  }));
+  return box;
+}
+
+// Tô màu cú pháp khi xem file: highlight.js chỉ tải khi cần, integrity chặn bản CDN bị sửa
+const HLJS = { src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
+  sri: 'sha384-F/bZzf7p3Joyp5psL90p/p89AZJsndkSoGwRpXcZhleCWhd8SnRuoYo4d0yirjJp' };
+let hljsP;
+const loadHljs = () => hljsP ??= new Promise((ok, fail) => {
+  const s = Object.assign(document.createElement('script'), { src: HLJS.src, crossOrigin: 'anonymous', integrity: HLJS.sri });
+  s.onload = () => ok(window.hljs);
+  s.onerror = () => { hljsP = null; fail(new Error('Không tải được bộ tô màu')); };
+  document.head.append(s);
 });
+const LANG = { js: 'javascript', mjs: 'javascript', cjs: 'javascript', jsx: 'javascript', ts: 'typescript', tsx: 'typescript',
+  py: 'python', sh: 'bash', bash: 'bash', zsh: 'bash', env: 'bash', json: 'json', css: 'css', scss: 'scss', less: 'less',
+  html: 'xml', htm: 'xml', xml: 'xml', svg: 'xml', vue: 'xml', go: 'go', rs: 'rust', sql: 'sql', yml: 'yaml', yaml: 'yaml',
+  java: 'java', kt: 'kotlin', swift: 'swift', php: 'php', rb: 'ruby', c: 'c', h: 'c', cpp: 'cpp', hpp: 'cpp', cc: 'cpp',
+  cs: 'csharp', lua: 'lua', r: 'r', toml: 'ini', ini: 'ini', diff: 'diff', patch: 'diff', graphql: 'graphql', m: 'objectivec' };
+async function codeNode(text, file) {
+  const name = file.split('/').pop(), lang = /^(makefile|gnumakefile)$/i.test(name) ? 'makefile' : LANG[name.split('.').pop().toLowerCase()];
+  if (!lang || text.length > 200_000) return el('pre', 'code', text); // file quá lớn: không tô để khỏi chậm
+  const hljs = await loadHljs();
+  const pre = el('pre', 'code hljs');
+  pre.innerHTML = hljs.highlight(text, { language: lang, ignoreIllegals: true }).value; // highlight.js tự escape nội dung file
+  return pre;
+}
 
 // ---------- Git ----------
 const loadGit = safely(async dir => {
