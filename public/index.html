@@ -84,7 +84,8 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .scroll { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; }
 
 /* ---------- Terminal ---------- */
-#frame { flex:1; width:100%; border:0; background:#16181d; }
+/* min-height:0: iframe mặc định cao tối thiểu 150px, không co lại khi bàn phím mở → đẩy ô nhắn ra ngoài */
+#frame { flex:1; min-height:0; width:100%; border:0; background:#16181d; }
 .keys { display:flex; gap:6px; padding:8px 8px 0; overflow-x:auto; scrollbar-width:none; }
 .keys::-webkit-scrollbar { display:none; }
 .keys button { flex:none; height:34px; min-width:44px; padding:0 10px; border-radius:8px; border:1px solid var(--line2); background:var(--card); font:13px var(--mono); }
@@ -184,6 +185,8 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   .side-foot { display:none; }
   #top .seg { display:none; }
   #tabbar { display:flex; grid-row:2; background:var(--panel); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
+  /* Đang gõ (bàn phím mở): ẩn thanh tab để nhường chỗ cho terminal và ô nhắn */
+  body:has(#text:focus, #g-msg:focus) #tabbar { display:none; }
   #tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0 6px; border:0; background:transparent; color:var(--faint); font-size:11px; font-weight:500; }
   #tabbar button.on { color:var(--acc); }
   #tabbar svg.i { width:22px; height:22px; }
