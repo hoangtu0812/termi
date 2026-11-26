@@ -1471,8 +1471,16 @@ function renderMulti(x, box, sig) {
 function renderConfirm() {
   const x = cur(), box = $('confirm');
   const show = x?.state === 'waiting' && (x.choices?.length || x.multi) && !$('composer').hidden;
+  // Thanh hiện/ẩn làm terminal đổi cỡ → agent vẽ lại → lượt đọc màn hình kế tiếp có thể chưa thấy menu → ẩn
+  // → terminal lại đổi cỡ… (nháy liên tục). Nên chỉ ẩn khi menu đã mất hơn 4 giây hoặc bạn đã bấm chọn.
+  if (!show && !box.hidden && box.dataset.sig && box.dataset.name === x?.name && !$('composer').hidden) {
+    S.confirmGone ||= Date.now();
+    if (Date.now() - S.confirmGone < 4000) return setTimeout(renderConfirm, 4100);
+  }
+  S.confirmGone = 0;
   box.hidden = !show;
   if (!show) return;
+  box.dataset.name = x.name;
   const sig = x.name + JSON.stringify(x.choices || x.options);
   if (x.multi) return box.dataset.sig === sig ? null : renderMulti(x, box, sig);
   if (box.dataset.sig === sig) return;
@@ -1803,6 +1811,23 @@ $('b-attach').onclick = () => $('f-input').click();
 $('b-photo').onclick = () => $('f-photo').click();
 $('f-photo').onchange = $('f-input').onchange = safely(async e => {
   const files = [...e.target.files]; e.target.value = '';
+  await addFiles(files);
+});
+// Máy tính: dán ảnh chụp màn hình (Ctrl/Cmd+V) hoặc kéo thả file vào ô chat thành tệp đính kèm
+$('text').addEventListener('paste', safely(async e => {
+  const files = [...e.clipboardData?.files || []];
+  if (!files.length) return; // chữ thường: để trình duyệt dán như bình thường
+  e.preventDefault();
+  const at = new Date().toISOString().replace(/\D/g, '').slice(0, 14);
+  await addFiles(files.map(f => f.name && f.name !== 'image.png' ? f : new File([f], `paste-${at}.${(f.type.split('/')[1] || 'png').replace('jpeg', 'jpg')}`, { type: f.type })));
+}));
+$('composer').addEventListener('dragover', e => e.dataTransfer?.types.includes('Files') && e.preventDefault());
+$('composer').addEventListener('drop', safely(async e => {
+  if (!e.dataTransfer?.files.length) return;
+  e.preventDefault();
+  await addFiles([...e.dataTransfer.files]);
+}));
+async function addFiles(files) {
   await Promise.all(files.map(async f => {
     const a = { name: f.name, url: f.type.startsWith('image/') ? URL.createObjectURL(f) : null, path: null };
     S.atts.push(a); renderAtts();
@@ -1814,7 +1839,7 @@ $('f-photo').onchange = $('f-input').onchange = safely(async e => {
     } catch (err) { removeAtt(a); throw err; }
     renderAtts();
   }));
-});
+}
 function removeAtt(a) {
   if (a.url) URL.revokeObjectURL(a.url);
   S.atts = S.atts.filter(x => x !== a); renderAtts();
