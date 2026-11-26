@@ -75,7 +75,7 @@ These rules apply to every human and AI agent that changes this repository. They
 
 - Use `node:test` and `node:assert/strict` only.
 - Every bug fix comes with a test that fails before the fix. Every new pure function comes with tests.
-- Tests must not touch the real home directory, `~/.termi`, tmux, git remotes or the network. Use temp directories and injected dependencies.
+- Tests must not touch the real home directory, `~/.termi`, the user's tmux server, git remotes or the network. Use temp directories and injected dependencies. Tests that need tmux run a private server (`TMUX_TMPDIR` set to a temp directory, `TMUX` unset) through `test/helpers/server.mjs`.
 - Run `npm run verify` (rule checks + tests) and make it pass before declaring a task done.
 - Never add an entry to `scripts/check-allowlist.json`. Remove entries as files are cleaned up.
 

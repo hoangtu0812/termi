@@ -325,7 +325,7 @@ async function createSession(b) {
   await tmux('send-keys', '-t', target(b.name), command, 'Enter');
 }
 
-const resumeIdFor = session => (session.agent ? agents.get(session.agent).resumeId(session) : null);
+const resumeIdFor = async session => (session.agent ? agents.get(session.agent).resumeId(session) : null);
 export const normalizeSnapshot = saved => ({
   at: saved?.at || 0,
   sessions: Array.isArray(saved?.sessions) ? saved.sessions : [],

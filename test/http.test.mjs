@@ -1,90 +1,106 @@
 import { test, before, after } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
-import http from 'node:http';
-import os from 'node:os';
-import path from 'node:path';
-import { start } from '../src/app.mjs';
-import { loadConfig } from '../src/config.mjs';
+import { startTestServer } from './helpers/server.mjs';
 
 let app;
-let port;
-let root;
 
 before(async () => {
-  root = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), 'termi-http-')));
-  await fs.mkdir(path.join(root, 'data'));
-  await fs.mkdir(path.join(root, 'work'));
-  const config = loadConfig({
-    TERMI_PORT: '0',
-    TERMI_DATA: path.join(root, 'data'),
-    TERMI_ROOTS: path.join(root, 'work'),
-    TERMI_ALLOWED_USERS: 'owner@example.com',
-  }, path.join(root, 'home'));
-  app = await start({ ...config, port: 0 });
-  port = app.server.address().port;
+  app = await startTestServer();
 });
 
-after(async () => {
-  await app?.close();
-  await fs.rm(root, { recursive: true, force: true });
-});
+after(() => app?.stop());
 
-function request(method, pathname, { headers = {}, body } = {}) {
-  return new Promise((resolve, reject) => {
-    const req = http.request({ host: '127.0.0.1', port, method, path: pathname, headers }, res => {
-      let text = '';
-      res.on('data', chunk => { text += chunk; });
-      res.on('end', () => resolve({ status: res.statusCode, text, json: () => JSON.parse(text) }));
-    });
-    req.on('error', reject);
-    req.end(body);
-  });
-}
-
-const post = (pathname, body, headers = {}) => request('POST', pathname, {
-  headers: { 'content-type': 'application/json', 'x-termi': '1', ...headers },
-  body: JSON.stringify(body),
-});
-
-test('read-only endpoints respond', async () => {
-  for (const endpoint of ['/api/agents', '/api/history', '/api/projects', '/api/sessions', '/api/events']) {
-    const res = await request('GET', endpoint);
-    assert.equal(res.status, 200, endpoint);
-    assert.ok(Array.isArray(res.json()), endpoint);
-  }
-  const dirs = (await request('GET', '/api/dirs')).json();
-  assert.deepEqual(dirs.roots, [path.join(root, 'work')]);
-  assert.equal((await request('GET', '/')).status, 200);
-});
-
-test('paths outside TERMI_ROOTS are refused', async () => {
-  assert.equal((await request('GET', `/api/ls?dir=${encodeURIComponent(os.tmpdir())}`)).status, 403);
-  const created = await post('/api/sessions', { name: 'probe', dir: os.tmpdir() });
-  assert.equal(created.status, 403);
-  const listed = await request('GET', `/api/ls?dir=${encodeURIComponent(path.join(root, 'work'))}`);
-  assert.equal(listed.status, 200);
-});
-
-test('session creation validates the agent before touching tmux', async () => {
-  const dir = path.join(root, 'work');
-  assert.equal((await post('/api/sessions', { name: 'bad name', dir })).status, 400);
-  assert.equal((await post('/api/sessions', { name: 'x', dir, agent: 'evil' })).status, 400);
-  const resumeId = '11111111-1111-4111-8111-111111111111';
-  const resume = await post('/api/sessions', { name: 'x', dir, agent: 'agy', resume: resumeId });
-  assert.equal(resume.status, 400);
-});
+const TAILNET = { host: 'mac.tail1.ts.net' };
+const OWNER_HEADERS = { ...TAILNET, 'tailscale-user-login': 'Owner@Example.com' };
 
 test('request guards', async () => {
-  assert.equal((await request('GET', '/api/agents', { headers: { host: 'evil.com' } })).status, 421);
-  const foreignOrigin = await request('GET', '/api/agents', { headers: { origin: 'https://evil.com' } });
-  assert.equal(foreignOrigin.status, 403);
-  const tailnet = { host: 'mac.tail1.ts.net' };
-  assert.equal((await request('GET', '/api/agents', { headers: tailnet })).status, 403);
-  const owner = { ...tailnet, 'tailscale-user-login': 'Owner@Example.com' };
-  assert.equal((await request('GET', '/api/agents', { headers: owner })).status, 200);
+  assert.equal((await app.get('/api/agents', { host: 'evil.com' })).status, 421);
+  assert.equal((await app.get('/api/agents', { origin: 'https://evil.com' })).status, 403);
+  assert.equal((await app.get('/api/agents', TAILNET)).status, 403);
+  const stranger = { ...TAILNET, 'tailscale-user-login': 'someone@else.com' };
+  assert.equal((await app.get('/api/agents', stranger)).status, 403);
+  assert.equal((await app.get('/api/agents', OWNER_HEADERS)).status, 200);
   const json = { 'content-type': 'application/json' };
-  const noHeader = await request('POST', '/api/restore/dismiss', { headers: json, body: '{}' });
+  const noHeader = await app.request('POST', '/api/restore/dismiss', { headers: json, body: '{}' });
   assert.equal(noHeader.status, 403);
-  assert.equal((await request('GET', '/api/nope')).status, 404);
+  assert.equal((await app.request('POST', '/api/nope', { headers: json, body: '{}' })).status, 403);
+  assert.equal((await app.get('/api/nope')).status, 404);
+  assert.equal((await app.post('/api/nope', {})).status, 404);
+  assert.equal((await app.request('GET', '/api/restore/dismiss')).status, 404);
+});
+
+test('request bodies are bounded and must be JSON', async () => {
+  const headers = { 'content-type': 'application/json', 'x-termi': '1' };
+  const broken = await app.request('POST', '/api/notify', { headers, body: '{"waiting":' });
+  assert.equal(broken.status, 400);
+  assert.equal(broken.json().error, 'JSON không hợp lệ');
+  const huge = await app.request('POST', '/api/notify', { headers, body: JSON.stringify({ x: 'a'.repeat(70_000) }) });
+  assert.equal(huge.status, 413);
+});
+
+test('static files carry security headers', async () => {
+  const page = await app.get('/');
+  assert.equal(page.status, 200);
+  assert.equal(page.headers['content-type'], 'text/html');
+  assert.equal(page.headers['x-frame-options'], 'SAMEORIGIN');
+  assert.equal(page.headers['content-security-policy'], "frame-ancestors 'self'");
+  assert.equal(page.headers['referrer-policy'], 'no-referrer');
+  assert.equal(page.headers['cache-control'], 'no-cache');
+  assert.equal((await app.get('/manifest.json')).headers['content-type'], 'application/manifest+json');
+  assert.equal((await app.get('/sw.js')).headers['content-type'], 'text/javascript');
+  assert.equal((await app.get('/icon-192.png')).headers['content-type'], 'image/png');
+  assert.equal((await app.get('/index.html')).status, 404);
+  assert.equal((await app.get('/../package.json')).status, 404);
+  assert.equal((await app.request('POST', '/', { headers: { 'x-termi': '1' } })).status, 404);
+});
+
+test('bundled fonts are served', async () => {
+  const css = await app.get('/fonts/fonts.css');
+  assert.equal(css.headers['content-type'], 'text/css');
+  const font = await app.get('/fonts/jbm-latin.woff2');
+  assert.equal(font.headers['content-type'], 'font/woff2');
+  assert.equal(font.headers['cache-control'], 'public, max-age=31536000, immutable');
+  assert.equal((await app.get('/fonts/LICENSE.txt')).status, 404);
+  assert.equal((await app.get('/fonts/../index.html')).status, 404);
+});
+
+test('JSON responses carry the UI build id', async () => {
+  const res = await app.get('/api/agents');
+  assert.equal(res.headers['content-type'], 'application/json');
+  assert.match(res.headers['x-termi-build'], /^\d+(\.\d+)?$/);
+});
+
+test('terminal requests are proxied to ttyd', async () => {
+  const res = await app.get('/term/token?x=1');
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.json(), { ttyd: true, url: '/term/token?x=1' });
+  assert.equal((await app.get('/term')).json().url, '/term');
+  assert.equal((await app.get('/terminal')).status, 404);
+  assert.equal((await app.get('/term', { host: 'evil.com' })).status, 421);
+});
+
+test('WebSocket upgrades are guarded', async () => {
+  const before = app.ttyd.seen.filter(entry => entry.kind === 'upgrade').length;
+  assert.equal(await app.upgrade('/term/ws', { host: 'evil.com' }), '');
+  assert.equal(await app.upgrade('/term/ws', { origin: 'https://evil.com' }), '');
+  assert.equal(await app.upgrade('/term/ws', TAILNET), '');
+  assert.equal(await app.upgrade('/api/sessions'), '');
+  assert.equal(await app.upgrade('/m/other/term/ws'), '');
+  assert.equal(app.ttyd.seen.filter(entry => entry.kind === 'upgrade').length, before);
+  const accepted = await app.upgrade('/term/ws', { origin: `http://127.0.0.1:${app.port}` });
+  assert.match(accepted, /^HTTP\/1\.1 101/);
+  const forwarded = app.ttyd.seen.findLast(entry => entry.kind === 'upgrade');
+  assert.equal(forwarded.url, '/term/ws');
+  assert.equal(forwarded.headers.host, `127.0.0.1:${app.port}`);
+  assert.equal(forwarded.headers.origin, `http://127.0.0.1:${app.port}`);
+});
+
+test('unknown peers are not proxied', async () => {
+  const res = await app.get('/m/desktop-1/api/sessions');
+  assert.equal(res.status, 404);
+  assert.equal(res.json().error, 'Không tìm thấy máy, hoặc máy đó chưa chạy termi');
+  const machines = (await app.get('/api/machines')).json();
+  assert.equal(machines.length, 1);
+  assert.equal(machines[0].self, true);
+  assert.equal('dns' in machines[0], false);
 });

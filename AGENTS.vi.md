@@ -77,7 +77,7 @@ Mọi người và mọi AI agent khi sửa repo này đều phải tuân theo c
 
 - Chỉ dùng `node:test` và `node:assert/strict`.
 - Mỗi lần sửa lỗi phải có một test fail trước khi sửa. Mỗi hàm thuần mới phải có test.
-- Test không được đụng tới thư mục home thật, `~/.termi`, tmux, git remote hay mạng. Dùng thư mục tạm và phụ thuộc được truyền vào.
+- Test không được đụng tới thư mục home thật, `~/.termi`, tmux server của người dùng, git remote hay mạng. Dùng thư mục tạm và phụ thuộc được truyền vào. Test cần tmux thì chạy một tmux server riêng (`TMUX_TMPDIR` trỏ vào thư mục tạm, bỏ `TMUX`) qua `test/helpers/server.mjs`.
 - Chạy `npm run verify` (kiểm tra quy tắc + test) và phải qua hết trước khi báo xong việc.
 - Không bao giờ thêm mục vào `scripts/check-allowlist.json`. Xoá mục khi đã dọn xong file.
 
