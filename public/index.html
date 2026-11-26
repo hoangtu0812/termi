@@ -741,6 +741,7 @@ async function poll() {
       S.seen[x.name] = x.state;
     }
     S.list = list; S.loaded = true;
+    checkStale();
     renderSessions(); renderTop();
   } catch {}
 }
@@ -890,6 +891,8 @@ $('frame').addEventListener('load', () => {
     setTimeout(() => { if ($('t-down').hidden) retryDelay = 1000; }, 10_000);
     t.options.fontSize = fontSize; t.fit();
     t.onResize(fitTmux); // đổi cỡ chữ, xoay máy, bàn phím mở/đóng
+    S.lastData = Date.now();
+    (t.onWriteParsed || t.onRender).call(t, () => { S.lastData = Date.now(); }); // để phát hiện màn hình đứng
     fitTmux();
     touchScroll(w, t);
     watchDisconnect(t);
@@ -952,7 +955,19 @@ function reconnectNow() {
   if (S.termName) ensureTerm(S.termName, true);
 }
 $('t-down').onclick = reconnectNow;
-document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !$('t-down').hidden) reconnectNow(); });
+// Kết nối "nửa vời": điện thoại ngủ / đổi mạng làm WebSocket chết mà không báo, màn hình đứng im.
+// (1) Quay lại app sau khi ẩn hơn 10 giây thì luôn nối lại (mất ~1 giây).
+let hiddenAt = 0;
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
+  if (!$('t-down').hidden || (hiddenAt && Date.now() - hiddenAt > 10_000)) reconnectNow();
+});
+// (2) Máy chủ báo phiên vừa có thay đổi mà terminal hơn 5 giây không nhận được gì: màn hình đang đứng
+function checkStale() {
+  const x = cur();
+  if (!x || st().t === 'sessions' && !wide() || S.termName !== x.name || !S.lastData || retryTimer) return;
+  if (x.activity * 1000 > S.lastData + 5000 && Date.now() - S.lastData > 5000) { S.lastData = Date.now(); reconnectNow(); }
+}
 addEventListener('online', () => { if (!$('t-down').hidden) reconnectNow(); });
 
 const KEYS = [['Esc','Escape'],['⇧Tab','BTab'],['^C','C-c'],['↑','Up'],['↓','Down'],['←','Left'],['→','Right'],['Tab','Tab'],['⏎','Enter'],['PgUp','PageUp'],['PgDn','PageDown'],['^D','C-d']];
