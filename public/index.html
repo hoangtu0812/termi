@@ -546,7 +546,6 @@ function ensureTerm(name) {
 const KEYS = [['Esc','Escape'],['⇧Tab','BTab'],['^C','C-c'],['↑','Up'],['↓','Down'],['←','Left'],['→','Right'],['Tab','Tab'],['⏎','Enter'],['PgUp','PageUp'],['PgDn','PageDown'],['^D','C-d']];
 $('keys').append(...KEYS.map(([label, key]) => {
   const b = el('button', null, label); b.type = 'button';
-  b.onpointerdown = e => e.preventDefault(); // giữ bàn phím không bị đóng
   b.onclick = safely(() => api('/api/send', { session: st().s, key }));
   return b;
 }));
