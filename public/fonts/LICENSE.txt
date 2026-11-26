@@ -1,0 +1,3 @@
+Be Vietnam Pro (bvp-*) © Lâm Bảo, Tony Le, ViệtAnh Nguyễn; JetBrains Mono (jbm-*) © JetBrains.
+Cả hai dùng giấy phép SIL Open Font License 1.1: https://openfontlicense.org
+File lấy từ gói @fontsource (chỉ bộ ký tự latin, latin-ext, vietnamese).

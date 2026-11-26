@@ -167,7 +167,11 @@ test('đọc lựa chọn khi agent chờ xác nhận', () => {
   const codex = 'Would you like to run the following command?\n$ npm test\n› 1. Yes, proceed\n  2. No, and tell Codex what to do differently\nPress enter to confirm or esc to cancel';
   assert.equal(parseChoices(codex).choices.length, 2);
   assert.equal(parseChoices(codex).question, 'Would you like to run the following command?');
-  assert.deepEqual(parseChoices('không có lựa chọn nào\n1. dòng lẻ không bắt đầu từ menu\n3. ba'), { question: null, choices: [{ n: 1, label: 'dòng lẻ không bắt đầu từ menu' }] });
+  // Danh sách đánh số không có con trỏ ❯ chỉ là chữ trong câu trả lời, không phải menu
+  assert.deepEqual(parseChoices('không có lựa chọn nào\n1. dòng lẻ không bắt đầu từ menu\n3. ba'), {});
+  // Câu trả lời có danh sách 1. 2. phía trên, menu thật (có ❯) bên dưới: lấy menu thật
+  const both = '1. Cài agent trong Ubuntu\n2. Kiểm tra khi đóng cửa sổ\nReview your answers\n❯ 1. Submit answers\n  2. Cancel';
+  assert.deepEqual(parseChoices(both).choices, [{ n: 1, label: 'Submit answers' }, { n: 2, label: 'Cancel' }]);
 });
 
 test('tên model dễ đọc', () => {

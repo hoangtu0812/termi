@@ -463,13 +463,19 @@ export function stepsToSubmit(screen) {
 
 export function parseChoices(screen) {
   const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim());
-  const tail = lines.slice(-20), choices = [];
-  let first = -1;
+  const tail = lines.slice(-20), runs = [];
+  // Tách các dãy 1., 2., 3.… liên tiếp; menu thật là dãy cuối có con trỏ ❯ (danh sách đánh số trong câu trả lời
+  // của agent phía trên không có con trỏ, trước đây bị nhận nhầm thành lựa chọn)
   tail.forEach((l, i) => {
-    const m = /^\s*(?:[❯›>]\s*)?(\d)[.)]\s+(.+)$/.exec(l);
-    if (m && Number(m[1]) === choices.length + 1) { if (first < 0) first = i; choices.push({ n: Number(m[1]), label: m[2].trim() }); }
+    const m = /^\s*([❯›>]\s*)?(\d)[.)]\s+(.+)$/.exec(l);
+    if (!m) return;
+    const n = Number(m[2]), run = runs.at(-1);
+    if (n === 1) runs.push({ first: i, cursor: !!m[1], choices: [{ n, label: m[3].trim() }] });
+    else if (run && n === run.choices.length + 1) { run.choices.push({ n, label: m[3].trim() }); run.cursor ||= !!m[1]; }
   });
-  if (!choices.length) return {};
+  const pick = runs.filter(r => r.cursor).at(-1);
+  if (!pick) return {};
+  const { first, choices } = pick;
   // Menu chọn nhiều (ô tích [ ] / [✔], nút Submit) hoặc danh sách phải cuộn: bấm số chỉ tích/bỏ tích, không gửi;
   // để bạn thao tác trong terminal, không hiện nút (nếu không thanh nút cứ nháy theo menu cuộn)
   if (choices.some(c => /^\[[ xX✓✔]?\]/.test(c.label)) || tail.some(l => /^\s*(?:[❯›>]\s*)?Submit\s*$/.test(l) || /more lines?/.test(l))) return {};
@@ -1061,6 +1067,9 @@ const STATIC = {
   '/icon-512.png': ['icon-512.png', 'image/png'], '/icon-maskable.png': ['icon-maskable.png', 'image/png'],
   '/apple-touch-icon.png': ['apple-touch-icon.png', 'image/png'],
 };
+// Font đóng gói sẵn: /fonts/<tên>.woff2 và /fonts/fonts.css
+for (const f of await fs.readdir(path.join(PUBLIC, 'fonts')).catch(() => []))
+  if (/^[a-z0-9-]+\.(woff2|css)$/.test(f)) STATIC['/fonts/' + f] = ['fonts/' + f, f.endsWith('.css') ? 'text/css' : 'font/woff2'];
 
 async function readBody(req) {
   let s = '';
@@ -1169,7 +1178,7 @@ async function handle(req, res) {
   if (st) {
     const file = await fs.readFile(path.join(PUBLIC, st[0]));
     // Không cho trang khác nhúng termi (clickjacking)
-    res.writeHead(200, { 'content-type': st[1], 'cache-control': 'no-cache', 'x-frame-options': 'SAMEORIGIN', 'content-security-policy': "frame-ancestors 'self'", 'referrer-policy': 'no-referrer' });
+    res.writeHead(200, { 'content-type': st[1], 'cache-control': st[0].endsWith('.woff2') ? 'public, max-age=31536000, immutable' : 'no-cache', 'x-frame-options': 'SAMEORIGIN', 'content-security-policy': "frame-ancestors 'self'", 'referrer-policy': 'no-referrer' });
     return res.end(file);
   }
   if (req.method === 'GET' && url.pathname === '/api/raw') {
