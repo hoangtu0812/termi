@@ -1765,7 +1765,7 @@ const send = safely(async () => {
   if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
   await api('/api/send', { session: st().s, text, enter: true });
   if (t.value.trim()) rememberSent(t.value.trim());
-  t.value = ''; autosize(t); saveDraft(); S.showRecent = false; updateSuggest();
+  t.value = ''; autosize(t); saveDraft(); updateSuggest();
   navigator.vibrate?.(10);
   S.atts.forEach(a => a.url && URL.revokeObjectURL(a.url)); S.atts = []; renderAtts();
 });
@@ -1775,9 +1775,7 @@ $('b-send').onclick = send;
 $('b-send').onpointerdown = e => e.preventDefault();
 $('text').oninput = e => { autosize(e.target); saveDraft(); updateSuggest(); };
 $('text').onfocus = () => { updateSuggest(); fitTmux(); };
-$('text').onblur = () => setTimeout(() => { S.showRecent = false; $('suggest').hidden = true; }, 150);
-// Câu đã gửi gần đây chỉ hiện khi bạn chạm vào ô nhắn đang trống (không hiện lại ngay sau khi gửi)
-$('text').addEventListener('pointerdown', () => { S.showRecent = true; setTimeout(updateSuggest, 0); });
+$('text').onblur = () => setTimeout(() => { $('suggest').hidden = true; }, 150);
 // Bàn phím mở = chiều cao trang bị thu lại nhiều (đo theo từng chiều rộng màn hình: xoay máy khác nhau)
 {
   const tallest = new Map();
@@ -1810,7 +1808,6 @@ function updateSuggest() {
   const t = $('text'), v = t.value, box = $('suggest');
   let items = [];
   if (/^\/\S*$/.test(v)) items = (SLASH[cur()?.agent] || []).filter(([c]) => c.startsWith(v)).map(([c, d]) => [c, d, c + ' ']);
-  else if (!v && document.activeElement === t && S.showRecent) items = sentList().slice(0, 6).map(x => [x.length > 48 ? x.slice(0, 48) + '…' : x, '', x]);
   box.hidden = !items.length;
   box.replaceChildren(...items.map(([label, desc, fill]) => {
     const b = el('button', 'sg'); b.type = 'button';
