@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel, chatItems, toolSummary } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -177,4 +177,23 @@ test('tên model dễ đọc', () => {
   assert.equal(prettyModel('claude-fable-5-2'), 'Fable 5.2');
   assert.equal(prettyModel('gpt-5-codex'), 'gpt-5-codex');
   assert.equal(prettyModel(undefined), null);
+});
+
+test('Chat: tin nhắn + các bước agent làm', () => {
+  const lines = [
+    { type: 'user', message: { content: 'chạy test giúp tôi' }, timestamp: '2026-11-26T10:00:00Z' },
+    { type: 'assistant', message: { content: [{ type: 'text', text: 'Để tôi chạy.' }, { type: 'tool_use', name: 'Bash', input: { command: 'npm test', description: 'Chạy test' } }] } },
+    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/a/b/server.mjs' } }] } },
+    { type: 'assistant', message: { content: [{ type: 'text', text: '22 test qua.' }] } },
+  ].map(o => JSON.stringify(o)).reverse();
+  const items = chatItems('claude', lines);
+  assert.deepEqual(items.map(x => x.kind === 'tools' ? x.steps.map(s => s.verb + ' ' + s.detail) : x.who + ': ' + x.text), [
+    'user: chạy test giúp tôi', 'assistant: Để tôi chạy.', ['Chạy Chạy test', 'Đọc server.mjs'], 'assistant: 22 test qua.']);
+  assert.deepEqual(toolSummary('exec', 'const r = await tools.exec_command({cmd:"rg -n TODO src"})'), { verb: 'Chạy', detail: 'rg -n TODO src' });
+  assert.deepEqual(toolSummary('Edit', { file_path: '/x/y/index.html' }), { verb: 'Sửa', detail: 'index.html' });
+});
+
+test('menu chọn nhiều không hiện nút xác nhận nhanh', () => {
+  const multi = 'Làm những cải tiến nào?\n❯ 1. [✔] Chat đầy đủ hơn\n     Thẻ các bước\n  2. [ ] Thao tác nhanh\n  3. [✔] Bảng lệnh\n     Submit\n  6. Chat about this\n↑ 2 more lines\nEnter to select · ↑/↓ to navigate · Esc to cancel';
+  assert.deepEqual(parseChoices(multi), {});
 });

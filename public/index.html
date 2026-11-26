@@ -322,6 +322,39 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 .seg2 button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
 .seg2 .fsv { min-width:36px; text-align:center; font:600 14px var(--mono); }
 .agi { display:inline-flex; align-items:center; margin-right:12px; }
+/* Chat: thẻ các bước, copy code, ảnh thu nhỏ */
+details.tools { align-self:flex-start; max-width:min(88%, 760px); border:1px dashed var(--line2); border-radius:12px; font-size:13px; color:var(--dim); }
+details.tools summary { display:flex; align-items:center; gap:8px; padding:7px 12px; cursor:pointer; list-style:none; }
+details.tools summary::-webkit-details-marker { display:none; }
+details.tools summary svg.i { width:14px; height:14px; color:var(--acc); flex:none; }
+details.tools summary span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
+details.tools ul { margin:0; padding:2px 12px 10px 34px; display:flex; flex-direction:column; gap:3px; }
+details.tools li { overflow-wrap:anywhere; } details.tools li code { font:12px var(--mono); color:var(--fg); }
+.msg.ai .mb pre { position:relative; }
+.cpy { position:absolute; top:6px; right:6px; padding:2px 8px; border-radius:6px; border:1px solid var(--line2); background:var(--card); color:var(--dim); font-size:11.5px; opacity:.85; }
+.msg .mb img.thumb { display:block; max-width:220px; max-height:220px; margin-top:8px; border-radius:10px; cursor:pointer; }
+/* Thanh "agent đang làm gì" */
+.doing { display:flex; align-items:center; gap:10px; margin:8px 8px 0; padding:8px 8px 8px 12px; border-radius:12px; background:var(--acc-soft); border:1px solid color-mix(in srgb, var(--acc) 40%, transparent); }
+.doing .dt { flex:1; min-width:0; font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.doing .dt b { color:var(--acc); margin-right:2px; } .doing .dt small { color:var(--dim); }
+.doing .spin { width:14px; height:14px; flex:none; border-radius:50%; border:2px solid var(--acc); border-right-color:transparent; animation:spin .8s linear infinite; }
+@keyframes spin { to { transform:rotate(360deg); } }
+/* Chưa xem, ghim */
+.si.unread .nm::after { content:''; display:inline-block; width:8px; height:8px; margin-left:6px; border-radius:50%; background:var(--blue); vertical-align:middle; }
+.si.unread .sip { color:var(--fg); }
+.pjt .pin svg.i { width:13px; height:13px; color:var(--acc); }
+/* Bảng lệnh */
+dialog.palette { width:min(94vw, 620px); padding:0; margin-top:10vh; }
+.cmdh { display:flex; align-items:center; gap:10px; padding:12px 14px; border-bottom:1px solid var(--line); }
+.cmdh input { flex:1; border:0; outline:0; background:transparent; color:var(--fg); font-size:16px; }
+.cmdh kbd { font:11px var(--mono); color:var(--faint); border:1px solid var(--line2); border-radius:5px; padding:1px 5px; }
+#cmd-list { max-height:min(60vh, 480px); overflow:auto; padding:6px; }
+.cmdi { display:flex; align-items:center; gap:12px; width:100%; padding:8px 10px; border:0; border-radius:8px; background:transparent; text-align:left; }
+.cmdi svg.i { color:var(--dim); flex:none; }
+.cmdi div { display:flex; flex-direction:column; min-width:0; }
+.cmdi b { font-weight:500; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmdi small { font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cmdi.on { background:var(--acc-soft); } .cmdi.on svg.i { color:var(--acc); }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
@@ -503,6 +536,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
     </div>
     <!-- Ô nhắn dùng chung cho Terminal và Chat -->
     <div id="composer" hidden>
+      <div class="doing" id="doing" hidden></div>
       <div class="confirm" id="confirm" hidden></div>
       <div class="atts" id="atts" hidden></div>
       <div class="suggest" id="suggest" hidden></div>
@@ -582,6 +616,11 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   <div class="sheet-body" id="settings-body"></div>
 </dialog>
 
+<dialog id="d-cmd" class="palette" aria-label="Bảng lệnh">
+  <div class="cmdh"><span data-i="search"></span><input id="cmd-q" placeholder="Tìm phiên, project, hội thoại hoặc lệnh…" autocomplete="off" spellcheck="false"><kbd>Esc</kbd></div>
+  <div id="cmd-list"></div>
+</dialog>
+
 <dialog id="d-quick">
   <form method="dialog">
     <h3>Thao tác nhanh</h3>
@@ -621,7 +660,7 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>', chevron:'<path d="m9 18 6-6-6-6"/>', down:'<path d="M12 5v14M19 12l-7 7-7-7"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  minus:'<path d="M5 12h14"/>', pin:'<path d="M12 17v5M9 10.8V4h6v6.8l3 3.2v2H6v-2z"/>', search:'<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>', chevron:'<path d="m9 18 6-6-6-6"/>', down:'<path d="M12 5v14M19 12l-7 7-7-7"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
   doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
   braces:'<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>', rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
   gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -763,6 +802,7 @@ function render() {
   renderConfirm();
   // Bản nháp theo từng phiên: chuyển phiên không mất chữ đang gõ dở
   const dk = `${s.m || ''}/${s.s || ''}`;
+  if (s.s && show !== 'none') markSeen(s.s);
   if (S.draftFor !== dk) { S.draftFor = dk; $('text').value = loadDraft(dk); autosize($('text')); }
   if (show === 'none') welcome($('p-none'));
   if (s.v) return; // đang xem file/diff: giữ nguyên pane phía sau, không tải lại
@@ -798,7 +838,8 @@ function renderSessions() {
   const byDir = new Map();
   for (const x of S.list) byDir.set(x.dir, [...(byDir.get(x.dir) || []), x]);
   // Project từ máy chủ + project của phiên mới tạo (chưa kịp có trong danh sách project)
-  const dirs = [...new Set([...[...byDir.keys()], ...projects.map(p => p.dir)])];
+  const pinned = new Set(JSON.parse(store.get('termi-pinned') || '[]'));
+  const dirs = [...new Set([...[...byDir.keys()], ...projects.map(p => p.dir)])].sort((a, b) => pinned.has(b) - pinned.has(a)); // ghim lên đầu
   const projOf = new Map(projects.map(p => [p.dir, p]));
   const running = new Set(S.list.map(x => x.convId).filter(Boolean));
   const collapsed = collapsedSet(), nodes = [];
@@ -819,6 +860,14 @@ function renderSessions() {
     if (waiting || working) { const d = el('span', 'state st-' + (waiting ? 'waiting' : 'working')); d.append(el('span', 'dot')); t.append(d); }
     t.title = dir;
     t.onclick = () => byDir.has(dir) ? toggleProject(dir, !open) : toggleProject('+' + dir, open);
+    if (pinned.has(dir)) { const pin = el('span', 'pin'); pin.innerHTML = icon('pin'); t.append(pin); }
+    // Giữ lâu (chuột phải) dòng project: ghim / bỏ ghim
+    t.oncontextmenu = e => {
+      e.preventDefault();
+      pinned.has(dir) ? pinned.delete(dir) : pinned.add(dir);
+      store.set('termi-pinned', JSON.stringify([...pinned]));
+      toast(pinned.has(dir) ? `Đã ghim ${name}` : `Bỏ ghim ${name}`); renderSessions();
+    };
     add.type = 'button'; add.innerHTML = icon('plus'); add.title = 'Phiên mới trong thư mục này'; add.setAttribute('aria-label', `Phiên mới trong ${dir}`);
     add.onclick = safely(() => quickStart(dir, sess.find(x => x.agent)?.agent || convs[0]?.agent || 'claude'));
     h.append(t, add);
@@ -839,7 +888,9 @@ function renderSessions() {
   renderRestore(box);
   // Phiên đang chạy: một dòng gọn (logo nhỏ, tên, trạng thái) + một dòng xem trước
   function sessionRow(x) {
-    const b = el('button', 'si' + (x.name === sel ? ' cur' : '')); b.type = 'button';
+    const unread = x.replyAt && x.name !== sel && x.replyAt > (seenMap()[seenKeyOf(x.name)] || 0);
+    const b = el('button', 'si' + (x.name === sel ? ' cur' : '') + (unread ? ' unread' : '')); b.type = 'button';
+    if (unread) b.title = 'Có câu trả lời mới chưa xem';
     const top = el('div', 'sit'); top.append(el('span', 'nm', x.title || x.name), stateEl(x.state, null, x.since));
     if (x.changes) { const c = el('span', 'chgs'); c.innerHTML = icon('git'); c.append(x.changes); c.title = `${x.changes} file chưa commit`; top.append(c); }
     const body = el('div', 'sib'); body.append(top);
@@ -852,6 +903,14 @@ function renderSessions() {
     b.append(agentAvatar(x.agent, true), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
     b.oncontextmenu = e => { e.preventDefault(); openSessionMenu(x.name); }; // giữ lâu: đổi tên / đóng
+    // Vuốt sang trái: menu đổi tên / đóng
+    let sx = null, sy = 0;
+    b.addEventListener('touchstart', e => { sx = e.touches[0].clientX; sy = e.touches[0].clientY; }, { passive: true });
+    b.addEventListener('touchend', e => {
+      if (sx === null) return;
+      const dx = e.changedTouches[0].clientX - sx, dy = e.changedTouches[0].clientY - sy; sx = null;
+      if (dx < -70 && Math.abs(dy) < 40) { e.preventDefault(); openSessionMenu(x.name); }
+    });
     return b;
   }
   // Hội thoại cũ: chạm để mở lại đúng hội thoại trong một phiên mới
@@ -948,6 +1007,19 @@ function renderTop() {
   $('b-menu').hidden = !x;
   renderTabs();
   renderConfirm();
+  renderDoing();
+}
+// Thanh "agent đang làm gì": bước hiện tại + thời gian + nút Dừng (Esc)
+function renderDoing() {
+  const x = cur(), box = $('doing');
+  const show = x?.state === 'working' && !$('composer').hidden;
+  box.hidden = !show;
+  if (!show) return;
+  const d = x.doing, stop = el('button', 'btn sm', 'Dừng'); stop.type = 'button'; stop.title = 'Gửi Esc để ngắt agent';
+  stop.onclick = safely(async () => { await api('/api/send', { session: x.name, key: 'Escape' }); navigator.vibrate?.(15); setTimeout(poll, 500); });
+  const txt = el('span', 'dt');
+  txt.append(el('b', null, d ? d.verb : 'Đang làm'), d?.detail ? ' ' + d.detail : '', el('small', null, ' · ' + dur(x.since)));
+  box.replaceChildren(el('i', 'spin'), txt, stop);
 }
 
 // ---- Chuyển phiên nhanh. Thứ tự theo tên: cố định, không nhảy chỗ khi trạng thái đổi ----
@@ -1153,6 +1225,7 @@ $('frame').addEventListener('load', () => {
     // Thiết bị nào đang được chạm / gõ thì khung tmux vừa thiết bị đó (thiết bị khác có thể đã ép khung)
     w.document.addEventListener('pointerdown', fitTmux, true);
     w.document.addEventListener('keydown', fitTmux, true);
+    w.document.addEventListener('keydown', paletteKey, true); // Ctrl/Cmd+K cả khi đang ở trong terminal
   }, 100);
 });
 
@@ -1282,13 +1355,38 @@ async function mdSafe(text) {
 }
 const chatCache = new Map(); // nội dung → bong bóng đã dựng (khỏi dựng lại markdown mỗi lần làm mới)
 let chatKey = '';
+// Các bước agent làm (đọc/sửa file, chạy lệnh) gộp thành một thẻ thu gọn được
+function toolsCard(x) {
+  const d = el('details', 'tools'), sm = el('summary'), last = x.steps.at(-1);
+  sm.innerHTML = icon('zap');
+  sm.append(el('b', null, `${x.steps.length} bước`), el('span', null, `${last.verb} ${last.detail}`));
+  const ul = el('ul');
+  ul.append(...x.steps.map(st => { const li = el('li'); li.append(el('b', null, st.verb), ' ', el('code', null, st.detail)); return li; }));
+  d.append(sm, ul);
+  return d;
+}
 async function bubble(m) {
   const key = m.who + '\u0000' + m.text;
   if (chatCache.has(key)) return chatCache.get(key);
   const b = el('div', 'msg ' + (m.who === 'user' ? 'me' : 'ai'));
   const body = el('div', 'mb');
-  if (m.who === 'user') body.textContent = m.text;
-  else body.append(await mdSafe(m.text).catch(() => document.createTextNode(m.text)));
+  if (m.who === 'user') {
+    body.textContent = m.text;
+    // Ảnh bạn gửi (đường dẫn trong tin nhắn) hiện thành ảnh thu nhỏ
+    for (const path of new Set(m.text.match(/\/[^\s'"]+\.(?:png|jpe?g|gif|webp)\b/gi) || [])) {
+      const img = el('img', 'thumb'); img.loading = 'lazy'; img.alt = path.split('/').pop(); img.src = rawUrl(path);
+      img.onclick = () => openFile(path); img.onerror = () => img.remove();
+      body.append(img);
+    }
+  } else {
+    body.append(await mdSafe(m.text).catch(() => document.createTextNode(m.text)));
+    // Nút copy trên mỗi khối code
+    for (const pre of body.querySelectorAll('pre')) {
+      const c = el('button', 'cpy', 'Copy'); c.type = 'button';
+      c.onclick = async () => { await navigator.clipboard?.writeText(pre.querySelector('code')?.textContent ?? pre.textContent).then(() => { c.textContent = 'Đã copy'; }, () => { c.textContent = 'Không copy được'; }); setTimeout(() => { c.textContent = 'Copy'; }, 1500); };
+      pre.append(c);
+    }
+  }
   b.append(body);
   if (m.t) b.append(el('time', null, new Date(m.t).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })));
   chatCache.set(key, b);
@@ -1301,15 +1399,15 @@ const loadChat = safely(async first => {
   if (first && box.dataset.for !== name) { box.dataset.for = name; box.replaceChildren(...skel(4, 'sk tall')); chatKey = ''; }
   const r = await api('/api/chat?session=' + encodeURIComponent(name));
   if (st().s !== name) return;
-  const last = r.messages.at(-1);
-  const key = `${name}|${r.messages.length}|${last?.t}|${last?.text.length}|${r.state}`;
+  const last = r.items.at(-1);
+  const key = `${name}|${r.items.length}|${last?.t}|${last?.text?.length ?? last?.steps?.length}|${r.state}|${cur()?.doing?.detail}`;
   if (key === chatKey) return;
   chatKey = key;
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
-  const nodes = await Promise.all(r.messages.map(bubble));
+  const nodes = await Promise.all(r.items.map(x => x.kind === 'tools' ? toolsCard(x) : bubble(x)));
   if (!r.agent) nodes.push(el('div', 'empty', 'Phiên này chưa chạy agent nào'));
-  else if (!r.messages.length) nodes.push(el('div', 'empty', 'Chưa có tin nhắn nào'));
-  if (r.state === 'working') { const t = el('div', 'msg ai typing'); t.append(el('div', 'mb', `${agentName(r.agent)} đang làm`), el('i')); nodes.push(t); }
+  else if (!r.items.length) nodes.push(el('div', 'empty', 'Chưa có tin nhắn nào'));
+  if (r.state === 'working') { const d = cur()?.doing, t = el('div', 'msg ai typing'); t.append(el('div', 'mb', d ? `${d.verb} ${d.detail}` : `${agentName(r.agent)} đang làm`), el('i')); nodes.push(t); }
   box.replaceChildren(...nodes);
   if (first || atBottom) box.scrollTop = box.scrollHeight;
 });
@@ -1336,6 +1434,68 @@ function renderConfirm() {
     return b;
   }));
 }
+
+// ==================== Đã xem / chưa xem ====================
+// Lưu theo thiết bị: lần cuối bạn mở mỗi phiên; agent trả lời sau đó thì phiên có chấm "chưa xem"
+const seenKeyOf = name => `${st().m || ''}/${name}`;
+const seenMap = () => { try { return JSON.parse(store.get('termi-seen') || '{}'); } catch { return {}; } };
+function markSeen(name) {
+  const m = seenMap(), k = seenKeyOf(name), now = Date.now();
+  if (now - (m[k] || 0) < 5000) return;
+  m[k] = now; store.set('termi-seen', JSON.stringify(m));
+}
+
+// ==================== Bảng lệnh Ctrl/Cmd+K ====================
+// Gõ để nhảy tới phiên / project / hội thoại hoặc chạy lệnh. Tìm không cần dấu ("dang nhap" ra "Đăng nhập").
+const fold = t => String(t || '').normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/đ/gi, 'd').toLowerCase();
+function paletteItems() {
+  const x = cur(), items = [];
+  for (const s of S.list) items.push({ icon: 'term', label: s.title || s.name, hint: `Phiên · ${s.dir.split('/').pop()}`, run: () => go({ s: s.name, t: 'term', d: null, g: null, v: null }) });
+  const running = new Set(S.list.map(s => s.convId).filter(Boolean));
+  for (const p of S.projects || []) {
+    const name = p.dir.split('/').pop() || p.dir;
+    items.push({ icon: 'folder', label: name, hint: 'Phiên mới trong project', run: () => quickStart(p.dir, p.conversations[0]?.agent || 'claude') });
+    for (const c of p.conversations) if (!running.has(c.id)) items.push({ icon: 'chat', label: c.title, hint: `Mở lại hội thoại · ${name} · ${ago(c.mtime)}`, run: () => quickStart(p.dir, c.agent, c.id) });
+  }
+  const cmd = (icon, label, run, hint = 'Lệnh') => items.push({ icon, label, hint, run });
+  cmd('plus', 'Phiên mới…', newSession);
+  if (x) for (const [t, n, ic] of [['chat', 'Chat', 'chat'], ['term', 'Terminal', 'term'], ['files', 'File', 'folder'], ['git', 'Git', 'git']]) cmd(ic, `Mở tab ${n}`, () => go({ t, v: null }), x.title || x.name);
+  cmd('gear', 'Cài đặt', () => $('b-settings').click());
+  cmd('bell', 'Thông báo', () => $('b-bell').click());
+  for (const [k, [n, ic]] of Object.entries(THEMES)) cmd(ic, `Giao diện: ${n}`, () => setTheme(k));
+  return items;
+}
+function openPalette() {
+  if ($('d-cmd').open) return;
+  const all = paletteItems(), input = $('cmd-q'), list = $('cmd-list');
+  let shown = [], sel = 0;
+  const draw = () => {
+    const words = fold(input.value).split(/\s+/).filter(Boolean);
+    shown = all.filter(it => { const h = fold(it.label + ' ' + it.hint); return words.every(w => h.includes(w)); }).slice(0, 40);
+    sel = Math.min(sel, Math.max(0, shown.length - 1));
+    list.replaceChildren(...(shown.length ? shown.map((it, i) => {
+      const b = el('button', 'cmdi' + (i === sel ? ' on' : '')); b.type = 'button';
+      b.innerHTML = icon(it.icon);
+      const t = el('div'); t.append(el('b', null, it.label), el('small', null, it.hint)); b.append(t);
+      b.onclick = () => runAt(i);
+      return b;
+    }) : [el('div', 'empty', 'Không có gì khớp')]));
+    list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
+  };
+  const runAt = i => { const it = shown[i]; if (!it) return; $('d-cmd').close(); safely(async () => it.run())(); };
+  input.value = ''; sel = 0;
+  input.oninput = () => { sel = 0; draw(); };
+  input.onkeydown = e => {
+    if (e.key === 'ArrowDown') { e.preventDefault(); sel = Math.min(sel + 1, shown.length - 1); draw(); }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); sel = Math.max(sel - 1, 0); draw(); }
+    else if (e.key === 'Enter') { e.preventDefault(); runAt(sel); }
+  };
+  draw();
+  $('d-cmd').showModal();
+  input.focus();
+}
+const paletteKey = e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); e.stopPropagation(); openPalette(); } };
+document.addEventListener('keydown', paletteKey, true);
 
 // ==================== Nhập bằng giọng nói ====================
 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;

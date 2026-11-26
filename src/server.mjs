@@ -154,6 +154,8 @@ async function sessions() {
       // Model: tên hiển thị từ statusline nếu có (vd. "Opus 5.5"), không thì từ câu trả lời gần nhất
       const live = s.convId && (await claudeUsageFile())?.sessions?.[s.convId];
       s.model = live?.model || prettyModel(r?.model);
+      s.replyAt = r?.replyAt || null; // để đánh dấu "chưa xem"
+      if (s.state === 'working' && r?.lastTool) s.doing = r.lastTool; // thanh "agent đang làm gì"
     }
     // Trạng thái bắt đầu từ lúc nào (vd. "đang chạy 3 phút"); cùng một mốc cho mọi thiết bị
     const prev = stateSince.get(s.name);
@@ -334,7 +336,10 @@ async function lastReply(agent, cwd, pid) {
   const lines = await readTail(fc.file, 1024 * 1024);
   const msg = transcriptMessages(agent, lines, 12).filter(m => m.who === 'assistant').pop();
   const model = lastJson(lines, o => agent === 'claude' ? o.type === 'assistant' && o.message?.model : o.type === 'turn_context' && o.payload?.model);
-  const out = { mtime, text: msg && plainText(msg.text).slice(0, 300), model };
+  const items = chatItems(agent, lines, 6), last = items.at(-1);
+  const lastTool = last?.kind === 'tools' ? last.steps.at(-1) : null; // bước mới nhất (nếu chưa có câu trả lời sau nó)
+  const replyAt = items.filter(x => x.kind === 'msg' && x.who === 'assistant').at(-1)?.t || null;
+  const out = { mtime, text: msg && plainText(msg.text).slice(0, 300), model, lastTool, replyAt };
   replyCache.set(fc.file, out);
   return out;
 }
@@ -366,6 +371,66 @@ async function sessionTokens(agent, cwd, pid) {
 }
 
 // Tin nhắn gần nhất (người dùng + agent) dạng văn bản: agent chạy màn hình phụ nên tmux không giữ lịch sử
+// Tóm tắt một lần gọi công cụ của agent thành [việc, chi tiết] ngắn để hiện trong Chat
+export function toolSummary(name, input) {
+  let i = input || {};
+  if (typeof i === 'string') { try { i = JSON.parse(i); } catch { i = { raw: i }; } }
+  const base = p => (p ? String(p).split('/').pop() : '');
+  const out = (() => {
+    switch (name) {
+      case 'Read': return ['Đọc', base(i.file_path)];
+      case 'Edit': case 'MultiEdit': case 'NotebookEdit': return ['Sửa', base(i.file_path || i.notebook_path)];
+      case 'Write': return ['Tạo', base(i.file_path)];
+      case 'Bash': return ['Chạy', i.description || i.command];
+      case 'Grep': return ['Tìm', i.pattern];
+      case 'Glob': return ['Tìm file', i.pattern];
+      case 'WebFetch': return ['Đọc web', i.url];
+      case 'WebSearch': return ['Tìm web', i.query];
+      case 'Agent': case 'Task': return ['Giao việc', i.description];
+      case 'TodoWrite': return ['Cập nhật danh sách việc', ''];
+      case 'AskUserQuestion': return ['Hỏi bạn', i.questions?.[0]?.question];
+      default: { // Codex: exec / shell với lệnh bên trong
+        const cmd = /cmd:\s*"((?:[^"\\]|\\.){1,200})/.exec(i.raw || '')?.[1] || (Array.isArray(i.command) ? i.command.join(' ') : i.command || i.cmd);
+        return [name === 'exec' || name === 'shell' ? 'Chạy' : name, cmd || ''];
+      }
+    }
+  })();
+  return { verb: out[0], detail: String(out[1] || '').replace(/\s+/g, ' ').trim().slice(0, 140) };
+}
+
+// Chat: tin nhắn + các bước agent làm (gọi công cụ), các bước liền nhau gộp thành một thẻ. lines: mới nhất trước
+export function chatItems(agent, lines, limit = 80) {
+  const raw = [];
+  for (const l of lines) {
+    let o; try { o = JSON.parse(l); } catch { continue; }
+    const t = Date.parse(o.timestamp) || null, ev = [];
+    if (agent === 'claude' && (o.type === 'user' || o.type === 'assistant') && !o.isMeta && !o.isSidechain) {
+      const c = o.message?.content;
+      const items = typeof c === 'string' ? [{ type: 'text', text: c }] : Array.isArray(c) ? c : [];
+      for (const x of items) {
+        if (x.type === 'text' && x.text?.trim() && !x.text.startsWith('<')) ev.push({ who: o.type, text: x.text.trim(), t });
+        else if (x.type === 'tool_use' && o.type === 'assistant') ev.push({ tool: toolSummary(x.name, x.input), t });
+      }
+    } else if (agent === 'codex' && o.type === 'response_item') {
+      const p = o.payload || {};
+      if (p.type === 'message' && (p.role === 'user' || p.role === 'assistant')) {
+        const text = (p.content || []).filter(x => x.type === 'input_text' || x.type === 'output_text').map(x => x.text).join('\n').trim();
+        if (text && !text.startsWith('<') && !text.startsWith('# AGENTS.md')) ev.push({ who: p.role, text, t });
+      } else if (p.type === 'function_call' || p.type === 'custom_tool_call') ev.push({ tool: toolSummary(p.name, p.arguments ?? p.input), t });
+    }
+    raw.push(...ev.reverse()); // trong một dòng: giữ đúng thứ tự khi đảo ngược cả danh sách
+    if (raw.filter(e => e.who).length >= limit) break;
+  }
+  const items = [];
+  for (const e of raw.reverse()) {
+    const prev = items.at(-1);
+    if (e.tool && prev?.kind === 'tools') { prev.steps.push(e.tool); prev.t = e.t; }
+    else if (e.tool) items.push({ kind: 'tools', steps: [e.tool], t: e.t });
+    else items.push({ kind: 'msg', who: e.who, text: e.text, t: e.t });
+  }
+  return items;
+}
+
 // Màn hình chờ xác nhận: câu hỏi và các lựa chọn đánh số ("❯ 1. Yes", "  2. No, and tell Claude…")
 export function parseChoices(screen) {
   const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim());
@@ -376,6 +441,9 @@ export function parseChoices(screen) {
     if (m && Number(m[1]) === choices.length + 1) { if (first < 0) first = i; choices.push({ n: Number(m[1]), label: m[2].trim() }); }
   });
   if (!choices.length) return {};
+  // Menu chọn nhiều (ô tích [ ] / [✔], nút Submit) hoặc danh sách phải cuộn: bấm số chỉ tích/bỏ tích, không gửi;
+  // để bạn thao tác trong terminal, không hiện nút (nếu không thanh nút cứ nháy theo menu cuộn)
+  if (choices.some(c => /^\[[ xX✓✔]?\]/.test(c.label)) || tail.some(l => /^\s*(?:[❯›>]\s*)?Submit\s*$/.test(l) || /more lines?/.test(l))) return {};
   const question = tail.slice(0, first).reverse().find(l => /\?\s*$/.test(l.trim()))?.trim() || null;
   return { question, choices };
 }
@@ -870,7 +938,7 @@ const routes = {
     if (!s) throw fail(404, 'Không tìm thấy phiên');
     const f = s.agent && await transcriptFile(s.agent, s.dir, s.agentPid);
     const limit = Math.min(200, Math.max(10, Number(q.get('limit')) || 80));
-    return { agent: s.agent, state: s.state, messages: f ? transcriptMessages(s.agent, await readTail(f, 4 * 1024 * 1024), limit) : [] };
+    return { agent: s.agent, state: s.state, items: f ? chatItems(s.agent, await readTail(f, 4 * 1024 * 1024), limit) : [] };
   },
   // Trang Cài đặt
   async 'GET /api/info'() {
