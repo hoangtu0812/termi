@@ -180,7 +180,17 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
 .ugrp { display:flex; flex-direction:column; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
 .ugrp:first-child { border-top:0; padding-top:0; }
 .ugrp h4 { margin:0; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; }
-.urow { display:flex; flex-direction:column; gap:4px; font-size:14px; }
+dialog.sheet[open] { display:flex; flex-direction:column; }
+.sheet-head { display:flex; align-items:center; gap:8px; padding:10px 8px 6px 18px; flex:none; }
+.sheet-head h3 { flex:1; margin:0; display:flex; align-items:center; gap:8px; font-size:17px; }
+.sheet-head h3 svg.i { color:var(--acc); }
+.sheet-body { overflow:auto; padding:4px 18px 18px; }
+.ugrp h4 { display:flex; align-items:center; gap:6px; }
+.ugrp h4 svg.i { width:15px; height:15px; }
+.urow { display:grid; grid-template-columns:34px 1fr; column-gap:12px; row-gap:4px; align-items:center; font-size:14px; }
+.urow .ic { grid-row:span 3; align-self:start; width:34px; height:34px; border-radius:10px; display:grid; place-items:center; background:color-mix(in srgb, currentColor 14%, transparent); }
+.urow .ic svg.i { width:18px; height:18px; }
+.urow > :not(.ic) { grid-column:2; }
 .urow .top { display:flex; justify-content:space-between; gap:8px; }
 .urow .top b { font-weight:500; } .urow .top span { font:13px var(--mono); }
 .urow small { color:var(--faint); font-size:12px; }
@@ -367,12 +377,12 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   </form>
 </dialog>
 
-<dialog id="d-usage">
-  <form method="dialog">
-    <h3>Usage</h3>
-    <div id="usage-body"></div>
-    <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
-  </form>
+<dialog id="d-usage" class="sheet">
+  <div class="sheet-head">
+    <h3><span data-i="gauge"></span>Usage</h3>
+    <button class="ibtn" type="button" aria-label="Đóng" onclick="this.closest('dialog').close()" data-i="x"></button>
+  </div>
+  <div class="sheet-body" id="usage-body"></div>
 </dialog>
 
 <dialog id="d-quick">
@@ -410,7 +420,14 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>', zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
+  minus:'<path d="M5 12h14"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+  calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
+  layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
+  cpu:'<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
+  ram:'<rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 11v2M10 11v2M14 11v2M18 11v2M6 17v3M18 17v3"/>',
+  disk:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  monitor:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>', zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
 };
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
 const fillIcons = root => root.querySelectorAll('[data-i]').forEach(e => { e.insertAdjacentHTML('afterbegin', icon(e.dataset.i)); e.removeAttribute('data-i'); });
@@ -806,6 +823,9 @@ const send = safely(async () => {
   S.atts.forEach(a => a.url && URL.revokeObjectURL(a.url)); S.atts = []; renderAtts();
 });
 $('b-send').onclick = send;
+// Chạm nút gửi mà ô nhắn mất focus thì bàn phím đóng, trang co lại, nút bị dời chỗ trước khi kịp
+// tính là bấm (phải bấm 2 lần). Không lấy focus: bàn phím giữ nguyên, một chạm là gửi.
+$('b-send').onpointerdown = e => e.preventDefault();
 $('text').oninput = e => autosize(e.target);
 $('text').onkeydown = e => {
   // Máy tính: Enter gửi, Shift+Enter xuống dòng. Điện thoại: Enter luôn xuống dòng
@@ -1149,15 +1169,20 @@ function renderUsageChip() {
   b.title = 'Usage: hạn mức, token, tài nguyên máy';
   b.hidden = false;
 }
-function meterRow(name, pct, note) {
+const ICON_COLOR = { claude: 'var(--acc)', codex: 'var(--blue)', ctx: '#a78bfa', machine: 'var(--ok)' };
+function meterRow(name, pct, note, ic, color) {
   const r = el('div', 'urow'), top = el('div', 'top'), m = el('div', 'meter ' + level(pct ?? 0)), bar = el('span');
+  if (ic) { const i = el('span', 'ic'); i.style.color = color; i.innerHTML = icon(ic); r.append(i); }
   top.append(el('b', null, name), el('span', null, pct == null ? '—' : pct + '%'));
   bar.style.width = Math.min(100, pct ?? 0) + '%'; m.append(bar);
   r.append(top, m);
   if (note) r.append(el('small', null, note));
   return r;
 }
-function group(title, rows) { const g = el('div', 'ugrp'); g.append(el('h4', null, title), ...rows); return g; }
+function group(title, ic, rows) {
+  const g = el('div', 'ugrp'), h = el('h4'); h.innerHTML = icon(ic); h.append(title);
+  g.append(h, ...rows); return g;
+}
 function renderUsageDialog() {
   const u = S.usage; if (!u) return;
   const parts = [];
@@ -1165,22 +1190,22 @@ function renderUsageDialog() {
   const lim = [];
   for (const a of ['claude', 'codex']) {
     const rows = limitRows(a, u.limits);
-    if (rows.length) lim.push(...rows.map(([, n, p, t]) => meterRow(`${agentName(a)} · ${n}`, p, until(t))));
+    if (rows.length) lim.push(...rows.map(([short, n, p, t]) => meterRow(`${agentName(a)} · ${n}`, p, until(t), /d$/.test(short) ? 'calendar' : 'clock', ICON_COLOR[a])));
     else if (a === 'claude') lim.push(el('div', 'uempty', 'Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra có hạn mức này.'));
   }
-  parts.push(group('Hạn mức gói', lim));
+  parts.push(group('Hạn mức gói', 'gauge', lim));
   // Phiên đang mở
   const s = u.session;
-  if (s?.agent) parts.push(group(`Phiên ${s.name} · ${agentName(s.agent)}`, [s.context != null
+  if (s?.agent) parts.push(group(`Phiên ${s.name} · ${agentName(s.agent)}`, 'term', [s.context != null
     ? meterRow('Ngữ cảnh', s.pct != null ? Math.round(s.pct) : s.window ? Math.round(s.context / s.window * 100) : null,
-        `${kTok(s.context)}${s.window ? ' / ' + kTok(s.window) : ''} token${s.model ? ' · ' + s.model : ''}`)
+        `${kTok(s.context)}${s.window ? ' / ' + kTok(s.window) : ''} token${s.model ? ' · ' + s.model : ''}`, 'layers', ICON_COLOR.ctx)
     : el('div', 'uempty', 'Chưa có số liệu token cho phiên này')]));
   // Máy
   const m = u.machine;
-  parts.push(group('Máy' + (st().m ? ' · ' + st().m : ''), [
-    meterRow('CPU (tải 1 phút)', m.cpu),
-    meterRow('RAM', m.mem, m.memTotal ? `${Math.round(m.memTotal / 2 ** 30)} GB` : ''),
-    meterRow('Ổ đĩa', m.disk, m.diskFree != null ? `còn trống ${(m.diskFree / 2 ** 30).toFixed(0)} GB` : ''),
+  parts.push(group('Máy' + (st().m ? ' · ' + st().m : ''), 'monitor', [
+    meterRow('CPU (tải 1 phút)', m.cpu, '', 'cpu', ICON_COLOR.machine),
+    meterRow('RAM', m.mem, m.memTotal ? `${Math.round(m.memTotal / 2 ** 30)} GB` : '', 'ram', ICON_COLOR.machine),
+    meterRow('Ổ đĩa', m.disk, m.diskFree != null ? `còn trống ${(m.diskFree / 2 ** 30).toFixed(0)} GB` : '', 'disk', ICON_COLOR.machine),
   ]));
   $('usage-body').replaceChildren(...parts);
 }
