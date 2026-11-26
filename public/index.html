@@ -2,6 +2,11 @@
 <html lang="vi">
 <head>
 <meta charset="utf-8">
+<script>
+// Gắn giao diện (sáng/tối) trước khi trang hiện ra để không bị nháy màu
+try { var t = localStorage.getItem('termi-theme'); } catch (e) {}
+document.documentElement.dataset.theme = t === 'light' || t === 'dark' ? t : matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+</script>
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
@@ -19,11 +24,10 @@
   --add:#4fbf7f; --del:#ef6b73; --blue:#6aa7ff;
   --r:12px; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
 }
-@media (prefers-color-scheme: light) {
-  :root { --bg:#f6f7f9; --panel:#ffffff; --card:#ffffff; --hover:#eef0f4; --line:#e4e7ec; --line2:#d5d9e0;
-    --fg:#171a21; --dim:#5f6675; --faint:#9aa1ae; --acc:#c95f3a; --acc-soft:#c95f3a1a; --ok:#1f9d5c; --ok-soft:#1f9d5c1a;
-    --warn:#b7810c; --warn-soft:#b7810c1a; --add:#1f9d5c; --del:#d33f49; --blue:#2f6fdf; }
-}
+:root[data-theme=light] { --bg:#f6f7f9; --panel:#ffffff; --card:#ffffff; --hover:#eef0f4; --line:#e4e7ec; --line2:#d5d9e0;
+  --fg:#171a21; --dim:#5f6675; --faint:#9aa1ae; --acc:#c95f3a; --acc-soft:#c95f3a1a; --ok:#1f9d5c; --ok-soft:#1f9d5c1a;
+  --warn:#b7810c; --warn-soft:#b7810c1a; --add:#1f9d5c; --del:#d33f49; --blue:#2f6fdf; color-scheme:light; }
+:root[data-theme=dark] { color-scheme:dark; }
 * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
 html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
 button,select,input,textarea { font:inherit; color:inherit; }
@@ -202,6 +206,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
     <div class="bar">
       <div class="brand"><img src="/icon.svg" alt="">termi</div>
       <button class="ibtn" id="b-hist" title="Hội thoại Claude cũ" aria-label="Hội thoại Claude cũ" data-i="history"></button>
+      <button class="ibtn" id="b-theme"></button>
       <button class="ibtn" id="b-bell" title="Thông báo" aria-label="Bật thông báo" data-i="bell"></button>
       <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
     </div>
@@ -340,6 +345,8 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
 const $ = id => document.getElementById(id);
 const P = {
   history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', contrast:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="m15 18-6-6 6-6"/>', more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
   term:'<path d="m4 17 6-5-6-5M12 19h8"/>', folder:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
@@ -354,6 +361,28 @@ const P = {
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
 const fillIcons = root => root.querySelectorAll('[data-i]').forEach(e => { e.insertAdjacentHTML('afterbegin', icon(e.dataset.i)); e.removeAttribute('data-i'); });
 fillIcons(document);
+
+// ---------- Giao diện sáng/tối: lưu theo từng thiết bị ----------
+const THEMES = { auto: ['Tự động', 'contrast'], light: ['Sáng', 'sun'], dark: ['Tối', 'moon'] };
+const lightQuery = matchMedia('(prefers-color-scheme: light)');
+function themePref() { try { return THEMES[localStorage.getItem('termi-theme')] ? localStorage.getItem('termi-theme') : 'auto'; } catch { return 'auto'; } }
+function applyTheme() {
+  const pref = themePref(), theme = pref === 'auto' ? (lightQuery.matches ? 'light' : 'dark') : pref;
+  document.documentElement.dataset.theme = theme;
+  document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#111318';
+  const b = document.getElementById('b-theme');
+  b.innerHTML = icon(THEMES[pref][1]);
+  b.title = 'Giao diện: ' + THEMES[pref][0];
+  b.setAttribute('aria-label', b.title + ' (bấm để đổi)');
+}
+document.getElementById('b-theme').onclick = () => {
+  const order = Object.keys(THEMES), next = order[(order.indexOf(themePref()) + 1) % order.length];
+  try { localStorage.setItem('termi-theme', next); } catch {}
+  applyTheme();
+  toast('Giao diện: ' + THEMES[next][0]);
+};
+lightQuery.addEventListener('change', applyTheme);
+applyTheme();
 
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const short = d => (d || '').replace(/^\/Users\/[^/]+/, '~');
@@ -676,8 +705,8 @@ const loadMarked = () => markedP ??= new Promise((ok, fail) => {
   s.onerror = () => { markedP = null; fail(new Error('Không tải được trình hiển thị Markdown (cần mạng)')); };
   document.head.append(s);
 });
-const MD_CSS = `:root{color-scheme:light dark;--bg:#f6f7f9;--fg:#171a21;--dim:#5f6675;--line:#e4e7ec;--code:#eceef2;--acc:#c95f3a}
-@media (prefers-color-scheme:dark){:root{--bg:#111318;--fg:#e8eaee;--dim:#8d94a3;--line:#2a2f3a;--code:#1d2129;--acc:#e07a55}}
+const MD_CSS = `:root{color-scheme:light;--bg:#f6f7f9;--fg:#171a21;--dim:#5f6675;--line:#e4e7ec;--code:#eceef2;--acc:#c95f3a}
+:root[data-theme=dark]{color-scheme:dark;--bg:#111318;--fg:#e8eaee;--dim:#8d94a3;--line:#2a2f3a;--code:#1d2129;--acc:#e07a55}
 body{margin:0;padding:16px 18px 56px;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-wrap:break-word}
 h1,h2,h3,h4{line-height:1.3;margin:1.4em 0 .6em}h1{font-size:1.75em}h2{font-size:1.35em}h3{font-size:1.15em}
 h1,h2{padding-bottom:.3em;border-bottom:1px solid var(--line)}a{color:var(--acc)}img{max-width:100%;vertical-align:middle}
@@ -685,7 +714,8 @@ code{font:.87em ui-monospace,"SF Mono",Menlo,monospace;background:var(--code);pa
 pre{background:var(--code);padding:12px 14px;border-radius:10px;overflow:auto;line-height:1.5}pre code{padding:0;background:none}
 table{border-collapse:collapse;display:block;overflow:auto;max-width:100%;margin:1em 0}th,td{border:1px solid var(--line);padding:6px 12px}th{background:var(--code)}
 blockquote{margin:0;padding:0 1em;color:var(--dim);border-left:3px solid var(--line)}hr{border:0;border-top:1px solid var(--line);margin:2em 0}
-p[align=center],div[align=center]{text-align:center}li+li{margin-top:.25em}`;
+p[align=center],div[align=center]{text-align:center}li+li{margin-top:.25em}
+pre.mermaid{background:none;text-align:center;overflow:auto}`;
 async function markdownNode(text, file) {
   const marked = await loadMarked();
   // <template> không tải ảnh hay chạy gì khi gán innerHTML: chỉ để sửa đường dẫn ảnh tương đối
@@ -696,13 +726,29 @@ async function markdownNode(text, file) {
     const src = img.getAttribute('src');
     if (!/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(src)) img.src = rawUrl(decodeURIComponent(new URL(src, encodeURI(base)).pathname));
   }
-  // sandbox không có allow-scripts / allow-same-origin: HTML trong file .md không chạy được script, không chạm được API
+  const diagrams = [...t.content.querySelectorAll('pre > code.language-mermaid')];
+  for (const code of diagrams) code.parentElement.replaceWith(Object.assign(document.createElement('pre'), { className: 'mermaid', textContent: code.textContent }));
+  // Không bao giờ có allow-same-origin: iframe là origin riêng, không đọc được gì của app và POST tới API bị CORS chặn.
+  // Chỉ bật allow-scripts khi có sơ đồ, và CSP chỉ cho chạy đúng file mermaid (SRI) + đoạn khởi tạo (hash).
+  let sandbox = 'allow-popups allow-popups-to-escape-sandbox', scripts = '';
+  let csp = "default-src 'none'; img-src * data: blob:; style-src 'unsafe-inline'; font-src * data:";
+  if (diagrams.length) {
+    const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(MERMAID.init));
+    csp += `; script-src ${MERMAID.src} 'sha256-${btoa(String.fromCharCode(...new Uint8Array(digest)))}'`;
+    scripts = `<script src="${MERMAID.src}" integrity="${MERMAID.sri}" crossorigin="anonymous"><\/script><script>${MERMAID.init}<\/script>`;
+    sandbox += ' allow-scripts';
+  }
   const f = el('iframe', 'md');
-  f.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
+  f.setAttribute('sandbox', sandbox);
   f.title = 'Xem trước Markdown';
-  f.srcdoc = `<!doctype html><meta charset="utf-8"><base target="_blank"><style>${MD_CSS}</style><body>${t.innerHTML}</body>`;
+  f.srcdoc = `<!doctype html><html data-theme="${document.documentElement.dataset.theme}"><meta charset="utf-8"><meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank"><style>${MD_CSS}</style><body>${t.innerHTML}${scripts}</body>`;
   return f;
 }
+const MERMAID = {
+  src: 'https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js',
+  sri: 'sha384-WmdflGW9aGfoBdHc4rRyWzYuAjEmDwMdGdiPNacbwfGKxBW/SO6guzuQ76qjnSlr',
+  init: "mermaid.initialize({startOnLoad:true,securityLevel:'strict',theme:document.documentElement.dataset.theme==='dark'?'dark':'default'})",
+};
 function diffNode(text) {
   const pre = el('pre', 'diff');
   pre.append(...text.split('\n').map(l => el('span',

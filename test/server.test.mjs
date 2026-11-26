@@ -69,3 +69,8 @@ test('xếp làn cây commit: rẽ nhánh rồi merge', () => {
   assert.deepEqual(g.rows[2].seg, [[1, 0, 1, 1], [1, 1, 0, 2], [0, 0, 0, 2]]); // B nhập về làn của C
   assert.deepEqual(g.rows[3].seg, [[0, 0, 0, 1]]);                           // C là gốc, không đi tiếp
 });
+
+test('index.html: không có </script> lọt trong code JS (sẽ cắt ngang thẻ script)', async () => {
+  const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
+  assert.equal(html.match(/<\/script>/gi).length, html.match(/^<script[\s>]/gim).length); // thẻ thật đứng đầu dòng
+});

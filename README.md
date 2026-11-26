@@ -60,9 +60,9 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
-| 📁 | **Duyệt file** | Xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub, chèn đường dẫn vào prompt. |
+| 📁 | **Duyệt file** | Xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
 | 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
-| 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Tự theo chế độ sáng/tối; cài được như app (PWA). |
+| 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Giao diện Tự động / Sáng / Tối (nút ☀ ở đầu sidebar); cài được như app (PWA). |
 
 ## Kiến trúc
 
@@ -178,7 +178,7 @@ termi cho quyền điều khiển shell trên máy của bạn, nên được th
 - Chặn DNS rebinding (chỉ nhận Host là localhost hoặc `*.ts.net`) và CSRF (mọi POST phải có header `X-Termi`); ttyd bật kiểm tra origin.
 - Mọi đường dẫn đều được `realpath` và phải nằm trong `TERMI_ROOTS`; tên phiên, branch và commit được kiểm tra bằng regex; lệnh gọi qua `execFile`.
 - Chỉ phục vụ trực tiếp file ảnh, kèm header `Content-Security-Policy: sandbox`, để file trong repo (kể cả SVG) không chạy được script trên origin của app.
-- Xem trước Markdown hiển thị trong `iframe` sandbox (không script, không cùng origin); thư viện [marked](https://marked.js.org) chỉ tải từ CDN khi mở file `.md`, có kiểm tra SRI.
+- Xem trước Markdown hiển thị trong `iframe` sandbox (không script, không cùng origin); thư viện [marked](https://marked.js.org) chỉ tải từ CDN khi mở file `.md`, có kiểm tra SRI. File có sơ đồ [Mermaid](https://mermaid.js.org) mới được bật script, và CSP chỉ cho chạy đúng file Mermaid (SRI) cùng đoạn khởi tạo (hash).
 
 ## Giới hạn đã biết
 
