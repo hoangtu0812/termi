@@ -6,8 +6,10 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 TTYD_VERSION=1.7.7
 UNIT_DIR="$HOME/.config/systemd/user"
 TTYD="$HOME/.local/bin/ttyd"
-
 is_wsl() { grep -qi microsoft /proc/version 2>/dev/null; }
+# WSL chế độ mạng mirrored dùng chung cổng với Windows, mà Windows (Delivery Optimization) đã giữ cổng 7680
+if is_wsl; then PORT="${TERMI_PORT:-7690}"; TPORT="${TERMI_TTYD_PORT:-7691}"; else PORT="${TERMI_PORT:-7680}"; TPORT="${TERMI_TTYD_PORT:-7681}"; fi
+
 # Linux dùng lệnh tailscale; WSL dùng tailscale.exe của Windows (WSL tự chuyển localhost sang Windows)
 WIN_TS="/mnt/c/Program Files/Tailscale/tailscale.exe"
 ts() {
@@ -72,7 +74,7 @@ Description=termi server
 
 [Service]
 ExecStart="$NODE" "$ROOT/src/server.mjs"
-Environment="PATH=$ENV_PATH" "TERMI_ROOTS=$ROOTS" "LANG=C.UTF-8" "SHELL=$SHELL" "TERMI_TAILSCALE=$TS_BIN"
+Environment="PATH=$ENV_PATH" "TERMI_ROOTS=$ROOTS" "LANG=C.UTF-8" "SHELL=$SHELL" "TERMI_TAILSCALE=$TS_BIN" "TERMI_PORT=$PORT" "TERMI_TTYD_PORT=$TPORT"
 WorkingDirectory=$HOME
 Restart=always
 RestartSec=3
@@ -88,7 +90,7 @@ cat > "$UNIT_DIR/termi-ttyd.service" <<EOF
 Description=termi ttyd
 
 [Service]
-ExecStart="$TTYD" -i lo -p 7681 -b /term -W -a -O -P 20 -t fontSize=14 -t "fontFamily=Menlo,Consolas,Droid Sans Mono,monospace" -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' "$ROOT/scripts/attach.sh"
+ExecStart="$TTYD" -i 127.0.0.1 -p $TPORT -b /term -W -a -O -P 20 -t fontSize=14 -t "fontFamily=Menlo,Consolas,Droid Sans Mono,monospace" -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' "$ROOT/scripts/attach.sh"
 Environment="PATH=$ENV_PATH" "LANG=C.UTF-8" "SHELL=$SHELL"
 WorkingDirectory=$HOME
 Restart=always
@@ -105,7 +107,7 @@ systemctl --user restart termi-server termi-ttyd
 loginctl enable-linger "$USER" 2>/dev/null || true # chạy cả khi chưa đăng nhập
 
 # 6. Mở ra tailnet
-if ts serve --bg --https=443 http://127.0.0.1:7680; then
+if ts serve --bg --https=443 http://127.0.0.1:$PORT; then
   HOST=$(ts status --json | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>console.log(JSON.parse(s).Self.DNSName.replace(/\.$/,"")))')
   echo "Xong. Máy này: https://$HOST"
   echo "Trên termi của máy khác, chọn máy này ở ô chọn máy đầu sidebar."
