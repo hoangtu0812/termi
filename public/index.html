@@ -1015,6 +1015,9 @@ $('frame').addEventListener('load', () => {
     fitTmux();
     touchScroll(w, t);
     watchDisconnect(t);
+    // Thiết bị nào đang được chạm / gõ thì khung tmux vừa thiết bị đó (thiết bị khác có thể đã ép khung)
+    w.document.addEventListener('pointerdown', fitTmux, true);
+    w.document.addEventListener('keydown', fitTmux, true);
   }, 100);
 });
 
@@ -1161,7 +1164,7 @@ $('b-send').onclick = send;
 // tính là bấm (phải bấm 2 lần). Không lấy focus: bàn phím giữ nguyên, một chạm là gửi.
 $('b-send').onpointerdown = e => e.preventDefault();
 $('text').oninput = e => { autosize(e.target); saveDraft(); updateSuggest(); };
-$('text').onfocus = updateSuggest;
+$('text').onfocus = () => { updateSuggest(); fitTmux(); };
 $('text').onblur = () => setTimeout(() => { $('suggest').hidden = true; }, 150);
 
 // ---- Ô nhắn thông minh: gợi ý lệnh khi gõ "/", câu đã gửi gần đây, bản nháp theo phiên ----
