@@ -58,7 +58,10 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .machines select { width:100%; }
 .sfind { padding:8px 8px 0; }
 .sfind input { width:100%; height:38px; padding:0 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--fg); }
-.sgrp { padding:10px 6px 2px; font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sgrp { display:flex; align-items:center; gap:4px; padding:6px 0 0 6px; }
+.sgrp span { flex:1; min-width:0; }
+.sgrp .ibtn { width:30px; height:30px; flex:none; }
+.sgrp span { font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .welcome { display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 16px; margin:auto; width:100%; max-width:460px; text-align:center; }
 .welcome img { width:56px; height:56px; border-radius:14px; }
 .welcome h2 { margin:0; font-size:19px; }
@@ -595,10 +598,14 @@ function renderSessions() {
   // Nhóm theo thư mục khi các phiên nằm ở nhiều thư mục
   const groups = new Map();
   for (const x of list) groups.set(x.dir, [...(groups.get(x.dir) || []), x]);
-  const grouped = groups.size > 1 && list.length > 2;
   const nodes = [];
   for (const [dir, items] of groups) {
-    if (grouped) { const h = el('div', 'sgrp', `${dir.split('/').pop() || dir} · ${items.length}`); h.title = dir; nodes.push(h); }
+    // Tiêu đề project: tên thư mục + nút tạo phiên mới ngay trong thư mục đó (cùng agent với phiên mới nhất)
+    const h = el('div', 'sgrp'), add = el('button', 'ibtn');
+    h.append(el('span', null, `${dir.split('/').pop() || dir} · ${items.length}`), add); h.title = dir;
+    add.type = 'button'; add.innerHTML = icon('plus'); add.setAttribute('aria-label', `Phiên mới trong ${dir}`); add.title = 'Phiên mới trong thư mục này';
+    add.onclick = safely(() => quickStart(dir, items.find(x => x.agent)?.agent || 'claude'));
+    nodes.push(h);
     nodes.push(...items.map(sessionCard));
   }
   if (!nodes.length) nodes.push(el('div', 'empty', 'Không có phiên nào khớp'));
@@ -731,11 +738,14 @@ $('d-new').onclose = safely(async () => {
   await poll(); go({ s: name, t: 'term', d: null, g: null });
 });
 
-$('b-hist').onclick = safely(async () => {
+$('b-hist').onclick = () => showHistory(false);
+const showHistory = safely(async all => {
   const box = $('hist-list');
   box.replaceChildren(el('div', 'empty', 'Đang tải…'));
-  $('d-hist').showModal();
-  const list = await api('/api/history');
+  if (!$('d-hist').open) $('d-hist').showModal();
+  // Đang ở một phiên: chỉ hiện hội thoại của thư mục phiên đó, có nút xem tất cả
+  const dir = all ? null : cur()?.dir;
+  const list = await api('/api/history' + (dir ? '?dir=' + encodeURIComponent(dir) : ''));
   box.replaceChildren(...list.map(h => {
     const b = el('button'); b.type = 'button';
     const t2 = el('span', 't2'); t2.append(agentAvatar(h.agent, true), `${agentName(h.agent)} · ${short(h.cwd)} · ${ago(h.mtime)}`);
@@ -749,7 +759,8 @@ $('b-hist').onclick = safely(async () => {
     });
     return b;
   }));
-  if (!list.length) box.replaceChildren(el('div', 'empty', 'Không có hội thoại nào'));
+  if (!list.length) box.replaceChildren(el('div', 'empty', dir ? `Chưa có hội thoại nào ở ${short(dir)}` : 'Không có hội thoại nào'));
+  if (dir) { const b = el('button', 'btn', 'Xem mọi thư mục'); b.type = 'button'; b.onclick = () => showHistory(true); box.append(b); }
 });
 
 function openSessionMenu(name) { S.menuFor = name; $('m-title').textContent = name; $('d-menu').showModal(); }

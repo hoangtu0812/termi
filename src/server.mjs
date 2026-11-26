@@ -170,13 +170,14 @@ async function readHead(file, bytes = 512 * 1024) {
   const { bytesRead } = await fh.read(buf, 0, buf.length, 0).finally(() => fh.close());
   return buf.subarray(0, bytesRead).toString().split('\n');
 }
-async function history() {
+// dir: chỉ lấy hội thoại của thư mục đó (đọc nhiều file hơn vì cwd chỉ biết sau khi đọc)
+async function history(dir) {
   const files = [];
   for (const [agent, { dir, accept }] of Object.entries(HISTORY))
     for (const f of await fs.readdir(dir, { recursive: true }).catch(() => []))
       if (f.endsWith('.jsonl') && accept(f)) files.push({ agent, f: path.join(dir, f) });
   const stats = await Promise.all(files.map(x => fs.stat(x.f).then(s => ({ ...x, t: s.mtimeMs }), () => null)));
-  const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, 40);
+  const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, dir ? 300 : 40);
   return (await Promise.all(recent.map(async ({ agent, f, t }) => {
     const h = { id: agent === 'claude' ? path.basename(f, '.jsonl') : null };
     for (const line of await readHead(f)) {
@@ -185,7 +186,7 @@ async function history() {
       if (h.id && h.cwd && h.title) break;
     }
     return validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
-  }))).filter(Boolean);
+  }))).filter(h => h && (!dir || h.cwd === dir)).slice(0, 40);
 }
 
 // Agent nào có cài trên máy này (tìm trong PATH)
@@ -509,7 +510,7 @@ const routes = {
     for (const d of new Set([...s.map(x => x.dir), ...h.map(x => x.cwd), ...r])) if (await safeDir(d)) recent.push(d);
     return { roots: ROOTS, recent };
   },
-  'GET /api/history': () => history(),
+  'GET /api/history': q => history(q.get('dir') || undefined),
   'GET /api/agents': () => installedAgents(),
   'GET /api/usage': q => usage(q.get('session')),
   'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
