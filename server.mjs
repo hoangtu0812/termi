@@ -319,7 +319,7 @@ const routes = {
   async 'GET /api/ls'(q) {
     const dir = await need(q.get('dir'));
     const ents = await fs.readdir(dir, { withFileTypes: true });
-    const list = await Promise.all(ents.filter(e => e.name !== '.git' && e.name !== '.DS_Store').map(async e => {
+    const list = await Promise.all(ents.filter(e => e.name !== '.git' && e.name !== '.DS_Store' && !e.name.startsWith('._')).map(async e => {
       const p = path.join(dir, e.name);
       const st = await fs.stat(p).catch(() => null);
       return st && { name: e.name, path: p, dir: st.isDirectory(), size: st.size, mtime: st.mtimeMs };
@@ -436,7 +436,9 @@ async function handle(req, res) {
     if (!fn) throw fail(404, 'Không tìm thấy');
     data = await fn(url.searchParams, req.method === 'POST' ? await readBody(req) : {});
   }
-  res.writeHead(200, { 'content-type': 'application/json' });
+  // Phiên bản giao diện = thời điểm sửa index.html; trang cũ thấy khác thì tự tải lại
+  const build = String((await fs.stat(path.join(HERE, 'public', 'index.html'))).mtimeMs);
+  res.writeHead(200, { 'content-type': 'application/json', 'x-termi-build': build });
   res.end(JSON.stringify(data));
 }
 

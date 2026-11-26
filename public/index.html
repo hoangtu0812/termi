@@ -350,9 +350,17 @@ const TERM = location.protocol === 'https:' ? `https://${location.hostname}:8443
 
 async function api(path, body) {
   const r = await fetch(path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
+  checkBuild(r.headers.get('x-termi-build'));
   const j = await r.json().catch(() => ({ error: r.statusText }));
   if (!r.ok) throw new Error(j.error || r.status);
   return j;
+}
+// Server có giao diện mới → tải lại, nhưng không khi đang gõ dở hoặc đang mở hộp thoại (tránh mất chữ)
+let build;
+function checkBuild(b) {
+  if (!b) return;
+  build ??= b;
+  if (b !== build && !$('text').value && !$('g-msg').value && !document.querySelector('dialog[open]')) location.reload();
 }
 let toastT;
 function toast(msg, err) {
