@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.2 |
+| Version | 1.3 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 | Applies to | termi 0.12.0 → 1.0.0 |
@@ -31,7 +31,7 @@ Bring the codebase in line with `AGENTS.md` without changing user-visible behavi
 
 - Behavior-preserving: refactor phases change structure only. Any bug fix found on the way gets its own `fix:` commit and test.
 - Move first, then improve: extract code verbatim into its new module, run tests, then clean it up in a separate commit.
-- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.0-implementation-notes.md` (or an `ADR`), in the same commit.
+- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.1-implementation-notes.md` (or an `ADR`), in the same commit.
 - Each phase ends green: `npm test` passes and CI is green.
 
 ## 4. Phases
@@ -65,21 +65,24 @@ Result: 35 tests pass; `npm run check` reports 0 errors and 21 allowlisted legac
 - [x] `vapid.json` is read strictly: a corrupt key stops the server with a clear message instead of being regenerated.
 - [x] `sessions.json` is changed only through `store.update`, so the snapshot, close, restore and dismiss paths no longer overwrite each other.
 - [x] The former `src/server.mjs` moved to `src/app.mjs` (see its line history from before the move with `git blame -C -C src/app.mjs`), which exports `init(config)` and `start(config)`; all top-level `await` and timers moved into them. `src/server.mjs` is a 9-line entry point, so the installers keep working unchanged.
-- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.0-implementation-notes.md`.
+- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.1-implementation-notes.md`.
 - [x] Tests: atomic writes, 50 concurrent updates, write order, failed updates, corrupt files (strict and lenient), `init` keeps the VAPID key and refuses a corrupt one, config parsing, and a child-process test that imports every library module with an empty `HOME` and asserts nothing was created.
 
 Done when: importing any module has no side effects.
 
 Result: 48 tests pass. Running the old `server.mjs` under the same test creates `~/.termi`; the new modules create nothing.
 
-### Phase 3 — Extract pure modules (v0.15.0)
+### Phase 3 — Extract pure modules (v0.15.0) — done
 
-- `src/git/parse.mjs` (`parseStatus`, `parseNumstat`, `marksFromStatus`), `src/git/graph.mjs` (`graphLayout`), `src/git/run.mjs`, `src/git/ops.mjs`.
-- `src/tmux/screen.mjs` (`agentState`, `parseChoices`, `parseMulti`, `stepsToSubmit`), `src/tmux/client.mjs`.
-- `src/validate.mjs` (all `valid*` functions, `safePath`).
-- `src/text.mjs` (`plainText`, `prettyModel`, `clip`).
-- Remove comments from every moved function; migrate rationale to `docs/NOTES-v1.0-implementation-notes.md`.
-- Tests are split to match: `test/git.test.mjs`, `test/screen.test.mjs`, `test/validate.test.mjs`.
+- [x] `src/git/parse.mjs` (`parseStatus`, `parseNumstat`, `parseLog`, `marksFromStatus`, `LOG_FORMAT`), `src/git/graph.mjs` (`graphLayout`), `src/git/run.mjs` (`git`), `src/git/ops.mjs` (`GIT_OPS`).
+- [x] `src/tmux/screen.mjs` (`agentState`, `parseChoices`, `parseMulti`, `stepsToSubmit`), `src/tmux/client.mjs` (`tmux`, `target`, `serverStartTime`).
+- [x] `src/validate.mjs` (all `valid*` functions, `validKey`, `safePath`, `safeDir`); `safePath` now always takes the roots explicitly.
+- [x] `src/text.mjs` (`plainText`, `prettyModel`, `clip`); `src/errors.mjs` (`fail`).
+- [x] Moved code was rewritten to the rules (no comments, small functions, named constants); rationale moved to `docs/NOTES-v1.1-implementation-notes.md`.
+- [x] Before the old code was deleted, old and new implementations were compared on 702 inputs (validators, model names, markdown, 15 agent screens, git status/numstat/log, the real commit history of this repo and 400 random commit graphs) with identical results.
+- [x] Tests split: `test/git.test.mjs` (including stage/unstage/commit against a temporary repository), `test/screen.test.mjs`, `test/validate.test.mjs`, `test/text.test.mjs`.
+
+Result: 61 tests pass; `src/app.mjs` went from 1,260 to 1,111 lines and from 139 to 112 comments.
 
 ### Phase 4 — Agent adapters (v0.16.0)
 
@@ -100,6 +103,7 @@ Result: 48 tests pass. Running the old `server.mjs` under the same test creates 
 - `src/agents/claude.mjs`, `codex.mjs`, `agy.mjs` implement it.
 - Merge `transcriptMessages` into `chatItems`; one shared "real prompt" filter.
 - Test fixtures: sample `.jsonl` transcripts per agent in `test/fixtures/`.
+- `scripts/claude-statusline.mjs` always writes to `~/.termi`, so a server started with another `TERMI_DATA` does not see Claude usage. Claude Code runs the statusline outside termi's environment, so the installer must record the data directory (for example next to the installed copy of the script).
 
 Done when: `grep "agent === '" src` returns nothing outside `src/agents/`.
 
@@ -153,4 +157,5 @@ Update the checkboxes and this document's version when a phase lands.
 |---|---|---|
 | 1.0 | 2026-11-26 | Initial plan. |
 | 1.1 | 2026-11-26 | Phase 1 done. |
-| 1.2 | 2026-11-26 | Phase 2 done; later phases now start from `src/app.mjs`. | Each phase's release notes link back to this plan.
+| 1.2 | 2026-11-26 | Phase 2 done; later phases now start from `src/app.mjs`. |
+| 1.3 | 2026-11-26 | Phase 3 done; statusline data directory added to Phase 4. | Each phase's release notes link back to this plan.

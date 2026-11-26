@@ -185,7 +185,12 @@ termi/
 │   ├── server.mjs        # Điểm khởi động: đọc cấu hình, chạy app
 │   ├── app.mjs           # HTTP server + API: phiên, file, git, push, upload
 │   ├── config.mjs        # Biến môi trường và giới hạn
-│   └── store.mjs         # File trạng thái JSON, ghi nguyên tử theo hàng đợi
+│   ├── store.mjs         # File trạng thái JSON, ghi nguyên tử theo hàng đợi
+│   ├── validate.mjs      # Kiểm tra dữ liệu vào và đường dẫn
+│   ├── text.mjs          # Xử lý chữ: cắt bớt, bỏ markdown, tên model
+│   ├── errors.mjs        # Lỗi HTTP
+│   ├── git/              # Chạy git, thao tác, parser, cây commit
+│   └── tmux/             # Gọi tmux, đọc màn hình agent
 ├── public/               # PWA (giao diện tĩnh, không build)
 │   ├── index.html        # Toàn bộ UI: HTML + CSS + JS
 │   ├── sw.js             # Service worker cho thông báo đẩy

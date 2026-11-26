@@ -185,7 +185,12 @@ termi/
 │   ├── server.mjs        # Entry point: load config, start the app
 │   ├── app.mjs           # HTTP server + API: sessions, files, git, push, upload
 │   ├── config.mjs        # Environment variables and limits
-│   └── store.mjs         # JSON state files with atomic, serialized writes
+│   ├── store.mjs         # JSON state files with atomic, serialized writes
+│   ├── validate.mjs      # Input validation and path checks
+│   ├── text.mjs          # Text helpers: clip, plain text, model names
+│   ├── errors.mjs        # HTTP error helper
+│   ├── git/              # git runner, operations, parsers, commit graph
+│   └── tmux/             # tmux client and agent screen parsing
 ├── public/               # PWA (static UI, no build)
 │   ├── index.html        # The whole UI: HTML + CSS + JS
 │   ├── sw.js             # Service worker for push notifications

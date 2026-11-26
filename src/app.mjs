@@ -11,6 +11,17 @@ import net from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
 import { MAX_OUTPUT_CHARS, MAX_UPLOAD_BYTES, resolveRoots } from './config.mjs';
+import { fail } from './errors.mjs';
+import { GIT_OPS } from './git/ops.mjs';
+import { graphLayout } from './git/graph.mjs';
+import { LOG_FORMAT, marksFromStatus, parseLog, parseNumstat, parseStatus } from './git/parse.mjs';
+import { git } from './git/run.mjs';
+import { clip, plainText, prettyModel } from './text.mjs';
+import { serverStartTime, target, tmux } from './tmux/client.mjs';
+import { agentState, parseChoices, parseMulti, stepsToSubmit } from './tmux/screen.mjs';
+import {
+  safePath, validGitPath, validHost, validKey, validName, validRev, validTime, validUuid,
+} from './validate.mjs';
 import { createStore } from './store.mjs';
 
 const run = promisify(execFile);
@@ -22,15 +33,6 @@ const SKIP = new Set(['node_modules', 'Library', 'Applications', 'Pictures', 'Mu
 const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 const PUSH_HOSTS = /(^|\.)(fcm\.googleapis\.com|push\.apple\.com|notify\.windows\.com|push\.services\.mozilla\.com)$/;
 
-export const validName = s => typeof s === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(s);
-export const validRev = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/.test(s);
-export const validUuid = s => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
-export const validBranch = s => typeof s === 'string' && /^[A-Za-z0-9._\/-]{1,200}$/.test(s) && !s.startsWith('-') && !s.includes('..');
-export const validGitPath = s => typeof s === 'string' && s.length > 0 && s.length < 4096 && !s.includes('\0');
-// Phím số 1–9: chọn nhanh trong menu xác nhận của agent (menu nhận phím bấm thật, không nhận chữ dán vào)
-export const KEYS = new Set(['Escape', 'C-c', 'C-d', 'Tab', 'BTab', 'Up', 'Down', 'Left', 'Right', 'Enter', 'PageUp', 'PageDown', ...'123456789']);
-// Chặn DNS rebinding: chỉ nhận Host là localhost hoặc tên Tailscale
-export const validHost = h => typeof h === 'string' && /^(localhost|127\.0\.0\.1|[a-z0-9-]+\.[a-z0-9-]+\.ts\.net)(:\d+)?$/i.test(h);
 
 // Các coding agent hỗ trợ. proc nhận ra tiến trình qua đường dẫn file chạy (cột comm của ps).
 // shortcut: agent chạy bằng node (comm = node) sẽ không nhận ra; khi cần thì so thêm tham số dòng lệnh
@@ -42,34 +44,10 @@ export const AGENTS = {
   agy: { name: 'Antigravity', cmd: 'agy', proc: c => bin(c) === 'agy' },
 };
 
-// shortcut: đọc trạng thái agent bằng cách nhìn chữ trên màn hình; agent đổi giao diện thì phải sửa regex (hoặc chuyển sang hooks)
-export function agentState(screen) {
-  const tail = screen.split('\n').filter(l => l.trim()).slice(-15).join('\n');
-  // Hỏi xác nhận, hoặc menu lựa chọn đánh số (Claude: ❯ 1.  Codex: › 1.)
-  if (/Do you want to|Would you like to|Esc to cancel|Allow command|\(y\/n\)|\[y\/n\]|^\s*[›❯]\s*1\./im.test(tail)) return 'waiting';
-  if (/esc to interrupt/i.test(tail)) return 'working';
-  return 'idle';
-}
-
-export async function safePath(p, kind = 'dir', roots = allowedRoots) {
-  if (typeof p !== 'string' || !p) return null;
-  let real;
-  try {
-    real = await fs.realpath(p);
-    const st = await fs.stat(real);
-    if (kind === 'dir' ? !st.isDirectory() : !st.isFile()) return null;
-  } catch { return null; }
-  return roots.some(r => real === r || real.startsWith(r + path.sep)) ? real : null;
-}
-export const safeDir = (p, roots) => safePath(p, 'dir', roots);
-
-const fail = (status, msg) => Object.assign(new Error(msg), { status });
-const tmux = (...a) => run('tmux', a, { maxBuffer: 4e6 });
-const target = name => `=${name}:`; // `=` = khớp chính xác tên phiên
-const clip = s => s.length > MAX_OUTPUT_CHARS ? s.slice(0, MAX_OUTPUT_CHARS) + '\n… (đã cắt bớt)' : s;
+const inRoots = (candidate, kind = 'dir') => safePath(candidate, kind, allowedRoots);
 
 async function need(p, kind = 'dir') {
-  const r = await safePath(p, kind);
+  const r = await inRoots(p, kind);
   if (!r) throw fail(403, 'Đường dẫn không hợp lệ hoặc nằm ngoài TERMI_ROOTS');
   return r;
 }
@@ -292,11 +270,6 @@ async function claudeSessionId(pid) {
   const j = await claudeSessionInfo(pid);
   return validUuid(j?.sessionId) ? j.sessionId : null;
 }
-// "claude-opus-5-5" → "Opus 5.5"; model khác giữ nguyên
-export const prettyModel = id => {
-  const m = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-|$|\[)/.exec(id || '');
-  return m ? `${m[1][0].toUpperCase()}${m[1].slice(1)} ${m[2]}${m[3] ? '.' + m[3] : ''}` : id || null;
-};
 const claudeProjectDir = cwd => path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
 async function transcriptFile(agent, cwd, pid) {
   if (agent === 'claude') {
@@ -338,13 +311,6 @@ async function lastReply(agent, cwd, pid) {
   replyCache.set(fc.file, out);
   return out;
 }
-export const plainText = md => md
-  .replace(/```[\s\S]*?```/g, ' ')            // bỏ khối code
-  .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')      // [chữ](link) → chữ
-  .replace(/^\s*(#{1,6}|[-*>]|\d+\.)\s+/gm, '') // tiêu đề, gạch đầu dòng, trích dẫn
-  .replace(/[*_`~|]/g, '')                      // nhấn mạnh, code, bảng
-  .replace(/\s+/g, ' ').trim();
-
 // Token của phiên
 async function sessionTokens(agent, cwd, pid) {
   if (agent === 'claude') {
@@ -426,55 +392,6 @@ export function chatItems(agent, lines, limit = 80) {
   return items;
 }
 
-// Màn hình chờ xác nhận: câu hỏi và các lựa chọn đánh số ("❯ 1. Yes", "  2. No, and tell Claude…")
-// Menu chọn nhiều (ô tích, dòng Submit): các ô + đã tích chưa + vị trí con trỏ so với Submit
-export function parseMulti(screen) {
-  const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim()).slice(-24);
-  const rows = [], options = [];
-  let firstOpt = -1;
-  lines.forEach((l, i) => {
-    const sub = /^\s*([❯›>])?\s*Submit\s*$/.exec(l);
-    const opt = /^\s*([❯›>])?\s*(\d+)[.)]\s+(?:\[([ xX✓✔]?)\]\s*)?(.+)$/.exec(l);
-    if (sub) rows.push({ submit: true, cursor: !!sub[1] });
-    else if (opt) {
-      if (firstOpt < 0) firstOpt = i;
-      rows.push({ cursor: !!opt[1] });
-      if (opt[3] !== undefined && !/^Type something/i.test(opt[4])) options.push({ n: Number(opt[2]), label: opt[4].trim(), checked: /[xX✓✔]/.test(opt[3]) });
-    }
-  });
-  if (!options.length || !rows.some(r => r.submit) && !lines.some(l => /more lines?/.test(l))) return {};
-  const question = lines.slice(0, Math.max(0, firstOpt)).reverse().find(l => /\?\s*$/.test(l.trim()))?.trim() || null;
-  return { multi: true, question, options };
-}
-// Số lần bấm ↓ (dương) / ↑ (âm) để đưa con trỏ tới Submit; null nếu chưa thấy Submit (danh sách đang cuộn)
-export function stepsToSubmit(screen) {
-  const rows = screen.split('\n').map(l => l.replace(/[│┃]/g, '')).filter(l => /^\s*([❯›>])?\s*(Submit|\d+[.)]\s)/.test(l));
-  const cur = rows.findIndex(l => /^\s*[❯›>]/.test(l)), sub = rows.findIndex(l => /^\s*([❯›>])?\s*Submit\s*$/.test(l));
-  return cur < 0 || sub < 0 ? null : sub - cur;
-}
-
-export function parseChoices(screen) {
-  const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim());
-  const tail = lines.slice(-20), runs = [];
-  // Tách các dãy 1., 2., 3.… liên tiếp; menu thật là dãy cuối có con trỏ ❯ (danh sách đánh số trong câu trả lời
-  // của agent phía trên không có con trỏ, trước đây bị nhận nhầm thành lựa chọn)
-  tail.forEach((l, i) => {
-    const m = /^\s*([❯›>]\s*)?(\d)[.)]\s+(.+)$/.exec(l);
-    if (!m) return;
-    const n = Number(m[2]), run = runs.at(-1);
-    if (n === 1) runs.push({ first: i, cursor: !!m[1], choices: [{ n, label: m[3].trim() }] });
-    else if (run && n === run.choices.length + 1) { run.choices.push({ n, label: m[3].trim() }); run.cursor ||= !!m[1]; }
-  });
-  const pick = runs.filter(r => r.cursor).at(-1);
-  if (!pick) return {};
-  const { first, choices } = pick;
-  // Menu chọn nhiều (ô tích [ ] / [✔], nút Submit) hoặc danh sách phải cuộn: bấm số chỉ tích/bỏ tích, không gửi;
-  // để bạn thao tác trong terminal, không hiện nút (nếu không thanh nút cứ nháy theo menu cuộn)
-  if (choices.some(c => /^\[[ xX✓✔]?\]/.test(c.label)) || tail.some(l => /^\s*(?:[❯›>]\s*)?Submit\s*$/.test(l) || /more lines?/.test(l))) return {};
-  const question = tail.slice(0, first).reverse().find(l => /\?\s*$/.test(l.trim()))?.trim() || null;
-  return { question, choices };
-}
-
 export function transcriptMessages(agent, lines, limit = 40) {
   const out = [];
   for (const l of lines) { // lines: mới nhất trước
@@ -519,18 +436,6 @@ async function usage(sessionName) {
   return { machine, limits: { claude, codex }, session: s && { name: s.name, agent: s.agent, ...tokens } };
 }
 
-// Trạng thái git của từng mục trong thư mục (tab File): file → M/A/D/U, thư mục con có thay đổi → •
-export function marksFromStatus(raw, rel) {
-  const marks = new Map(), prefix = rel ? rel + '/' : '';
-  for (const f of parseStatus('## x\0' + raw).files) {
-    if (!f.path.startsWith(prefix)) continue;
-    const rest = f.path.slice(prefix.length).replace(/\/$/, ''), slash = rest.indexOf('/');
-    const code = f.x === '?' ? 'U' : (f.x !== ' ' ? f.x : f.y);
-    if (slash < 0) marks.set(rest, code);
-    else marks.set(rest.slice(0, slash), '•');
-  }
-  return marks;
-}
 async function gitMarks(dir) {
   try {
     const top = (await git(dir, 'rev-parse', '--show-toplevel')).trim();
@@ -539,82 +444,13 @@ async function gitMarks(dir) {
   } catch { return new Map(); } // không phải repo git
 }
 
-// ---------- Git ----------
 const tailscaleStatus = async () => JSON.parse((await run(config.tailscale, ['status', '--json'], {
   maxBuffer: 8e6,
   timeout: 5000,
 })).stdout);
-const GIT_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
-const git = (dir, ...a) => run('git', ['-C', dir, '-c', 'color.ui=never', ...a], { maxBuffer: 2e7, timeout: 90_000, env: GIT_ENV })
-  .then(r => r.stdout, e => { throw fail(400, (e.stderr || e.message).trim().slice(0, 800)); });
 async function needRepo(dir) {
   const d = await need(dir);
   return (await git(d, 'rev-parse', '--show-toplevel')).trim();
-}
-
-// git --numstat: "thêm<TAB>xoá<TAB>đường dẫn"; file nhị phân ghi "-"
-export const parseNumstat = raw => raw.split('\n').filter(Boolean).map(l => {
-  const [a, d, ...p] = l.split('\t');
-  return { path: p.join('\t'), add: a === '-' ? null : Number(a), del: d === '-' ? null : Number(d) };
-});
-
-export function parseStatus(raw) {
-  const parts = raw.split('\0');
-  const head = (parts.shift() || '').replace(/^## /, '');
-  const files = [];
-  for (let i = 0; i < parts.length; i++) {
-    const e = parts[i];
-    if (!e) continue;
-    files.push({ x: e[0], y: e[1], path: e.slice(3) });
-    if (e[0] === 'R' || e[0] === 'C') i++; // -z: tên cũ nằm ở mục tiếp theo
-  }
-  return { head, files };
-}
-
-// Xếp commit vào các làn để vẽ cây. Mỗi hàng: col = làn của commit, seg = đoạn nối
-// [làn đầu, y đầu, làn cuối, y cuối] với y: 0 = mép trên, 1 = chấm commit, 2 = mép dưới.
-export function graphLayout(commits) {
-  let lanes = [], width = 1; // lanes[i] = hash commit mà làn i đang chờ
-  const free = () => { const i = lanes.indexOf(null); return i < 0 ? lanes.length : i; };
-  const rows = commits.map(c => {
-    const before = lanes.slice(), seg = [];
-    let col = lanes.indexOf(c.h);
-    if (col < 0) col = free(); // đầu nhánh: không có đường vào
-    before.forEach((h, i) => { if (h === c.h) seg.push([i, 0, col, 1]); });
-    lanes = lanes.map(h => h === c.h ? null : h);
-    c.p.forEach((p, k) => {
-      let j = lanes.indexOf(p);
-      if (j < 0) { j = k === 0 ? col : free(); lanes[j] = p; }
-      seg.push([col, 1, j, 2]);
-    });
-    before.forEach((h, i) => { if (h != null && h !== c.h) seg.push([i, 0, lanes.indexOf(h), 2]); });
-    while (lanes.length && lanes.at(-1) == null) lanes.pop();
-    width = Math.max(width, before.length, lanes.length, col + 1);
-    return { col, seg };
-  });
-  return { width, rows };
-}
-
-const GIT_OPS = {
-  stage: (d, b) => git(d, 'add', '--', ...paths(b)),
-  // Repo chưa có commit thì không có HEAD để restore: bỏ khỏi index (file trên đĩa giữ nguyên)
-  unstage: (d, b) => git(d, 'restore', '--staged', '--', ...paths(b))
-    .catch(e => /resolve 'HEAD'/.test(e.message) ? git(d, 'rm', '--cached', '-r', '-q', '--', ...paths(b)) : Promise.reject(e)),
-  commit: (d, b) => {
-    if (typeof b.message !== 'string' || !b.message.trim() || b.message.length > 5000) throw fail(400, 'Cần nội dung commit');
-    return git(d, 'commit', '-m', b.message);
-  },
-  push: d => git(d, 'push').catch(e => /no upstream/i.test(e.message) ? git(d, 'push', '-u', 'origin', 'HEAD') : Promise.reject(e)),
-  pull: d => git(d, 'pull', '--ff-only'),
-  fetch: d => git(d, 'fetch', '--all', '--prune'),
-  checkout: (d, b) => {
-    if (!validBranch(b.branch)) throw fail(400, 'Tên branch không hợp lệ');
-    return git(d, 'switch', b.branch.replace(/^origin\//, ''));
-  },
-};
-function paths(b) {
-  if (!Array.isArray(b.paths) || !b.paths.length || !b.paths.every(validGitPath)) throw fail(400, 'Danh sách file không hợp lệ');
-  return b.paths;
 }
 
 const b64u = b => Buffer.from(b).toString('base64url');
@@ -683,7 +519,6 @@ export function shouldPush(prefs, kind, key, now = new Date()) {
   }
   return true;
 }
-const validTime = t => typeof t === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
 
 // Hộp thông báo trong app: 30 sự kiện gần nhất (agent xong việc / cần xác nhận), ghi cả khi chưa bật đẩy
 const events = [];
@@ -767,8 +602,6 @@ export const normalizeSnapshot = saved => ({
 });
 const readSnap = async () => normalizeSnapshot(await store.read('sessions.json'));
 const updateSnap = change => store.update('sessions.json', saved => change(normalizeSnapshot(saved)));
-// Thời điểm tmux server bắt đầu chạy; không có server (vừa khởi động máy) → Infinity
-const tmuxStart = () => tmux('display-message', '-p', '#{start_time}').then(r => Number(r.stdout) * 1000 || Infinity, () => Infinity);
 
 // Phiên trong bản lưu đã mất vì tmux khởi động lại sau lần lưu cuối (khởi động lại máy, tmux chết)
 export function computePending(snap, present, serverStart) {
@@ -777,14 +610,14 @@ export function computePending(snap, present, serverStart) {
   return [...snap.pending, ...lost].filter(x => !present.has(x.name) && !seen.has(x.name) && seen.add(x.name));
 }
 async function pendingRestore() {
-  const [snap, list, start] = await Promise.all([readSnap(), sessions(), tmuxStart()]);
+  const [snap, list, start] = await Promise.all([readSnap(), sessions(), serverStartTime()]);
   return computePending(snap, new Set(list.map(x => x.name)), start);
 }
 // Lưu danh sách phiên 30 giây một lần. tmux trống (vừa khởi động lại) thì không ghi đè bản đã lưu
 async function snapshot() {
   const list = await sessions();
   if (!list.length) return;
-  const serverStart = await tmuxStart();
+  const serverStart = await serverStartTime();
   const present = new Set(list.map(x => x.name));
   const current = await Promise.all(list.map(async s => ({
     name: s.name, dir: s.dir, agent: s.agent, resume: await resumeIdFor(s).catch(() => null),
@@ -823,7 +656,7 @@ const routes = {
   async 'GET /api/dirs'() {
     const [s, h, r] = await Promise.all([sessions(), history().catch(() => []), repos()]);
     const recent = [];
-    for (const d of new Set([...s.map(x => x.dir), ...h.map(x => x.cwd), ...r])) if (await safeDir(d)) recent.push(d);
+    for (const d of new Set([...s.map(x => x.dir), ...h.map(x => x.cwd), ...r])) if (await inRoots(d)) recent.push(d);
     return { roots: allowedRoots, recent };
   },
   'GET /api/history': q => history(q.get('dir') || undefined),
@@ -835,7 +668,7 @@ const routes = {
     for (const x of list) { const p = get(x.dir); p.sessions.push(x.name); p.last = Math.max(p.last, x.activity * 1000); }
     for (const h of hist) { const p = get(h.cwd); if (p.conversations.length < 20) p.conversations.push(h); p.last = Math.max(p.last, h.mtime); }
     // Chỉ thư mục còn tồn tại và nằm trong TERMI_ROOTS (mở lại hội thoại cần vào được thư mục)
-    const ok = await Promise.all([...map.values()].map(async p => (await safeDir(p.dir)) && p));
+    const ok = await Promise.all([...map.values()].map(async p => (await inRoots(p.dir)) && p));
     return ok.filter(Boolean).sort((a, b) => b.sessions.length - a.sessions.length || b.last - a.last);
   },
   'GET /api/agents': () => installedAgents(),
@@ -912,7 +745,7 @@ const routes = {
     if (!validName(b.session)) throw fail(400, 'Phiên không hợp lệ');
     const t = target(b.session);
     if (b.key !== undefined) {
-      if (!KEYS.has(b.key)) throw fail(400, 'Phím không hỗ trợ');
+      if (!validKey(b.key)) throw fail(400, 'Phím không hỗ trợ');
       await tmux('send-keys', '-t', t, b.key);
     }
     if (typeof b.text === 'string' && b.text) {
@@ -938,7 +771,7 @@ const routes = {
     }));
     const marks = await gitMarks(dir);
     for (const e of list) if (e && marks.has(e.name)) e.git = marks.get(e.name);
-    return { dir, parent: await safeDir(path.dirname(dir)) && path.dirname(dir),
+    return { dir, parent: await inRoots(path.dirname(dir)) && path.dirname(dir),
       entries: list.filter(Boolean).sort((a, b) => b.dir - a.dir || a.name.localeCompare(b.name)) };
   },
   async 'GET /api/file'(q) {
@@ -958,13 +791,10 @@ const routes = {
     const dir = await needRepo(q.get('dir'));
     const [status, log, branches] = await Promise.all([
       git(dir, 'status', '--porcelain=v1', '-b', '-z'),
-      git(dir, 'log', '--all', '--date-order', '-n', '200', '--format=%H%x1f%P%x1f%D%x1f%s%x1f%an%x1f%at').catch(() => ''),
+      git(dir, 'log', '--all', '--date-order', '-n', '200', `--format=${LOG_FORMAT}`).catch(() => ''),
       git(dir, 'branch', '-a', '--format=%(refname:short)').catch(() => ''),
     ]);
-    const commits = log.split('\n').filter(Boolean).map(l => {
-      const [h, p, d, s, a, t] = l.split('\x1f');
-      return { h, p: p ? p.split(' ') : [], refs: d ? d.split(', ') : [], s, a, t: Number(t) * 1000 };
-    });
+    const commits = parseLog(log);
     return { dir, ...parseStatus(status), commits, graph: graphLayout(commits), branches: branches.split('\n').filter(b => b && !b.endsWith('/HEAD') && b !== 'origin') };
   },
   // rev = commit; file = diff một file (staged=1 cho phần đã stage); không có gì = mọi thay đổi chưa commit
