@@ -5,7 +5,7 @@
 set -euo pipefail
 DIR="$(cd "$(dirname "$0")" && pwd)"
 LA="$HOME/Library/LaunchAgents"
-ROOTS="${TERMI_ROOTS:-$HOME:/Volumes/ST1000LM 03/03. Personal Project}"
+ROOTS="${TERMI_ROOTS:-$HOME:/Volumes/ST1000LM 03}"
 PATHS="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
 TS=/opt/homebrew/bin/tailscale
 xml() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' <<<"$1"; }
