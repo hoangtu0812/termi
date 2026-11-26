@@ -171,6 +171,30 @@ export function parseStatus(raw) {
   return { head, files };
 }
 
+// Xếp commit vào các làn để vẽ cây. Mỗi hàng: col = làn của commit, seg = đoạn nối
+// [làn đầu, y đầu, làn cuối, y cuối] với y: 0 = mép trên, 1 = chấm commit, 2 = mép dưới.
+export function graphLayout(commits) {
+  let lanes = [], width = 1; // lanes[i] = hash commit mà làn i đang chờ
+  const free = () => { const i = lanes.indexOf(null); return i < 0 ? lanes.length : i; };
+  const rows = commits.map(c => {
+    const before = lanes.slice(), seg = [];
+    let col = lanes.indexOf(c.h);
+    if (col < 0) col = free(); // đầu nhánh: không có đường vào
+    before.forEach((h, i) => { if (h === c.h) seg.push([i, 0, col, 1]); });
+    lanes = lanes.map(h => h === c.h ? null : h);
+    c.p.forEach((p, k) => {
+      let j = lanes.indexOf(p);
+      if (j < 0) { j = k === 0 ? col : free(); lanes[j] = p; }
+      seg.push([col, 1, j, 2]);
+    });
+    before.forEach((h, i) => { if (h != null && h !== c.h) seg.push([i, 0, lanes.indexOf(h), 2]); });
+    while (lanes.length && lanes.at(-1) == null) lanes.pop();
+    width = Math.max(width, before.length, lanes.length, col + 1);
+    return { col, seg };
+  });
+  return { width, rows };
+}
+
 const GIT_OPS = {
   stage: (d, b) => git(d, 'add', '--', ...paths(b)),
   // Repo chưa có commit thì không có HEAD để restore: bỏ khỏi index (file trên đĩa giữ nguyên)
@@ -320,10 +344,14 @@ const routes = {
     const dir = await needRepo(q.get('dir'));
     const [status, log, branches] = await Promise.all([
       git(dir, 'status', '--porcelain=v1', '-b', '-z'),
-      git(dir, 'log', '--graph', '--all', '--date-order', '-n', '200', '--format=%h%x09%d %s%x09%ar · %an').catch(() => ''),
+      git(dir, 'log', '--all', '--date-order', '-n', '200', '--format=%H%x1f%P%x1f%D%x1f%s%x1f%an%x1f%at').catch(() => ''),
       git(dir, 'branch', '-a', '--format=%(refname:short)').catch(() => ''),
     ]);
-    return { dir, ...parseStatus(status), log, branches: branches.split('\n').filter(b => b && !b.endsWith('/HEAD') && b !== 'origin') };
+    const commits = log.split('\n').filter(Boolean).map(l => {
+      const [h, p, d, s, a, t] = l.split('\x1f');
+      return { h, p: p ? p.split(' ') : [], refs: d ? d.split(', ') : [], s, a, t: Number(t) * 1000 };
+    });
+    return { dir, ...parseStatus(status), commits, graph: graphLayout(commits), branches: branches.split('\n').filter(b => b && !b.endsWith('/HEAD') && b !== 'origin') };
   },
   // rev = commit; file = diff một file (staged=1 cho phần đã stage); không có gì = mọi thay đổi chưa commit
   async 'GET /api/show'(q) {

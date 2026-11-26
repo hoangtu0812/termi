@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, claudeState, parseStatus } from './server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, claudeState, parseStatus, graphLayout } from './server.mjs';
 
 test('trạng thái Claude', () => {
   assert.equal(claudeState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -55,4 +55,17 @@ test('thư mục nằm trong roots', async () => {
   assert.equal(await safeDir(path.join(root, 'none'), [root]), null);
   await fs.symlink('/', path.join(root, 'link'));
   assert.equal(await safeDir(path.join(root, 'link'), [root]), null); // symlink thoát ra ngoài
+});
+
+test('xếp làn cây commit: rẽ nhánh rồi merge', () => {
+  // M merge A và B, cả hai cùng gốc C
+  const g = graphLayout([
+    { h: 'M', p: ['A', 'B'] }, { h: 'A', p: ['C'] }, { h: 'B', p: ['C'] }, { h: 'C', p: [] },
+  ]);
+  assert.equal(g.width, 2);
+  assert.deepEqual(g.rows.map(r => r.col), [0, 0, 1, 0]);
+  assert.deepEqual(g.rows[0].seg, [[0, 1, 0, 2], [0, 1, 1, 2]]);             // M tách ra 2 làn
+  assert.deepEqual(g.rows[1].seg, [[0, 0, 0, 1], [0, 1, 0, 2], [1, 0, 1, 2]]); // A thẳng, làn B chạy qua
+  assert.deepEqual(g.rows[2].seg, [[1, 0, 1, 1], [1, 1, 0, 2], [0, 0, 0, 2]]); // B nhập về làn của C
+  assert.deepEqual(g.rows[3].seg, [[0, 0, 0, 1]]);                           // C là gốc, không đi tiếp
 });

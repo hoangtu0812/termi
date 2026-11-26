@@ -120,9 +120,20 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 .commit { display:flex; gap:8px; padding:12px 14px; align-items:flex-end; }
 .commit textarea { flex:1; min-height:40px; max-height:140px; padding:9px 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); resize:vertical; }
 .log { padding:4px 0 24px; }
-.log div { padding:3px 14px; white-space:pre; font:12px/1.5 var(--mono); color:var(--faint); }
-.log div.c { cursor:pointer; color:var(--fg); } .log div.c:hover { background:var(--hover); }
-.log .h { color:var(--acc); } .log .r { color:var(--ok); font-weight:600; } .log .t { color:var(--faint); }
+/* Hàng cao cố định, không viền: đường nối giữa các hàng liền mạch */
+.cm { display:flex; align-items:center; height:56px; cursor:pointer; padding-right:14px; }
+.cm:hover { background:var(--hover); }
+.cm svg { flex:none; overflow:visible; }
+.cm-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
+.cm-msg { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.cm.head .cm-msg { font-weight:600; }
+.cm-meta { display:flex; align-items:center; gap:6px; font-size:12px; color:var(--faint); overflow:hidden; white-space:nowrap; }
+.cm-meta .h { font-family:var(--mono); color:var(--dim); }
+.pill { font-size:11px; font-weight:600; padding:1px 7px; border-radius:99px; border:1px solid; flex:none; max-width:45%; overflow:hidden; text-overflow:ellipsis; }
+.pill.head { background:var(--acc); border-color:var(--acc); color:#fff; }
+.pill.br { color:var(--ok); border-color:var(--ok); }
+.pill.rm { color:var(--dim); border-color:var(--line2); }
+.pill.tag { color:var(--warn); border-color:var(--warn); }
 
 /* ---------- Xem file/diff ---------- */
 #viewer { position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; z-index:5; }
@@ -641,18 +652,43 @@ const loadGit = safely(async dir => {
   $('g-changes').replaceChildren(...(nodes.length ? nodes : [el('div', 'empty', 'Không có thay đổi nào ✓')]));
   $('g-commit-box').hidden = !staged.length;
 
-  $('g-log').replaceChildren(...g.log.split('\n').filter(Boolean).map(line => {
-    const [head, refs = '', when = ''] = line.split('\t');
-    const m = head.match(/^(.*?)([0-9a-f]{7,40})$/);
-    const d = el('div', m ? 'c' : '');
-    if (!m) { d.textContent = head; return d; }
-    const close = refs.indexOf(')');
-    const [r, msg] = refs.startsWith(' (') && close > 0 ? [refs.slice(1, close + 1), refs.slice(close + 1)] : ['', refs];
-    d.append(m[1], el('span', 'h', m[2]), ' ', el('span', 'r', r), msg, '  ', el('span', 't', when));
-    d.onclick = () => openDiff(m[2], { dir: g.dir, rev: m[2] });
-    return d;
-  }));
+  $('g-log').replaceChildren(...g.commits.map((c, i) => commitRow(c, g.graph.rows[i], g.graph.width, g.dir)));
 });
+
+// ---- Vẽ một hàng của cây commit ----
+const LANE_COLORS = ['#e07a55', '#4fbf7f', '#6aa7ff', '#e8b339', '#c678dd', '#56b6c2', '#ef6b73', '#98c379'];
+const LW = 14, PAD = 12, RH = 56, MAX_LANES = 10; // làn quá 10 thì bị cắt để chừa chỗ cho chữ
+function commitRow(c, row, width, dir) {
+  const lanes = Math.min(width, MAX_LANES), W = PAD * 2 + (lanes - 1) * LW;
+  const X = l => PAD + l * LW, Y = [0, RH / 2, RH];
+  const isHead = c.refs.some(r => r.startsWith('HEAD'));
+  let svg = '';
+  for (const [a, ya, b, yb] of row.seg) {
+    const x1 = X(a), y1 = Y[ya], x2 = X(b), y2 = Y[yb], ym = (y1 + y2) / 2;
+    const color = LANE_COLORS[(ya === 0 && yb === 1 ? a : b) % LANE_COLORS.length];
+    const d = x1 === x2 ? `M${x1} ${y1}V${y2}` : `M${x1} ${y1}C${x1} ${ym} ${x2} ${ym} ${x2} ${y2}`;
+    svg += `<path d="${d}" stroke="${color}" stroke-width="2" fill="none"/>`;
+  }
+  const color = LANE_COLORS[row.col % LANE_COLORS.length], cx = X(row.col);
+  svg += c.p.length > 1
+    ? `<circle cx="${cx}" cy="${RH / 2}" r="5" fill="var(--bg)" stroke="${color}" stroke-width="2.5"/>`
+    : `<circle cx="${cx}" cy="${RH / 2}" r="${isHead ? 6 : 4.5}" fill="${color}"${isHead ? ' stroke="var(--bg)" stroke-width="2"' : ''}/>`;
+
+  const r = el('div', 'cm' + (isHead ? ' head' : ''));
+  r.insertAdjacentHTML('afterbegin', `<svg width="${W}" height="${RH}" viewBox="0 0 ${W} ${RH}" aria-hidden="true">${svg}</svg>`);
+  const body = el('div', 'cm-body'), meta = el('div', 'cm-meta');
+  for (const ref of c.refs) {
+    const name = ref.replace(/^HEAD -> /, '').replace(/^tag: /, '');
+    if (ref === 'HEAD' || name.endsWith('/HEAD')) continue;
+    meta.append(el('span', 'pill ' + (ref.startsWith('HEAD -> ') ? 'head' : ref.startsWith('tag: ') ? 'tag' : name.includes('/') ? 'rm' : 'br'), name));
+  }
+  meta.append(el('span', 'h', c.h.slice(0, 7)), `${c.a} · ${ago(c.t)}`);
+  body.append(el('div', 'cm-msg', c.s), meta);
+  r.append(body);
+  r.title = c.s;
+  r.onclick = () => openDiff(c.h.slice(0, 7), { dir, rev: c.h });
+  return r;
+}
 const gitOp = safely(async (op, extra = {}) => {
   const btns = document.querySelectorAll('#p-git button'); btns.forEach(b => b.disabled = true);
   try {
