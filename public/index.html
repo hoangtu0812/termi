@@ -1221,6 +1221,9 @@ function fitTmux() {
   }, 300);
 }
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && fitTmux());
+// Máy khác (điện thoại) vừa ép khung nhỏ lại: quay lại cửa sổ này hoặc chạm vào đâu cũng lấy lại cỡ
+window.addEventListener('focus', fitTmux);
+document.addEventListener('pointerdown', fitTmux, true);
 
 // Cỡ chữ terminal: lưu theo thiết bị
 let fontSize = (() => { try { return Number(localStorage.getItem('termi-font')); } catch { return 0; } })() || (wide() ? 14 : 12);
