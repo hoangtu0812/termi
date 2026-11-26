@@ -56,7 +56,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | | Tính năng | Chi tiết |
 |---|---|---|
 | 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại Claude cũ (`claude --resume`). |
-| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại. |
+| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
@@ -70,15 +70,15 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 flowchart LR
     phone["📱 Điện thoại / 💻 Máy tính<br/>(PWA trong trình duyệt)"]
     subgraph mac["Mac mini"]
-        ts["tailscale serve<br/>HTTPS :443 / :8443"]
+        ts["tailscale serve<br/>HTTPS :443"]
         server["src/server.mjs<br/>Node · 127.0.0.1:7680"]
         ttyd["ttyd<br/>127.0.0.1:7681"]
         tmux[("tmux<br/>phiên Claude Code")]
         git[("git repo")]
     end
     phone -- "Tailnet (WireGuard)" --> ts
-    ts -- ":443" --> server
-    ts -- ":8443" --> ttyd
+    ts --> server
+    server -- "/term (HTTP + WebSocket)" --> ttyd
     server -- "list / send-keys / capture-pane" --> tmux
     ttyd -- "scripts/attach.sh" --> tmux
     server -- "status / log / diff / commit" --> git
@@ -86,6 +86,7 @@ flowchart LR
 
 - **tmux** giữ toàn bộ trạng thái, nên server hay trình duyệt chết thì phiên vẫn còn.
 - **Server** chỉ dùng thư viện chuẩn của Node (`http`, `child_process`, `crypto`…) và gọi `tmux`/`git` qua `execFile`, không qua shell.
+- **Terminal** (ttyd) nằm sau server ở đường dẫn `/term`, cùng origin với app, nhờ vậy app chỉnh được cỡ chữ, cuộn bằng cảm ứng và tự kết nối lại.
 - **Ra ngoài** chỉ qua `tailscale serve`: chỉ thiết bị trong tailnet của bạn truy cập được, không mở port ra internet.
 
 ## Yêu cầu

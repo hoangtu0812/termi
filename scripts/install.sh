@@ -53,12 +53,13 @@ plist() {
 mkdir -p "$LA"
 chmod +x "$ROOT/scripts/attach.sh"
 plist server /opt/homebrew/bin/node "$ROOT/src/server.mjs"
-plist ttyd /opt/homebrew/bin/ttyd -i lo0 -p 7681 -W -a -O -P 20 \
+# -b /term: ttyd nằm sau server termi (cùng origin với app), không mở cổng riêng
+plist ttyd /opt/homebrew/bin/ttyd -i lo0 -p 7681 -b /term -W -a -O -P 20 \
   -t fontSize=14 -t 'fontFamily=Menlo,Consolas,Droid Sans Mono,monospace' -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' \
   "$ROOT/scripts/attach.sh"
 
 # Lần đầu tailscale sẽ in link để bật Serve/HTTPS cho tailnet và chờ: mở link đó rồi lệnh tự chạy tiếp
 $TS serve --bg --https=443 http://127.0.0.1:7680
-$TS serve --bg --https=8443 http://127.0.0.1:7681
+$TS serve --https=8443 off >/dev/null 2>&1 || true # bản cũ mở terminal ở cổng 8443
 HOST=$($TS status --json | /usr/bin/python3 -c 'import json,sys;print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))')
 echo "Xong. Mở trên điện thoại (đã bật Tailscale): https://$HOST"

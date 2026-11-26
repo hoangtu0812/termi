@@ -7,6 +7,7 @@ import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { promisify } from 'node:util';
 import fs from 'node:fs/promises';
+import net from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
 
@@ -307,6 +308,8 @@ const routes = {
     }
     if (typeof b.text === 'string' && b.text) {
       if (b.text.length > 20_000) throw fail(413, 'Văn bản quá dài');
+      // Đang cuộn xem lịch sử (copy mode) thì chữ sẽ bị hiểu là lệnh của copy mode: thoát ra trước
+      if ((await tmux('display', '-p', '-t', t, '#{pane_in_mode}')).stdout.trim() === '1') await tmux('send-keys', '-t', t, '-X', 'cancel');
       // paste-buffer -p = bracketed paste: văn bản nhiều dòng không bị gửi từng dòng
       await tmux('set-buffer', '-b', 'termi', '--', b.text);
       await tmux('paste-buffer', '-p', '-d', '-b', 'termi', '-t', t);
@@ -409,9 +412,37 @@ async function readBody(req) {
   try { return JSON.parse(s || '{}'); } catch { throw fail(400, 'JSON không hợp lệ'); }
 }
 
+// ---------- Chuyển tiếp /term/* sang ttyd ----------
+// Terminal cùng origin với app thì app mới chỉnh được cỡ chữ, cuộn bằng cảm ứng và tự kết nối lại.
+const TTYD_PORT = Number(process.env.TERMI_TTYD_PORT) || 7681;
+export const isTermPath = p => p === '/term' || p.startsWith('/term/');
+
+function proxyHttp(req, res) {
+  const up = http.request({ host: '127.0.0.1', port: TTYD_PORT, path: req.url, method: req.method, headers: req.headers }, r => {
+    res.writeHead(r.statusCode, r.headers);
+    r.pipe(res);
+  });
+  up.on('error', () => { if (!res.headersSent) res.writeHead(502); res.end(); });
+  req.pipe(up);
+}
+
+function proxyUpgrade(req, socket, head) {
+  if (!validHost(req.headers.host) || !isTermPath(new URL(req.url, 'http://x').pathname)) return socket.destroy();
+  const up = net.connect(TTYD_PORT, '127.0.0.1', () => {
+    let raw = `${req.method} ${req.url} HTTP/1.1\r\n`;
+    for (let i = 0; i < req.rawHeaders.length; i += 2) raw += `${req.rawHeaders[i]}: ${req.rawHeaders[i + 1]}\r\n`;
+    up.write(raw + '\r\n');
+    if (head.length) up.write(head);
+    socket.pipe(up).pipe(socket);
+  });
+  up.on('error', () => socket.destroy());
+  socket.on('error', () => up.destroy());
+}
+
 async function handle(req, res) {
   if (!validHost(req.headers.host)) throw fail(421, 'Host không hợp lệ');
   const url = new URL(req.url, 'http://x');
+  if (isTermPath(url.pathname)) return proxyHttp(req, res);
   const st = req.method === 'GET' && STATIC[url.pathname];
   if (st) {
     const file = await fs.readFile(path.join(PUBLIC, st[0]));
@@ -448,6 +479,7 @@ if (import.meta.main) {
     if (res.headersSent) return res.destroy();
     res.writeHead(e.status || 500, { 'content-type': 'application/json' });
     res.end(JSON.stringify({ error: e.status ? e.message : 'Lỗi máy chủ' }));
-  })).listen(PORT, '127.0.0.1', () => console.log(`termi: http://127.0.0.1:${PORT}  roots=${ROOTS.join(', ')}`));
+  })).on('upgrade', proxyUpgrade)
+    .listen(PORT, '127.0.0.1', () => console.log(`termi: http://127.0.0.1:${PORT}  roots=${ROOTS.join(', ')}`));
   setInterval(() => watch().catch(e => console.error('watch', e.message)), 3000);
 }
