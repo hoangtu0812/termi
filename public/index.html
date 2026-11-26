@@ -603,7 +603,8 @@ function ensureTerm(name, force) {
   if (S.termName === name && !force) return;
   S.termName = name;
   $('t-down').hidden = true;
-  $('frame').src = `/term/?arg=${encodeURIComponent(name)}`;
+  // fontSize trên URL: ttyd ưu tiên tham số URL hơn cấu hình server gửi xuống mỗi lần (kết nối lại)
+  $('frame').src = `/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 }
 const termWin = () => { try { return $('frame').contentWindow; } catch { return null; } };
 
