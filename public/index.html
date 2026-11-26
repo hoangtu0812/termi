@@ -152,6 +152,7 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 #viewer .bar b { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
 #v-body pre { margin:0; padding:12px 14px 40px; font:12.5px/1.55 var(--mono); white-space:pre; tab-size:4; }
 #v-body img { max-width:100%; display:block; margin:16px auto; border-radius:8px; }
+#v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
 .diff .f { color:var(--blue); font-weight:600; } .diff .hk { color:var(--faint); }
@@ -749,6 +750,16 @@ $('keys').append(...KEYS.map(([label, key]) => {
   b.onclick = () => setFont(fontSize + d);
   return b;
 }));
+// Chạm giữ trên terminal không chọn được chữ (tmux bắt cảm ứng để cuộn): mở chữ của phiên
+// dạng văn bản thường để chọn và copy như trang web bình thường
+const copyBtn = el('button', 'fs', '📋 Chép'); copyBtn.type = 'button';
+copyBtn.setAttribute('aria-label', 'Mở chữ trong phiên để chọn và sao chép');
+copyBtn.onclick = safely(async () => {
+  const { text } = await api(`/api/capture?session=${encodeURIComponent(st().s)}&lines=2000`);
+  openViewer(`Chữ trong phiên ${st().s}`, el('pre', 'copytext', text || '(trống)'));
+  requestAnimationFrame(() => { $('v-body').scrollTop = $('v-body').scrollHeight; }); // mới nhất nằm cuối
+});
+$('keys').prepend(copyBtn);
 // ---- Thao tác nhanh: gửi lời nhắn soạn sẵn cho agent trong phiên hiện tại ----
 // [biểu tượng, tên, mô tả ngắn, nội dung gửi, cần xác nhận]
 const QUICK = [

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -93,4 +93,20 @@ test('đường dẫn sang máy khác', () => {
   assert.deepEqual(matchPeer('/m/desktop-37bc1du/api/sessions?x=1'), { id: 'desktop-37bc1du', rest: '/api/sessions?x=1' });
   assert.deepEqual(matchPeer('/m/Desktop-ABC'), { id: 'desktop-abc', rest: '/' });
   for (const bad of ['/api/m/x', '/m/', '/m/a.b/api', '/m/evil.com/api', '/mx/a/api']) assert.equal(matchPeer(bad), null, bad);
+});
+
+test('tin nhắn từ file hội thoại', () => {
+  const claude = [
+    { type: 'user', message: { content: 'sửa lỗi đăng nhập' } },
+    { type: 'user', isMeta: true, message: { content: 'meta' } },
+    { type: 'user', message: { content: [{ type: 'tool_result', content: 'x' }] } },
+    { type: 'assistant', message: { content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text: 'Đã sửa.' }] } },
+  ].map(o => JSON.stringify(o)).reverse();
+  assert.deepEqual(transcriptMessages('claude', claude), [{ who: 'user', text: 'sửa lỗi đăng nhập' }, { who: 'assistant', text: 'Đã sửa.' }]);
+  const codex = [
+    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: '# AGENTS.md ...' }] } },
+    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'chạy test' }] } },
+    { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '12 test qua' }] } },
+  ].map(o => JSON.stringify(o)).reverse();
+  assert.deepEqual(transcriptMessages('codex', codex), [{ who: 'user', text: 'chạy test' }, { who: 'assistant', text: '12 test qua' }]);
 });

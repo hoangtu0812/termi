@@ -58,7 +58,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | 🖥️ | **Nhiều máy** | Điều khiển mọi máy cùng tài khoản Tailscale có chạy termi (Mac, Linux, Windows qua WSL) từ một app: chọn máy ở đầu sidebar; thông báo từ mọi máy về một chỗ. |
 | 🤖 | **Nhiều agent** | Claude Code, Codex, Antigravity (`agy`): chọn agent khi tạo phiên (chỉ hiện agent có cài), tự nhận ra phiên đang chạy agent nào, trạng thái và thông báo cho từng agent. |
 | 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
-| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
+| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, nút 📋 Chép mở chữ của phiên dạng văn bản để chọn và copy, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
 | ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
@@ -154,7 +154,8 @@ Sau đó trên app, ô chọn máy ở đầu sidebar sẽ hiện máy mới (m�
 Claude Code chỉ cung cấp hạn mức gói (5 giờ / 7 ngày) cho script **statusline**, nên termi có một script nhỏ lưu số liệu đó lại. Script giữ nguyên statusline bạn đang dùng (chuyển tiếp dữ liệu cho nó). Bạn tự chạy vì lệnh này sửa `~/.claude/settings.json` (có sao lưu `settings.json.termi-backup`):
 
 ```bash
-node scripts/claude-statusline.mjs install     # gỡ: node scripts/claude-statusline.mjs uninstall
+npm run claude-usage        # gỡ: npm run claude-usage:off
+# Từ termi trên điện thoại: gõ  ! npm run claude-usage  vào ô nhắn của phiên Claude đang ở thư mục termi
 ```
 
 Theo tài liệu Claude Code, hạn mức chỉ có với gói Pro, Max và Ultra; mức đầy ngữ cảnh thì gói nào cũng có. Codex không cần cài gì: termi đọc thẳng từ `~/.codex/sessions`.

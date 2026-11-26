@@ -238,31 +238,61 @@ async function claudeLimits() {
   return { fiveHour: w(r.five_hour), sevenDay: w(r.seven_day), at: r.at };
 }
 
-// Token của phiên: file hội thoại mới nhất của đúng thư mục đang chạy agent
-async function sessionTokens(agent, cwd) {
+// File hội thoại mới nhất của agent ở đúng thư mục
+async function transcriptFile(agent, cwd) {
   if (agent === 'claude') {
-    const live = (await claudeUsageFile())?.sessions?.[cwd];
-    if (live && Date.now() - live.at < 30 * 60_000) return { model: live.model, context: live.tokens, window: live.size, pct: live.pct };
     // Claude đặt tên thư mục lịch sử theo đường dẫn, mọi ký tự không phải chữ/số thành '-'
     const dir = path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
-    const [f] = await newestFiles(dir, x => x.endsWith('.jsonl') && !x.includes(path.sep), 1);
-    if (!f) return null;
-    return lastJson(await readTail(f), o => {
-      const u = o.type === 'assistant' && o.message?.usage;
-      return u && { model: o.message.model, context: (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0) };
-    });
+    return (await newestFiles(dir, x => x.endsWith('.jsonl') && !x.includes(path.sep), 1))[0] || null;
   }
   if (agent === 'codex') {
     for (const f of await codexFiles()) {
       const meta = lastJson((await readHead(f, 64 * 1024)).reverse(), o => o.type === 'session_meta' && o.payload);
-      if (meta?.cwd !== cwd) continue;
-      return lastJson(await readTail(f), o => {
-        const i = o.payload?.type === 'token_count' && o.payload.info;
-        return i && { context: i.last_token_usage?.total_tokens, window: i.model_context_window, total: i.total_token_usage?.total_tokens };
-      });
+      if (meta?.cwd === cwd) return f;
     }
   }
   return null;
+}
+
+// Token của phiên
+async function sessionTokens(agent, cwd) {
+  if (agent === 'claude') {
+    const live = (await claudeUsageFile())?.sessions?.[cwd];
+    if (live && Date.now() - live.at < 30 * 60_000) return { model: live.model, context: live.tokens, window: live.size, pct: live.pct };
+  }
+  const f = await transcriptFile(agent, cwd);
+  if (!f) return null;
+  return lastJson(await readTail(f), agent === 'claude'
+    ? o => {
+      const u = o.type === 'assistant' && o.message?.usage;
+      return u && { model: o.message.model, context: (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0) };
+    }
+    : o => {
+      const i = o.payload?.type === 'token_count' && o.payload.info;
+      return i && { context: i.last_token_usage?.total_tokens, window: i.model_context_window, total: i.total_token_usage?.total_tokens };
+    });
+}
+
+// Tin nhắn gần nhất (người dùng + agent) dạng văn bản: agent chạy màn hình phụ nên tmux không giữ lịch sử
+export function transcriptMessages(agent, lines, limit = 40) {
+  const out = [];
+  for (const l of lines) { // lines: mới nhất trước
+    let o; try { o = JSON.parse(l); } catch { continue; }
+    let who, text;
+    if (agent === 'claude' && (o.type === 'user' || o.type === 'assistant') && !o.isMeta && !o.isSidechain) {
+      const c = o.message?.content;
+      text = typeof c === 'string' ? c : Array.isArray(c) ? c.filter(x => x.type === 'text').map(x => x.text).join('\n') : '';
+      who = o.type;
+    } else if (agent === 'codex' && o.type === 'response_item' && o.payload?.type === 'message') {
+      const p = o.payload;
+      text = (p.content || []).filter(x => x.type === 'input_text' || x.type === 'output_text').map(x => x.text).join('\n');
+      who = p.role;
+    }
+    if (!text?.trim() || text.startsWith('<') || text.startsWith('# AGENTS.md') || (who !== 'user' && who !== 'assistant')) continue;
+    out.push({ who, text: text.trim() });
+    if (out.length >= limit) break;
+  }
+  return out.reverse();
 }
 
 async function machineUsage() {
@@ -474,6 +504,22 @@ const routes = {
     const a = AGENTS[b.agent];
     if (a) await tmux('send-keys', '-t', target(b.name), b.resume ? a.resume(b.resume) : a.cmd, 'Enter');
     return { ok: true };
+  },
+  // Chữ trong phiên (kể cả phần đã cuộn qua) dạng văn bản thường để chọn và copy trên điện thoại
+  async 'GET /api/capture'(q) {
+    const name = q.get('session');
+    if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
+    const lines = Math.min(5000, Math.max(50, Number(q.get('lines')) || 1000));
+    const s = (await sessions()).find(x => x.name === name);
+    if (!s) throw fail(404, 'Không tìm thấy phiên');
+    const f = s.agent && await transcriptFile(s.agent, s.dir);
+    if (f) {
+      const msgs = transcriptMessages(s.agent, await readTail(f, 4 * 1024 * 1024));
+      const who = m => m.who === 'user' ? '▶ Bạn' : '◆ ' + AGENTS[s.agent].name;
+      if (msgs.length) return { text: msgs.map(m => `${who(m)}\n${m.text}`).join('\n\n────────\n\n') };
+    }
+    const out = await tmux('capture-pane', '-p', '-J', '-S', `-${lines}`, '-t', target(name));
+    return { text: out.stdout.replace(/\s+$/, '') };
   },
   async 'POST /api/sessions/rename'(_, b) {
     if (!validName(b.name) || !validName(b.to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');

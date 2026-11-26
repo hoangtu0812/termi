@@ -8,7 +8,9 @@
     "start": "node src/server.mjs",
     "test": "node --test test/",
     "service:install": "scripts/install.sh",
-    "service:uninstall": "scripts/install.sh uninstall"
+    "service:uninstall": "scripts/install.sh uninstall",
+    "claude-usage": "node scripts/claude-statusline.mjs install",
+    "claude-usage:off": "node scripts/claude-statusline.mjs uninstall"
   },
   "engines": {
     "node": ">=24"
