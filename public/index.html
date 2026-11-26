@@ -1076,10 +1076,22 @@ $('b-bell').onclick = safely(async () => {
   if (await Notification.requestPermission() !== 'granted') throw new Error('Bạn chưa cho phép thông báo');
   const reg = await navigator.serviceWorker.ready;
   const { key } = await api('/api/push/key');
-  const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+  const subscribe = () => reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+  let sub = await reg.pushManager.getSubscription() || await subscribe();
   await api('/api/push/sub', sub.toJSON());
-  await api('/api/push/test', {});
-  toast('Đã bật thông báo: sẽ báo khi agent xong việc hoặc cần bạn xác nhận');
+  // Hiện thẳng kết quả gửi thử để biết lỗi nằm ở đâu (mã trả về của dịch vụ push)
+  let { results = [] } = await api('/api/push/test', {});
+  if (results.some(r => r.status === 404 || r.status === 410)) {
+    // Trình duyệt vẫn giữ đăng ký mà dịch vụ push đã huỷ: huỷ hẳn rồi đăng ký lại một lần
+    await sub.unsubscribe().catch(() => {});
+    sub = await subscribe();
+    await api('/api/push/sub', sub.toJSON());
+    ({ results = [] } = await api('/api/push/test', {}));
+  }
+  const bad = results.filter(r => r.status < 200 || r.status > 299);
+  if (!results.length) throw new Error('Server chưa nhận được đăng ký của máy này');
+  if (bad.length) throw new Error('Gửi thử thất bại: ' + bad.map(r => `${r.host} ${r.status || ''} ${r.detail}`).join('; '));
+  toast('Đã gửi thử thành công. Nếu vài giây nữa không thấy thông báo, kiểm tra quyền thông báo của Chrome trong Cài đặt Android.');
   pushState();
 });
 navigator.serviceWorker?.register('/sw.js').then(pushState).catch(() => {});

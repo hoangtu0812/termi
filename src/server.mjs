@@ -375,7 +375,7 @@ let lastAlert = { title: 'termi', body: '', session: '', machine: '' };
 async function push(title, body, session, machine = '') {
   lastAlert = { title, body, session, machine, t: Date.now() };
   const gone = new Set();
-  await Promise.all(subs.map(async sub => {
+  const results = await Promise.all(subs.map(async sub => {
     const u = new URL(sub.endpoint);
     const claims = b64u(JSON.stringify({ aud: u.origin, exp: Math.floor(Date.now() / 1000) + 43200, sub: 'mailto:termi@example.com' }));
     const head = b64u(JSON.stringify({ typ: 'JWT', alg: 'ES256' }));
@@ -384,11 +384,17 @@ async function push(title, body, session, machine = '') {
       const r = await fetch(sub.endpoint, { method: 'POST', headers: {
         TTL: '600', Urgency: 'high', 'Content-Length': '0',
         Authorization: `vapid t=${head}.${claims}.${b64u(sig)}, k=${vapid.pub}` } });
+      const detail = r.ok ? '' : (await r.text()).slice(0, 300);
+      if (!r.ok) console.error('push', u.hostname, r.status, detail); // ghi cả 404/410 để còn biết vì sao đăng ký bị xoá
       if (r.status === 404 || r.status === 410) gone.add(sub.endpoint);
-      else if (!r.ok) console.error('push', r.status, await r.text());
-    } catch (e) { console.error('push', e.message); }
+      return { host: u.hostname, status: r.status, detail };
+    } catch (e) {
+      console.error('push', u.hostname, e.message);
+      return { host: u.hostname, status: 0, detail: e.message };
+    }
   }));
   if (gone.size) { subs = subs.filter(s => !gone.has(s.endpoint)); await saveJson('subs.json', subs); }
+  return results;
 }
 
 // Theo dõi chuyển trạng thái của agent (máy này và các máy khác có termi) để báo:
@@ -564,9 +570,10 @@ const routes = {
     if (u.protocol !== 'https:' || !PUSH_HOSTS.test(u.hostname)) throw fail(400, 'Dịch vụ push không được hỗ trợ');
     subs = [...subs.filter(s => s.endpoint !== b.endpoint), { endpoint: b.endpoint }];
     await saveJson('subs.json', subs);
+    console.log('push: đăng ký mới', u.hostname, `(tổng ${subs.length})`);
     return { ok: true };
   },
-  'POST /api/push/test': async () => { await push('termi', 'Thông báo hoạt động 👍', ''); return { ok: true }; },
+  'POST /api/push/test': async () => ({ results: await push('termi', 'Thông báo hoạt động 👍', '') }),
 };
 
 // Upload: body là nội dung file thô, lưu vào ~/.termi/uploads và trả đường dẫn để chèn vào prompt
