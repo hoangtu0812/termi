@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.2 |
+| Version | 1.3 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 
@@ -11,7 +11,8 @@ Rationale that used to live in code comments. Source files carry no comments (se
 ## Startup and configuration
 
 - `src/server.mjs` is only the entry point: it loads the configuration and calls `start()`. Every other module can be imported without side effects, which `test/app.test.mjs` checks by importing them with an empty temporary `HOME`.
-- The server code moved from `src/server.mjs` to `src/app.mjs` in Phase 2. Plain `git blame` attributes every line to that move; use `git blame -C -C src/app.mjs` to see where each line came from.
+- The server code moved from `src/server.mjs` to `src/app.mjs` in Phase 2 and was split into the modules under `src/` in Phases 3–5. Plain `git blame` attributes the lines to those moves; use `git blame -C -C <file>` to follow a line back to where it came from.
+- `src/start.mjs` builds every service once in `init(config)` and passes them to the route tables as one context object. `start(config)` adds the HTTP server and the timers: the state watcher every 3 s, the session snapshot every 30 s (and once 5 s after start), the ttyd watchdog every 2 minutes.
 - `src/config.mjs` is the only place that reads `TERMI_*` environment variables. `process.env` elsewhere is used only to pass `PATH` and git settings to child processes.
 - The server listens on `127.0.0.1` only. The single way in from outside is `tailscale serve` (set up by `scripts/install.sh` and `scripts/install-linux.sh`).
 - Diff and file responses are capped at `MAX_OUTPUT_CHARS` (300,000 characters) because larger payloads freeze phone browsers.
@@ -86,9 +87,57 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - Session listing runs every 3 seconds, so the transcript path is cached for 15 seconds per agent, folder and process, and the parsed latest reply is cached until the file's modification time changes.
 - Conversation history reads only the head of each file and stops once id, folder and title are known (for Claude also a custom title). Entries are cached per file and modification time. Filtering by folder scans the 300 newest files, because the folder is only known after reading.
 
+## Sessions (`src/sessions.mjs`, `src/snapshot.mjs`)
+
+- A pane belongs to an agent when the agent process is one of its descendants. `agentPanes` walks up from every agent process (at most 64 levels, stopping at pid 1) and marks each ancestor; the first agent found wins.
+- The session list is built every 3 seconds, so the uncommitted-file count of each folder is cached for 15 seconds. A folder that is not a git repository counts as `null`.
+- The card preview drops box-drawing frames, the agent logo and the footer hints (`⏵`, `? for shortcuts`) and keeps the last three lines with real content. For agent sessions the latest reply from the transcript replaces it, because it reads better than captured terminal text; while the agent waits for a confirmation the screen is kept, because the question is not in the transcript.
+- `since` (when the current state began, for "running for 3 minutes") is kept on the server so every device shows the same time.
+- The snapshot is written every 30 seconds. An empty tmux (right after a reboot) never overwrites it. Sessions in the snapshot that are gone after tmux restarted become `pending` and are offered for restore. Closing a session on purpose removes it from the snapshot at once, so it is not offered again.
+
+## Terminal routes (`src/routes/terminal.mjs`)
+
+- `/api/resize` sets the tmux window to the size of the device that is looking at it. By default tmux only resizes on a key press, so a phone and a computer on the same session would see dots or a cut-off frame.
+- `/api/refresh` asks tmux to redraw for every attached client; a live connection then gets text at once.
+- `/api/send` leaves copy mode first: while the user scrolls back, typed text would be read as copy-mode commands. Text goes through `paste-buffer -p` (bracketed paste) so a multi-line message is not sent line by line.
+- `/api/menu-submit` moves the cursor to `Submit` in a multi-select menu and presses Enter. When `Submit` is scrolled out of view it presses ↓ and looks again, up to 25 times.
+
+## HTTP layer (`src/http/`)
+
+- Request order (`handler.mjs`): Host check, identity check, Origin check, then the peer proxy (`/m/<machine>/…`), the ttyd proxy (`/term`), static files, the `X-Termi` check for POST, and finally the API router.
+- Identity: `tailscale serve` puts the sender's login in `Tailscale-User-Login` and overwrites a forged header. Only the machine owner (or `TERMI_ALLOWED_USERS`) gets in. Tagged devices, shared machines and Funnel have no such identity and are refused. A request without the header is allowed only on `localhost`/`127.0.0.1`, i.e. directly on this machine. When the owner cannot be determined, every tailnet request is refused (fail closed).
+- `X-Termi: 1` on POST: a custom header forces a CORS preflight that termi never answers, which blocks cross-site form posts (CSRF).
+- WebSockets are not covered by CORS, so a foreign page could open one to the terminal. The upgrade is accepted only with the app's own Origin.
+- Static pages are sent with `X-Frame-Options: SAMEORIGIN` and `frame-ancestors 'self'` so no other site can frame termi (clickjacking).
+- `/api/raw` serves images only, with `Content-Security-Policy: sandbox` and `nosniff`, so an SVG opened directly cannot run script on termi's origin.
+- Every JSON response carries `x-termi-build`, the modification time of `index.html`. An open page that sees a different value reloads itself.
+- The terminal (ttyd) is proxied under `/term` on the same origin as the app; only then can the app change the font size, scroll by touch and reconnect.
+
+## Machines and peer proxy (`src/machines.mjs`, `src/http/proxy.mjs`)
+
+- Other machines run their own termi behind `tailscale serve`; this machine forwards `/m/<machine>/…` to them. Only desktop peers (Windows, Linux, macOS) without tags that answer `/api/agents` count, and only those are proxied to. Without Tailscale (for example inside WSL) the list is just this machine.
+- Proxying to a peer rewrites `Host` and `Origin` to the peer's name, because ttyd there checks the origin. This is safe because the local guards already refused foreign origins. The peer's `x-termi-build` is dropped: its UI version has nothing to do with the page that is open.
+- The watcher also polls peers that run termi, so notifications only need to be enabled on one machine.
+
+## ttyd watchdog (`src/ttyd-watchdog.mjs`)
+
+- ttyd 1.7.7 does not clean up the tmux client of a connection that drops abruptly (phone asleep, lost signal). Every stuck client keeps a pty; at the file limit ttyd cannot open new terminals, and only restarting ttyd clears them.
+- An orphan is a child of ttyd that is not an attached tmux client. With nobody connected ttyd is restarted at 20 orphans; while someone is using it, only at 150 (the terminal reconnects by itself).
+
+## Files and uploads (`src/routes/files.mjs`)
+
+- An upload is the raw file body. It is stored as `<data>/uploads/<timestamp>-<random>-<sanitized name>` (opened with `wx`, max 25 MB) and the path is returned so it can be pasted into a prompt.
+
+## System usage (`src/system.mjs`)
+
+- CPU is the 1-minute load average divided by the number of cores.
+- On macOS `os.freemem()` does not count cached memory and always looks almost full, so memory comes from `memory_pressure`. On Linux it is `MemAvailable` from `/proc/meminfo`.
+
 ## Web Push
 
 - termi sends Web Push messages without a payload. Without a payload only the VAPID signature (ES256 JWT) is required; no message encryption is needed. The app fetches the details from `/api/push/alert` when the notification arrives.
+- Failed deliveries are logged, including 404/410, so it is clear why a subscription was removed.
+- The in-app inbox keeps the last 30 events (agent done, agent waiting) even when push is not enabled. Notification settings (event kinds, quiet hours that may cross midnight, muted sessions) only filter push messages.
 
 ## Static files
 

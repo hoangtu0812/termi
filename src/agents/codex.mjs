@@ -65,14 +65,15 @@ const percentWindow = window => window && {
   resetsAt: window.resets_at * 1000,
 };
 
-export function createCodexAgent({ home }) {
-  const sessionsDir = path.join(home, '.codex', 'sessions');
-  const recentFiles = () => newestFiles(sessionsDir, name => isRollout(name) && name.endsWith('.jsonl'), RECENT_FILES);
+async function sessionMeta(file) {
+  const lines = (await readHead(file, META_BYTES)).reverse();
+  return lastJson(lines, record => record.type === 'session_meta' && record.payload);
+}
 
-  async function sessionMeta(file) {
-    const lines = (await readHead(file, META_BYTES)).reverse();
-    return lastJson(lines, record => record.type === 'session_meta' && record.payload);
-  }
+const rateLimits = record => record.payload?.type === 'token_count' && record.payload.rate_limits;
+
+function createTranscripts(sessionsDir) {
+  const recentFiles = () => newestFiles(sessionsDir, name => isRollout(name) && name.endsWith('.jsonl'), RECENT_FILES);
 
   async function transcriptFile(cwd) {
     for (const file of await recentFiles()) {
@@ -81,19 +82,33 @@ export function createCodexAgent({ home }) {
     return null;
   }
 
-  async function sessionTokens(cwd) {
-    const file = await transcriptFile(cwd);
-    return file ? lastJson(await readTail(file), tokenUsage) : null;
-  }
-
   async function limits() {
     for (const file of await recentFiles()) {
-      const rates = lastJson(await readTail(file), r => r.payload?.type === 'token_count' && r.payload.rate_limits);
+      const rates = lastJson(await readTail(file), rateLimits);
       if (!rates) continue;
       const { plan_type: plan, primary, secondary } = rates;
       return { plan, primary: percentWindow(primary), secondary: percentWindow(secondary) };
     }
     return null;
+  }
+
+  return { transcriptFile, limits };
+}
+
+const HISTORY_SPEC = {
+  accept: isRollout,
+  start: () => ({ id: null }),
+  parse: parseHistory,
+  isComplete: entry => Boolean(entry.id && entry.cwd && entry.title),
+};
+
+export function createCodexAgent({ home }) {
+  const sessionsDir = path.join(home, '.codex', 'sessions');
+  const { transcriptFile, limits } = createTranscripts(sessionsDir);
+
+  async function sessionTokens(cwd) {
+    const file = await transcriptFile(cwd);
+    return file ? lastJson(await readTail(file), tokenUsage) : null;
   }
 
   async function resumeId(session) {
@@ -115,12 +130,6 @@ export function createCodexAgent({ home }) {
     sessionTokens,
     limits,
     resumeId,
-    history: {
-      dir: sessionsDir,
-      accept: isRollout,
-      start: () => ({ id: null }),
-      parse: parseHistory,
-      isComplete: entry => Boolean(entry.id && entry.cwd && entry.title),
-    },
+    history: { dir: sessionsDir, ...HISTORY_SPEC },
   };
 }

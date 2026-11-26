@@ -10,8 +10,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thêm
 - Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
-- Kế hoạch refactor kiến trúc `plan/PLAN-v1.4-architecture-refactor.md`.
-- Ghi chú cài đặt `docs/NOTES-v1.2-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
+- Kế hoạch refactor kiến trúc `plan/PLAN-v1.5-architecture-refactor.md`.
+- Ghi chú cài đặt `docs/NOTES-v1.3-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
 - `npm run check`: kiểm tra comment, độ dài file và dòng, cú pháp và tên tài liệu, không cần dependency; có allowlist cho file cũ và danh sách này chỉ được thu hẹp.
 - `npm run verify` (kiểm tra + test) và CI trên GitHub Actions cho Ubuntu và macOS.
 - `.editorconfig`.
@@ -29,6 +29,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - `src/server.mjs` giờ chỉ là điểm khởi động; code server chuyển sang `src/app.mjs`, cấu hình ở `src/config.mjs`, lưu trữ ở `src/store.mjs`.
 - Phần kiểm tra dữ liệu, xử lý chữ, git và tmux tách khỏi `src/app.mjs` sang `src/validate.mjs`, `src/text.mjs`, `src/git/` và `src/tmux/`, mỗi phần có test riêng.
 - Code riêng của từng agent (Claude Code, Codex, Antigravity) chuyển vào adapter riêng trong `src/agents/`.
+- Không còn `src/app.mjs`: lớp HTTP nằm trong `src/http/`, API chia mỗi nhóm một file trong `src/routes/`, Web Push trong `src/push/`; phiên, bản lưu phiên, máy trong tailnet và watchdog ttyd có module riêng; `src/start.mjs` nối chúng lại.
+- Log của server viết bằng tiếng Anh.
 
 ### Sửa lỗi
 - `npm test` lỗi trên Node 24 (`MODULE_NOT_FOUND`) và không chạy test nào.

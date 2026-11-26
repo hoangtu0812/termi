@@ -8,8 +8,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
-- Architecture refactor plan `plan/PLAN-v1.4-architecture-refactor.md`.
-- Implementation notes `docs/NOTES-v1.2-implementation-notes.md` for rationale moved out of code comments.
+- Architecture refactor plan `plan/PLAN-v1.5-architecture-refactor.md`.
+- Implementation notes `docs/NOTES-v1.3-implementation-notes.md` for rationale moved out of code comments.
 - `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
 - `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
 - `.editorconfig`.
@@ -27,6 +27,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - `src/server.mjs` is now only the entry point; the server code moved to `src/app.mjs`, with configuration in `src/config.mjs` and persistence in `src/store.mjs`.
 - Validation, text helpers, git and tmux code moved out of `src/app.mjs` into `src/validate.mjs`, `src/text.mjs`, `src/git/` and `src/tmux/`, each with its own tests.
 - Agent-specific code (Claude Code, Codex, Antigravity) moved into one adapter per agent under `src/agents/`.
+- `src/app.mjs` is gone: the HTTP layer lives in `src/http/`, the API in one file per area under `src/routes/`, Web Push in `src/push/`, and sessions, snapshots, machines and the ttyd watchdog in their own modules; `src/start.mjs` wires them together.
+- Server logs are in English.
 
 ### Fixed
 - `npm test` failed on Node 24 (`MODULE_NOT_FOUND`) and ran no tests.

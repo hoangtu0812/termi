@@ -95,3 +95,16 @@ export function stepsToSubmit(screen) {
   const submit = rows.findIndex(line => SUBMIT_ROW.test(line));
   return cursor < 0 || submit < 0 ? null : submit - cursor;
 }
+
+const PREVIEW_LINES = 3;
+const FRAME_CHARS = /[─━│╭╮╰╯\s]/g;
+const LOGO_BLOCKS = /[▐▛▜▝▘█▀]/;
+const FOOTER_HINT = /^\s*(⏵|\? for shortcuts)/;
+
+const hasContent = line => line.replace(FRAME_CHARS, '').length > 1
+  && !LOGO_BLOCKS.test(line)
+  && !FOOTER_HINT.test(line);
+
+export function screenPreview(screen) {
+  return screen.split('\n').map(line => line.trimEnd()).filter(hasContent).slice(-PREVIEW_LINES).join('\n');
+}

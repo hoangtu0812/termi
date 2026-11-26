@@ -182,13 +182,23 @@ tm() { tmux new -A -s "${1:-main}"; }
 ```
 termi/
 ├── src/
-│   ├── server.mjs        # Điểm khởi động: đọc cấu hình, chạy app
-│   ├── app.mjs           # HTTP server + API: phiên, file, git, push, upload
+│   ├── server.mjs        # Điểm khởi động: đọc cấu hình, gọi start()
+│   ├── start.mjs         # Nối các module, chạy server và các bộ hẹn giờ
 │   ├── config.mjs        # Biến môi trường và giới hạn
 │   ├── store.mjs         # File trạng thái JSON, ghi nguyên tử theo hàng đợi
 │   ├── validate.mjs      # Kiểm tra dữ liệu vào và đường dẫn
 │   ├── text.mjs          # Xử lý chữ: cắt bớt, bỏ markdown, tên model
 │   ├── errors.mjs        # Lỗi HTTP
+│   ├── paths.mjs         # Kiểm tra đường dẫn theo TERMI_ROOTS
+│   ├── sessions.mjs      # Danh sách phiên: pane tmux, agent, trạng thái, xem trước
+│   ├── snapshot.mjs      # Lưu phiên và khôi phục sau khi khởi động lại máy
+│   ├── machines.mjs      # Các máy khác trong tailnet, danh tính chủ máy
+│   ├── repos.mjs         # Các repo git trong TERMI_ROOTS
+│   ├── system.mjs        # Mức dùng CPU, bộ nhớ, ổ đĩa
+│   ├── ttyd-watchdog.mjs # Khởi động lại ttyd khi client kẹt dồn nhiều
+│   ├── http/             # Lớp chặn request, router, file tĩnh, proxy ttyd và máy khác
+│   ├── routes/           # Mỗi nhóm API một file
+│   ├── push/             # Khoá VAPID, Web Push, tuỳ chỉnh, theo dõi trạng thái
 │   ├── agents/           # Mỗi agent một adapter: Claude Code, Codex, Antigravity
 │   ├── git/              # Chạy git, thao tác, parser, cây commit
 │   └── tmux/             # Gọi tmux, đọc màn hình agent

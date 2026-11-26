@@ -182,13 +182,23 @@ tm() { tmux new -A -s "${1:-main}"; }
 ```
 termi/
 ├── src/
-│   ├── server.mjs        # Entry point: load config, start the app
-│   ├── app.mjs           # HTTP server + API: sessions, files, git, push, upload
+│   ├── server.mjs        # Entry point: load config, call start()
+│   ├── start.mjs         # Wires the modules together, starts the server and timers
 │   ├── config.mjs        # Environment variables and limits
 │   ├── store.mjs         # JSON state files with atomic, serialized writes
 │   ├── validate.mjs      # Input validation and path checks
 │   ├── text.mjs          # Text helpers: clip, plain text, model names
 │   ├── errors.mjs        # HTTP error helper
+│   ├── paths.mjs         # Path checks against TERMI_ROOTS
+│   ├── sessions.mjs      # Session list: tmux panes, agent, state, preview
+│   ├── snapshot.mjs      # Saved sessions and restore after a reboot
+│   ├── machines.mjs      # Other machines in the tailnet, owner identity
+│   ├── repos.mjs         # git repositories under TERMI_ROOTS
+│   ├── system.mjs        # CPU, memory and disk usage
+│   ├── ttyd-watchdog.mjs # Restarts ttyd when stuck clients pile up
+│   ├── http/             # Guards, router, static files, ttyd and peer proxy
+│   ├── routes/           # One file per API area
+│   ├── push/             # VAPID keys, Web Push, settings, state watcher
 │   ├── agents/           # One adapter per agent: Claude Code, Codex, Antigravity
 │   ├── git/              # git runner, operations, parsers, commit graph
 │   └── tmux/             # tmux client and agent screen parsing

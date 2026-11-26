@@ -1,0 +1,55 @@
+import { fail } from '../errors.mjs';
+import { target, tmux } from '../tmux/client.mjs';
+import { validName } from '../validate.mjs';
+
+const RENAME_REFUSED = 'Không đổi tên được (trùng tên?)';
+
+async function restoreAll({ sessions, snapshots }) {
+  const done = [];
+  const failed = [];
+  for (const saved of await snapshots.pending()) {
+    try {
+      await sessions.create(saved);
+      done.push(saved.name);
+    } catch (error) {
+      failed.push(`${saved.name}: ${error.message}`);
+    }
+  }
+  await snapshots.dismiss();
+  await snapshots.save();
+  return { done, failed };
+}
+
+export function sessionRoutes({ sessions, snapshots }) {
+  return {
+    'GET /api/sessions': () => sessions.list(),
+
+    async 'POST /api/sessions'(_, body) {
+      await sessions.create(body);
+      snapshots.save().catch(error => console.error('snapshot', error.message));
+      return { ok: true };
+    },
+
+    async 'POST /api/sessions/rename'(_, body) {
+      if (!validName(body.name) || !validName(body.to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
+      await tmux('rename-session', '-t', target(body.name), body.to).catch(() => { throw fail(409, RENAME_REFUSED); });
+      return { ok: true };
+    },
+
+    async 'POST /api/sessions/kill'(_, body) {
+      if (!validName(body.name)) throw fail(400, 'Phiên không hợp lệ');
+      await tmux('kill-session', '-t', target(body.name)).catch(() => { throw fail(404, 'Không tìm thấy phiên'); });
+      await snapshots.forget(body.name);
+      return { ok: true };
+    },
+
+    'GET /api/restore': () => snapshots.pending(),
+
+    'POST /api/restore': () => restoreAll({ sessions, snapshots }),
+
+    async 'POST /api/restore/dismiss'() {
+      await snapshots.dismiss();
+      return { ok: true };
+    },
+  };
+}

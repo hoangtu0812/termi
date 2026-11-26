@@ -1,9 +1,11 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
-import {
-  matchPeer, isAllowed, sameOrigin, computePending, orphanCount, shouldPush,
-} from '../src/app.mjs';
+import { isAllowed, sameOrigin } from '../src/http/guard.mjs';
+import { matchPeer } from '../src/machines.mjs';
+import { shouldPush } from '../src/push/prefs.mjs';
+import { computePending } from '../src/snapshot.mjs';
+import { orphanCount } from '../src/ttyd-watchdog.mjs';
 
 test('index.html: không có </script> lọt trong code JS (sẽ cắt ngang thẻ script)', async () => {
   const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');

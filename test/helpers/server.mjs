@@ -6,7 +6,7 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { loadConfig } from '../../src/config.mjs';
-import { start } from '../../src/app.mjs';
+import { start } from '../../src/start.mjs';
 
 const run = promisify(execFile);
 

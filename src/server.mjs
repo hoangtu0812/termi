@@ -1,5 +1,5 @@
 import { loadConfig } from './config.mjs';
-import { start } from './app.mjs';
+import { start } from './start.mjs';
 
 try {
   await start(loadConfig());

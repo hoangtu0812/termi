@@ -6,11 +6,12 @@ import os from 'node:os';
 import path from 'node:path';
 import { promisify } from 'node:util';
 import { loadConfig } from '../src/config.mjs';
-import { init, normalizeSnapshot } from '../src/app.mjs';
+import { normalizeSnapshot } from '../src/snapshot.mjs';
+import { init } from '../src/start.mjs';
 
 const run = promisify(execFile);
 const SRC = path.join(import.meta.dirname, '..', 'src');
-const LIBRARY_MODULES = ['app.mjs', 'config.mjs', 'store.mjs'];
+const ENTRY_POINT = 'server.mjs';
 
 async function tempDir(t, prefix) {
   const dir = await fs.realpath(await fs.mkdtemp(path.join(os.tmpdir(), prefix)));
@@ -20,7 +21,9 @@ async function tempDir(t, prefix) {
 
 test('importing a module has no side effects', async t => {
   const home = await tempDir(t, 'termi-home-');
-  for (const file of LIBRARY_MODULES) {
+  const modules = (await fs.readdir(SRC, { recursive: true })).filter(f => f.endsWith('.mjs') && f !== ENTRY_POINT);
+  assert.ok(modules.length > 30);
+  for (const file of modules) {
     const url = new URL(`file://${path.join(SRC, file)}`).href;
     await run(process.execPath, ['--input-type=module', '-e', `await import(${JSON.stringify(url)})`], {
       env: { ...process.env, HOME: home, TERMI_DATA: '', TERMI_ROOTS: '' },
