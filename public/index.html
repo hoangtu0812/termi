@@ -173,6 +173,20 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
 #hist-list button { text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; padding:12px 18px; display:flex; flex-direction:column; gap:3px; }
 #hist-list .t1 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 #hist-list .t2 { font-size:12px; color:var(--faint); }
+.uchip { flex:none; display:inline-flex; align-items:center; gap:5px; height:28px; padding:0 9px; border-radius:99px; border:1px solid var(--line2); background:var(--card); font:600 12px var(--mono); color:var(--dim); white-space:nowrap; }
+.uchip i { width:7px; height:7px; border-radius:50%; background:var(--ok); }
+.uchip.warn i { background:var(--warn); } .uchip.bad i { background:var(--del); }
+.ugrp { display:flex; flex-direction:column; gap:10px; padding:12px 0; border-top:1px solid var(--line); }
+.ugrp:first-child { border-top:0; padding-top:0; }
+.ugrp h4 { margin:0; font-size:13px; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; }
+.urow { display:flex; flex-direction:column; gap:4px; font-size:14px; }
+.urow .top { display:flex; justify-content:space-between; gap:8px; }
+.urow .top b { font-weight:500; } .urow .top span { font:13px var(--mono); }
+.urow small { color:var(--faint); font-size:12px; }
+.meter { height:6px; border-radius:99px; background:var(--hover); overflow:hidden; }
+.meter span { display:block; height:100%; border-radius:99px; background:var(--ok); }
+.meter.warn span { background:var(--warn); } .meter.bad span { background:var(--del); }
+.uempty { font-size:13px; color:var(--faint); }
 .quick { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
 .quick button { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:10px 12px; border-radius:12px; border:1px solid var(--line2); background:var(--card); }
 .quick button b { font-size:14px; }
@@ -241,6 +255,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
         <button data-t="files"><span data-i="folder"></span>File</button>
         <button data-t="git"><span data-i="git"></span>Git</button>
       </div>
+      <button class="uchip" id="b-usage" type="button" hidden></button>
       <button class="ibtn" id="b-menu" aria-label="Tuỳ chọn phiên" data-i="more"></button>
     </div>
 
@@ -347,6 +362,14 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   <form method="dialog">
     <h3>Mở lại hội thoại</h3>
     <div id="hist-list"></div>
+    <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
+  </form>
+</dialog>
+
+<dialog id="d-usage">
+  <form method="dialog">
+    <h3>Usage</h3>
+    <div id="usage-body"></div>
     <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
   </form>
 </dialog>
@@ -1073,6 +1096,80 @@ async function loadMachines() {
 }
 $('machine').onchange = e => go({ m: e.target.value || null, s: null, d: null, g: null, v: null, t: wide() ? null : 'sessions' });
 loadMachines();
+
+// ---- Usage: hạn mức gói agent, token của phiên, tài nguyên máy ----
+const level = p => p >= 90 ? 'bad' : p >= 70 ? 'warn' : '';
+const kTok = n => n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : Math.round(n / 1e3) + 'k';
+const windowName = m => ({ 300: '5 giờ', 10080: '7 ngày', 43200: '30 ngày' })[m] || (m ? `${Math.round(m / 60)} giờ` : '');
+const until = t => {
+  const m = Math.round((t - Date.now()) / 60000);
+  return m <= 0 ? 'sắp reset' : m < 60 ? `reset sau ${m} phút` : m < 1440 ? `reset sau ${Math.floor(m / 60)} giờ ${m % 60} phút` : `reset ${new Date(t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}`;
+};
+// Các mục hạn mức của agent: [nhãn ngắn cho chip, tên đầy đủ, % , lúc reset]
+function limitRows(agent, l) {
+  if (agent === 'claude' && l.claude) return [['5h', 'Phiên 5 giờ', l.claude.fiveHour], ['7d', '7 ngày', l.claude.sevenDay]]
+    .filter(r => r[2]).map(([s, n, w]) => [s, n, w.pct, w.resetsAt]);
+  if (agent === 'codex' && l.codex) return [l.codex.primary, l.codex.secondary].filter(Boolean)
+    .map(w => [windowName(w.minutes).replace(' giờ', 'h').replace(' ngày', 'd'), windowName(w.minutes), w.pct, w.resetsAt]);
+  return [];
+}
+function renderUsageChip() {
+  const u = S.usage, b = $('b-usage');
+  if (!u) return (b.hidden = true);
+  const agent = u.session?.agent, lim = limitRows(agent, u.limits)[0];
+  // Ưu tiên: hạn mức gói của agent đang chạy → mức đầy ngữ cảnh → tải CPU
+  const ctx = u.session?.context;
+  const [label, pct, text] = lim ? [lim[0], lim[2]] : u.session?.pct != null ? ['ctx', Math.round(u.session.pct)]
+    : ctx ? ['ctx', 0, kTok(ctx)] : ['CPU', u.machine.cpu];
+  b.className = 'uchip ' + level(pct);
+  b.replaceChildren(el('i'), `${label} ${text ?? pct + '%'}`);
+  b.title = 'Usage: hạn mức, token, tài nguyên máy';
+  b.hidden = false;
+}
+function meterRow(name, pct, note) {
+  const r = el('div', 'urow'), top = el('div', 'top'), m = el('div', 'meter ' + level(pct ?? 0)), bar = el('span');
+  top.append(el('b', null, name), el('span', null, pct == null ? '—' : pct + '%'));
+  bar.style.width = Math.min(100, pct ?? 0) + '%'; m.append(bar);
+  r.append(top, m);
+  if (note) r.append(el('small', null, note));
+  return r;
+}
+function group(title, rows) { const g = el('div', 'ugrp'); g.append(el('h4', null, title), ...rows); return g; }
+function renderUsageDialog() {
+  const u = S.usage; if (!u) return;
+  const parts = [];
+  // Hạn mức gói
+  const lim = [];
+  for (const a of ['claude', 'codex']) {
+    const rows = limitRows(a, u.limits);
+    if (rows.length) lim.push(...rows.map(([, n, p, t]) => meterRow(`${agentName(a)} · ${n}`, p, until(t))));
+    else if (a === 'claude') lim.push(el('div', 'uempty', 'Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra có hạn mức này.'));
+  }
+  parts.push(group('Hạn mức gói', lim));
+  // Phiên đang mở
+  const s = u.session;
+  if (s?.agent) parts.push(group(`Phiên ${s.name} · ${agentName(s.agent)}`, [s.context != null
+    ? meterRow('Ngữ cảnh', s.pct != null ? Math.round(s.pct) : s.window ? Math.round(s.context / s.window * 100) : null,
+        `${kTok(s.context)}${s.window ? ' / ' + kTok(s.window) : ''} token${s.model ? ' · ' + s.model : ''}`)
+    : el('div', 'uempty', 'Chưa có số liệu token cho phiên này')]));
+  // Máy
+  const m = u.machine;
+  parts.push(group('Máy' + (st().m ? ' · ' + st().m : ''), [
+    meterRow('CPU (tải 1 phút)', m.cpu),
+    meterRow('RAM', m.mem, m.memTotal ? `${Math.round(m.memTotal / 2 ** 30)} GB` : ''),
+    meterRow('Ổ đĩa', m.disk, m.diskFree != null ? `còn trống ${(m.diskFree / 2 ** 30).toFixed(0)} GB` : ''),
+  ]));
+  $('usage-body').replaceChildren(...parts);
+}
+async function loadUsage() {
+  S.usage = await api('/api/usage?session=' + encodeURIComponent(st().s || '')).catch(() => null);
+  renderUsageChip();
+  if ($('d-usage').open) renderUsageDialog();
+}
+$('b-usage').onclick = () => { renderUsageDialog(); $('d-usage').showModal(); loadUsage(); };
+setInterval(() => document.visibilityState === 'visible' && loadUsage(), 30_000);
+addEventListener('hashchange', () => { if (st().s !== S.usage?.session?.name) loadUsage(); });
+loadUsage();
 setInterval(() => document.visibilityState === 'visible' && loadMachines(), 60_000);
 
 S.machine = st().m || '';

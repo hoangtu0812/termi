@@ -196,6 +196,98 @@ async function installedAgents() {
   return ok.filter(Boolean);
 }
 
+// ---------- Usage: hạn mức gói agent, token của phiên, tài nguyên máy ----------
+async function readTail(file, bytes = 512 * 1024) {
+  const fh = await fs.open(file);
+  try {
+    const { size } = await fh.stat();
+    const len = Math.min(bytes, size), buf = Buffer.alloc(len);
+    await fh.read(buf, 0, len, size - len);
+    return buf.toString().split('\n').reverse(); // dòng mới nhất trước
+  } finally { await fh.close(); }
+}
+const lastJson = (lines, pick) => {
+  for (const l of lines) { let o; try { o = JSON.parse(l); } catch { continue; } const v = pick(o); if (v) return v; }
+  return null;
+};
+async function newestFiles(dir, accept, limit) {
+  const files = (await fs.readdir(dir, { recursive: true }).catch(() => [])).filter(accept).map(f => path.join(dir, f));
+  const st = await Promise.all(files.map(f => fs.stat(f).then(s => ({ f, t: s.mtimeMs }), () => null)));
+  return st.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, limit).map(x => x.f);
+}
+const CODEX_DIR = path.join(os.homedir(), '.codex', 'sessions');
+const codexFiles = () => newestFiles(CODEX_DIR, f => path.basename(f).startsWith('rollout-') && f.endsWith('.jsonl'), 30);
+const pctWindow = w => w && { pct: Math.round(w.used_percent), minutes: w.window_minutes, resetsAt: w.resets_at * 1000 };
+
+// Codex ghi hạn mức (rate_limits) vào sự kiện token_count của file phiên mới nhất
+async function codexLimits() {
+  for (const f of await codexFiles()) {
+    const r = lastJson(await readTail(f), o => o.payload?.type === 'token_count' && o.payload.rate_limits);
+    if (r) return { plan: r.plan_type, primary: pctWindow(r.primary), secondary: pctWindow(r.secondary) };
+  }
+  return null;
+}
+
+// Claude: hạn mức chỉ có qua statusline (scripts/claude-statusline.mjs ghi ra file này).
+// Tài liệu: chỉ gói Pro/Max/Ultra mới có rate_limits; mỗi khung có thể vắng.
+const claudeUsageFile = () => fs.readFile(path.join(DATA, 'claude-usage.json'), 'utf8').then(JSON.parse, () => null);
+async function claudeLimits() {
+  const r = (await claudeUsageFile())?.rate_limits;
+  if (!r) return null;
+  const w = x => x && x.resets_at * 1000 > Date.now() && { pct: Math.round(x.used_percentage), resetsAt: x.resets_at * 1000 };
+  return { fiveHour: w(r.five_hour), sevenDay: w(r.seven_day), at: r.at };
+}
+
+// Token của phiên: file hội thoại mới nhất của đúng thư mục đang chạy agent
+async function sessionTokens(agent, cwd) {
+  if (agent === 'claude') {
+    const live = (await claudeUsageFile())?.sessions?.[cwd];
+    if (live && Date.now() - live.at < 30 * 60_000) return { model: live.model, context: live.tokens, window: live.size, pct: live.pct };
+    // Claude đặt tên thư mục lịch sử theo đường dẫn, mọi ký tự không phải chữ/số thành '-'
+    const dir = path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
+    const [f] = await newestFiles(dir, x => x.endsWith('.jsonl') && !x.includes(path.sep), 1);
+    if (!f) return null;
+    return lastJson(await readTail(f), o => {
+      const u = o.type === 'assistant' && o.message?.usage;
+      return u && { model: o.message.model, context: (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0) };
+    });
+  }
+  if (agent === 'codex') {
+    for (const f of await codexFiles()) {
+      const meta = lastJson((await readHead(f, 64 * 1024)).reverse(), o => o.type === 'session_meta' && o.payload);
+      if (meta?.cwd !== cwd) continue;
+      return lastJson(await readTail(f), o => {
+        const i = o.payload?.type === 'token_count' && o.payload.info;
+        return i && { context: i.last_token_usage?.total_tokens, window: i.model_context_window, total: i.total_token_usage?.total_tokens };
+      });
+    }
+  }
+  return null;
+}
+
+async function machineUsage() {
+  const cpu = Math.min(100, Math.round(os.loadavg()[0] / os.cpus().length * 100)); // tải trung bình 1 phút / số nhân
+  let mem = null;
+  if (process.platform === 'darwin') {
+    // os.freemem() trên macOS không tính bộ nhớ cache nên luôn trông như gần đầy
+    const m = /(\d+)%/.exec((await run('memory_pressure', [], { timeout: 3000 }).catch(() => ({ stdout: '' }))).stdout.trim().split('\n').pop() || '');
+    if (m) mem = 100 - Number(m[1]);
+  } else {
+    const mi = await fs.readFile('/proc/meminfo', 'utf8').catch(() => '');
+    const kb = k => Number(new RegExp(`${k}:\\s+(\\d+)`).exec(mi)?.[1] || 0);
+    if (kb('MemTotal')) mem = Math.round(100 - kb('MemAvailable') / kb('MemTotal') * 100);
+  }
+  const d = await fs.statfs(os.homedir()).catch(() => null);
+  return { cpu, mem, memTotal: os.totalmem(), disk: d && Math.round(100 - d.bavail / d.blocks * 100), diskFree: d && d.bavail * d.bsize };
+}
+
+async function usage(sessionName) {
+  const s = validName(sessionName) ? (await sessions()).find(x => x.name === sessionName) : null;
+  const [machine, codex, claude, tokens] = await Promise.all([
+    machineUsage(), codexLimits(), claudeLimits(), s?.agent ? sessionTokens(s.agent, s.dir) : null]);
+  return { machine, limits: { claude, codex }, session: s && { name: s.name, agent: s.agent, ...tokens } };
+}
+
 // ---------- Git ----------
 const GIT_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
 const git = (dir, ...a) => run('git', ['-C', dir, '-c', 'color.ui=never', ...a], { maxBuffer: 2e7, timeout: 90_000, env: GIT_ENV })
@@ -362,6 +454,7 @@ const routes = {
   },
   'GET /api/history': () => history(),
   'GET /api/agents': () => installedAgents(),
+  'GET /api/usage': q => usage(q.get('session')),
   'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
 
   async 'POST /api/sessions'(_, b) {

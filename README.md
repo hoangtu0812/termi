@@ -62,6 +62,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
+| 📊 | **Usage** | Chip trên header: hạn mức gói của agent (Claude 5 giờ / 7 ngày, Codex), ngữ cảnh của phiên, CPU / RAM / ổ đĩa; chạm để xem chi tiết và lúc reset. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
 | 📁 | **Duyệt file** | Xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
 | 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
@@ -148,6 +149,16 @@ Tailscale cài trên Windows như bình thường; script tự gọi `tailscale.
 
 Sau đó trên app, ô chọn máy ở đầu sidebar sẽ hiện máy mới (máy chưa cài termi hiện mờ).
 
+## Hạn mức Claude trong mục Usage
+
+Claude Code chỉ cung cấp hạn mức gói (5 giờ / 7 ngày) cho script **statusline**, nên termi có một script nhỏ lưu số liệu đó lại. Script giữ nguyên statusline bạn đang dùng (chuyển tiếp dữ liệu cho nó). Bạn tự chạy vì lệnh này sửa `~/.claude/settings.json` (có sao lưu `settings.json.termi-backup`):
+
+```bash
+node scripts/claude-statusline.mjs install     # gỡ: node scripts/claude-statusline.mjs uninstall
+```
+
+Theo tài liệu Claude Code, hạn mức chỉ có với gói Pro, Max và Ultra; mức đầy ngữ cảnh thì gói nào cũng có. Codex không cần cài gì: termi đọc thẳng từ `~/.codex/sessions`.
+
 ## Sử dụng nhanh
 
 1. Bấm **+ Phiên mới**, chọn thư mục, tick *Chạy Claude ngay*.
@@ -175,6 +186,7 @@ termi/
 ├── scripts/
 │   ├── install.sh        # macOS: dịch vụ launchd + tailscale serve
 │   ├── install-linux.sh  # Linux/WSL: dịch vụ systemd --user + tailscale serve
+│   ├── claude-statusline.mjs # lưu hạn mức + ngữ cảnh Claude cho mục Usage
 │   └── attach.sh         # ttyd gọi để gắn vào phiên tmux theo tên
 ├── test/
 │   └── server.test.mjs   # node:test, không cần thư viện
