@@ -57,7 +57,9 @@ try {
   if (cwd && j.context_window) {
     const c = j.context_window;
     data.sessions = Object.fromEntries(Object.entries(data.sessions || {}).filter(([, v]) => now - v.at < 7 * 864e5)); // bỏ mục > 7 ngày
-    data.sessions[cwd] = { pct: c.used_percentage, size: c.context_window_size, tokens: c.total_input_tokens, model: j.model?.display_name || j.model?.id, at: now };
+    const entry = { pct: c.used_percentage, size: c.context_window_size, tokens: c.total_input_tokens, model: j.model?.display_name || j.model?.id, at: now };
+    data.sessions[cwd] = entry;
+    if (j.session_id) data.sessions[j.session_id] = entry; // nhiều phiên cùng thư mục: termi tra theo mã hội thoại
   }
   fs.mkdirSync(DIR, { recursive: true });
   writeAtomic(OUT, JSON.stringify(data));

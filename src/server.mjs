@@ -90,7 +90,7 @@ async function sessions() {
       '#{session_name}\t#{window_active}#{pane_active}\t#{pane_pid}\t#{pane_current_path}\t#{session_attached}\t#{session_activity}')).stdout;
   } catch { return []; } // chưa có tmux server = chưa có phiên
   // Tìm tổ tiên của mọi tiến trình agent để biết pane nào đang chạy agent nào
-  const parent = new Map(), agentOf = new Map(), found = [];
+  const parent = new Map(), agentOf = new Map(), agentPidOf = new Map(), found = [];
   // args (dòng lệnh) thay vì comm: trên Linux comm chỉ là tên rút gọn, không có đường dẫn
   const procs = (await run('ps', ['-ax', '-o', 'pid=,ppid=,args='], { maxBuffer: 16e6 })).stdout;
   for (const l of procs.split('\n')) {
@@ -102,14 +102,18 @@ async function sessions() {
     const agent = Object.keys(AGENTS).find(id => AGENTS[id].proc(exe));
     if (agent) found.push([m[1], agent]);
   }
-  for (let [p, agent] of found) for (let i = 0; p && p !== '1' && i < 64; i++) { if (!agentOf.has(p)) agentOf.set(p, agent); p = parent.get(p); }
+  for (const [pid, agent] of found)
+    for (let p = pid, i = 0; p && p !== '1' && i < 64; i++) {
+      if (!agentOf.has(p)) { agentOf.set(p, agent); agentPidOf.set(p, pid); }
+      p = parent.get(p);
+    }
 
   const by = new Map();
   for (const l of panes.trim().split('\n')) {
     const [name, active, pid, dir, attached, activity] = l.split('\t');
     const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
     if (active === '11') s.dir = dir;
-    s.agent ??= agentOf.get(pid) ?? null;
+    if (!s.agent && agentOf.has(pid)) { s.agent = agentOf.get(pid); s.agentPid = agentPidOf.get(pid); }
     by.set(name, s);
   }
   const list = [...by.values()].sort((a, b) => b.activity - a.activity);
@@ -120,6 +124,13 @@ async function sessions() {
     s.preview = screen.split('\n').map(l => l.trimEnd())
       .filter(l => l.replace(/[─━│╭╮╰╯\s]/g, '').length > 1 && !/[▐▛▜▝▘█▀]/.test(l) && !/^\s*(⏵|\? for shortcuts)/.test(l))
       .slice(-3).join('\n');
+    s.previewKind = 'screen';
+    // Phiên có agent: câu trả lời gần nhất dễ đọc hơn chữ chụp từ terminal. Riêng lúc chờ xác nhận
+    // thì giữ màn hình, vì câu hỏi xác nhận không có trong file hội thoại.
+    if (s.agent && s.state !== 'waiting') {
+      const reply = await lastReply(s.agent, s.dir, s.agentPid).catch(() => null);
+      if (reply) { s.preview = reply; s.previewKind = 'reply'; }
+    }
   }));
   return list;
 }
@@ -241,11 +252,24 @@ async function claudeLimits() {
 }
 
 // File hội thoại mới nhất của agent ở đúng thư mục
-async function transcriptFile(agent, cwd) {
+// Claude Code ghi ~/.claude/sessions/<pid>.json (có sessionId) cho mỗi tiến trình: biết chính xác hội thoại
+// của từng phiên, kể cả khi nhiều phiên cùng thư mục.
+// shortcut: file nội bộ, không có trong tài liệu; Claude Code đổi cách lưu thì quay về đoán theo thư mục
+async function claudeSessionId(pid) {
+  if (!pid) return null;
+  const j = await fs.readFile(path.join(os.homedir(), '.claude', 'sessions', `${pid}.json`), 'utf8').then(JSON.parse, () => null);
+  return validUuid(j?.sessionId) ? j.sessionId : null;
+}
+const claudeProjectDir = cwd => path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
+async function transcriptFile(agent, cwd, pid) {
   if (agent === 'claude') {
-    // Claude đặt tên thư mục lịch sử theo đường dẫn, mọi ký tự không phải chữ/số thành '-'
-    const dir = path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
-    return (await newestFiles(dir, x => x.endsWith('.jsonl') && !x.includes(path.sep), 1))[0] || null;
+    const sid = await claudeSessionId(pid);
+    if (sid) {
+      const f = path.join(claudeProjectDir(cwd), `${sid}.jsonl`);
+      if (await fs.access(f).then(() => true, () => false)) return f;
+    }
+    // Không biết pid: lấy hội thoại mới nhất của thư mục (tên thư mục: ký tự không phải chữ/số thành '-')
+    return (await newestFiles(claudeProjectDir(cwd), x => x.endsWith('.jsonl') && !x.includes(path.sep), 1))[0] || null;
   }
   if (agent === 'codex') {
     for (const f of await codexFiles()) {
@@ -256,13 +280,37 @@ async function transcriptFile(agent, cwd) {
   return null;
 }
 
+// Câu trả lời gần nhất của agent, dạng chữ thường (bỏ ký hiệu markdown), có bộ nhớ đệm:
+// danh sách phiên được gọi 3 giây một lần
+const fileCache = new Map(), replyCache = new Map();
+async function lastReply(agent, cwd, pid) {
+  const key = `${agent}:${cwd}:${pid || ''}`;
+  let fc = fileCache.get(key);
+  if (!fc || Date.now() - fc.t > 15_000) fileCache.set(key, fc = { t: Date.now(), file: await transcriptFile(agent, cwd, pid) });
+  if (!fc.file) return null;
+  const mtime = (await fs.stat(fc.file).catch(() => null))?.mtimeMs;
+  const rc = replyCache.get(fc.file);
+  if (rc && rc.mtime === mtime) return rc.text;
+  const msg = transcriptMessages(agent, await readTail(fc.file, 1024 * 1024), 12).filter(m => m.who === 'assistant').pop();
+  const text = msg && plainText(msg.text).slice(0, 300);
+  replyCache.set(fc.file, { mtime, text });
+  return text;
+}
+export const plainText = md => md
+  .replace(/```[\s\S]*?```/g, ' ')            // bỏ khối code
+  .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')      // [chữ](link) → chữ
+  .replace(/^\s*(#{1,6}|[-*>]|\d+\.)\s+/gm, '') // tiêu đề, gạch đầu dòng, trích dẫn
+  .replace(/[*_`~|]/g, '')                      // nhấn mạnh, code, bảng
+  .replace(/\s+/g, ' ').trim();
+
 // Token của phiên
-async function sessionTokens(agent, cwd) {
+async function sessionTokens(agent, cwd, pid) {
   if (agent === 'claude') {
-    const live = (await claudeUsageFile())?.sessions?.[cwd];
+    const all = (await claudeUsageFile())?.sessions || {}, sid = await claudeSessionId(pid);
+    const live = (sid && all[sid]) || all[cwd]; // statusline lưu theo mã hội thoại (và theo thư mục cho bản cũ)
     if (live && Date.now() - live.at < 30 * 60_000) return { model: live.model, context: live.tokens, window: live.size, pct: live.pct };
   }
-  const f = await transcriptFile(agent, cwd);
+  const f = await transcriptFile(agent, cwd, pid);
   if (!f) return null;
   return lastJson(await readTail(f), agent === 'claude'
     ? o => {
@@ -316,7 +364,7 @@ async function machineUsage() {
 async function usage(sessionName) {
   const s = validName(sessionName) ? (await sessions()).find(x => x.name === sessionName) : null;
   const [machine, codex, claude, tokens] = await Promise.all([
-    machineUsage(), codexLimits(), claudeLimits(), s?.agent ? sessionTokens(s.agent, s.dir) : null]);
+    machineUsage(), codexLimits(), claudeLimits(), s?.agent ? sessionTokens(s.agent, s.dir, s.agentPid) : null]);
   return { machine, limits: { claude, codex }, session: s && { name: s.name, agent: s.agent, ...tokens } };
 }
 
@@ -348,6 +396,12 @@ async function needRepo(dir) {
   const d = await need(dir);
   return (await git(d, 'rev-parse', '--show-toplevel')).trim();
 }
+
+// git --numstat: "thêm<TAB>xoá<TAB>đường dẫn"; file nhị phân ghi "-"
+export const parseNumstat = raw => raw.split('\n').filter(Boolean).map(l => {
+  const [a, d, ...p] = l.split('\t');
+  return { path: p.join('\t'), add: a === '-' ? null : Number(a), del: d === '-' ? null : Number(d) };
+});
 
 export function parseStatus(raw) {
   const parts = raw.split('\0');
@@ -534,7 +588,7 @@ const routes = {
     const lines = Math.min(5000, Math.max(50, Number(q.get('lines')) || 1000));
     const s = (await sessions()).find(x => x.name === name);
     if (!s) throw fail(404, 'Không tìm thấy phiên');
-    const f = s.agent && await transcriptFile(s.agent, s.dir);
+    const f = s.agent && await transcriptFile(s.agent, s.dir, s.agentPid);
     if (f) {
       const msgs = transcriptMessages(s.agent, await readTail(f, 4 * 1024 * 1024));
       const who = m => m.who === 'user' ? '▶ Bạn' : '◆ ' + AGENTS[s.agent].name;
@@ -628,10 +682,20 @@ const routes = {
     const rev = q.get('rev'), file = q.get('file');
     if (rev && !validRev(rev)) throw fail(400, 'Mã commit không hợp lệ');
     if (file !== null && !validGitPath(file)) throw fail(400, 'File không hợp lệ');
-    const out = rev ? await git(dir, 'show', '--stat', '--patch', '--format=%H%n%an  %ad%n%n%B', rev)
-      : file ? await git(dir, 'diff', ...(q.get('staged') ? ['--cached'] : []), '--', file)
-      : await git(dir, 'diff', 'HEAD', '--stat', '--patch').catch(() => git(dir, 'diff', '--stat', '--patch'));
-    return { text: clip(out) || '(không có thay đổi)' };
+    if (file) return { text: clip(await git(dir, 'diff', ...(q.get('staged') ? ['--cached'] : []), '--', file)) || '(không có thay đổi)' };
+    // Commit, hoặc mọi thay đổi chưa commit: kèm danh sách file +/− để hiện tóm tắt trước diff
+    const range = rev ? ['show', '--format=', rev] : ['diff', 'HEAD'];
+    const [patch, numstat, meta] = await Promise.all([
+      git(dir, ...range, '--patch').catch(() => git(dir, 'diff', '--patch')),
+      git(dir, ...range, '--numstat').catch(() => git(dir, 'diff', '--numstat')),
+      rev ? git(dir, 'log', '-1', '--format=%H%x1f%an%x1f%at%x1f%s%x1f%b', rev) : '',
+    ]);
+    const [hash, author, at, subject, body] = meta.split('\x1f');
+    return {
+      text: clip(patch) || '(không có thay đổi)',
+      files: parseNumstat(numstat),
+      commit: rev ? { hash, author, t: Number(at) * 1000, subject, body: (body || '').trim() } : null,
+    };
   },
   async 'POST /api/git/op'(_, b) {
     const op = Object.hasOwn(GIT_OPS, b.op) && GIT_OPS[b.op];

@@ -90,6 +90,8 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .sess .nm { font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sess .dir { font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sess .pv { font:11.5px/1.45 var(--mono); color:var(--dim); white-space:pre; overflow:hidden; text-overflow:ellipsis; max-height:3.1em; }
+/* Câu trả lời gần nhất của agent: chữ thường, tối đa 2 dòng */
+.sess .pv.reply { font:13px/1.4 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; white-space:normal; max-height:none; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; }
 .state { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--dim); white-space:nowrap; }
 .dot { width:8px; height:8px; border-radius:50%; background:var(--faint); flex:none; }
 .st-working .dot { background:var(--acc); animation:pulse 1.2s infinite; } .st-working { color:var(--acc); }
@@ -157,6 +159,7 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 .badge { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:5px; font:700 11px var(--mono); background:var(--hover); color:var(--dim); flex:none; }
 .badge.M { color:var(--warn); background:var(--warn-soft); } .badge.A, .badge.U { color:var(--ok); background:var(--ok-soft); }
 .badge.D { color:var(--del); background:#ef6b7322; } .badge.R { color:var(--blue); background:#6aa7ff22; }
+.chip.synced { color:var(--ok); } .chip.ahead { color:var(--acc); } .chip.behind { color:var(--warn); }
 .chip { font:12px var(--mono); padding:4px 8px; border-radius:6px; background:var(--hover); color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
 .commit { display:flex; gap:8px; padding:12px 14px; align-items:flex-end; }
 .commit textarea { flex:1; min-height:40px; max-height:140px; padding:9px 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); resize:vertical; }
@@ -180,6 +183,16 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 #viewer .bar b { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
 #v-body pre { margin:0; padding:12px 14px 40px; font:12.5px/1.55 var(--mono); white-space:pre; tab-size:4; }
 #v-body img { max-width:100%; display:block; margin:16px auto; border-radius:8px; }
+.dv .chead { display:flex; flex-direction:column; gap:6px; padding:14px; border-bottom:1px solid var(--line); }
+.dv .chead b { font-size:15px; } .dv .chead p { margin:0; white-space:pre-wrap; font-size:13px; color:var(--dim); }
+.dv .chead small { font:12px var(--mono); color:var(--faint); }
+.dv .fsum { padding:10px 14px 4px; font-size:12px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; }
+.pa { color:var(--add); } .pd { color:var(--del); }
+.dv .frow { display:flex; align-items:center; gap:8px; width:100%; padding:8px 14px; border:0; border-bottom:1px solid var(--line); background:transparent; text-align:left; }
+.dv .frow .p { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
+.dv .frow .pm { font:12px var(--mono); flex:none; } .dv .frow .pm:not(.pa):not(.pd) { color:var(--faint); }
+.pmbar { display:inline-flex; gap:2px; flex:none; } .pmbar i { width:7px; height:7px; border-radius:2px; background:var(--hover); }
+.pmbar i.a { background:var(--add); } .pmbar i.d { background:var(--del); }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
@@ -340,9 +353,9 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
           <div class="toolbar">
             <select class="sel" id="g-branch" aria-label="Branch" style="flex:1"></select>
             <span class="chip" id="g-track"></span>
-            <button class="btn sm" data-op="fetch">Fetch</button>
-            <button class="btn sm" data-op="pull">Pull</button>
-            <button class="btn sm" data-op="push">Push</button>
+            <button class="btn sm" data-op="fetch" title="Lấy thông tin mới từ remote"><span data-i="refresh"></span>Fetch</button>
+            <button class="btn sm" data-op="pull" title="Kéo commit mới về"><span data-i="down"></span>Pull</button>
+            <button class="btn sm" data-op="push" title="Đẩy commit lên remote"><span data-i="up"></span>Push</button>
           </div>
           <div id="g-changes"></div>
           <div class="commit" id="g-commit-box">
@@ -443,7 +456,7 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  minus:'<path d="M5 12h14"/>', down:'<path d="M12 5v14M19 12l-7 7-7-7"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
   doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
   braces:'<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>', rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
   gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -614,7 +627,7 @@ function renderSessions() {
     const b = el('button', 'sess' + (x.name === sel ? ' cur' : '')), body = el('div', 'sb');
     const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, x.agent));
     body.append(top, el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`));
-    if (x.preview) body.append(el('div', 'pv', x.preview));
+    if (x.preview) body.append(el('div', 'pv' + (x.previewKind === 'reply' ? ' reply' : ''), x.preview));
     b.append(agentAvatar(x.agent), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
     // Giữ lâu (hoặc chuột phải): menu đổi tên / đóng cho đúng phiên này
@@ -1125,18 +1138,52 @@ const MERMAID = {
 };
 function diffNode(text) {
   const pre = el('pre', 'diff');
-  pre.append(...text.split('\n').map(l => el('span',
-    /^(diff |\+\+\+ |--- |index )/.test(l) ? 'f' : l.startsWith('@@') ? 'hk' : l[0] === '+' ? 'a' : l[0] === '-' ? 'd' : '', l + '\n')));
+  pre.append(...text.split('\n').map(l => {
+    const sp = el('span', /^(diff |\+\+\+ |--- |index )/.test(l) ? 'f' : l.startsWith('@@') ? 'hk' : l[0] === '+' ? 'a' : l[0] === '-' ? 'd' : '', l + '\n');
+    if (l.startsWith('diff --git ')) sp.dataset.file = l.slice(l.lastIndexOf(' b/') + 3); // để nhảy tới từ danh sách file
+    return sp;
+  }));
   return pre;
 }
+// Thanh +/− kiểu GitHub: 5 ô chia theo tỉ lệ dòng thêm/xoá
+function plusMinusBar(add, del) {
+  const bar = el('span', 'pmbar'), total = add + del, a = total ? Math.round(add / total * 5) : 0;
+  for (let i = 0; i < 5; i++) bar.append(el('i', i < a ? 'a' : i < (total ? 5 : 0) ? 'd' : ''));
+  return bar;
+}
 const openDiff = safely(async (title, qs) => {
-  const { text } = await api('/api/show?' + new URLSearchParams(qs));
-  openViewer(title, diffNode(text));
+  const r = await api('/api/show?' + new URLSearchParams(qs));
+  const box = el('div', 'dv'), diff = diffNode(r.text);
+  if (r.commit) {
+    const h = el('div', 'chead');
+    h.append(el('b', null, r.commit.subject));
+    // Nối các dòng bị ngắt cứng theo 80 ký tự (giữ dòng trống và gạch đầu dòng) cho vừa màn hình hẹp
+    if (r.commit.body) h.append(el('p', null, r.commit.body.replace(/([^\n])\n(?![\n\-*•]|\s*$)\s*/g, '$1 ')));
+    h.append(el('small', null, `${r.commit.hash.slice(0, 7)} · ${r.commit.author} · ${ago(r.commit.t)}`));
+    box.append(h);
+  }
+  if (r.files?.length) {
+    const add = r.files.reduce((n, f) => n + (f.add || 0), 0), del = r.files.reduce((n, f) => n + (f.del || 0), 0);
+    const sum = el('div', 'fsum');
+    sum.append(`${r.files.length} file`, el('span', 'pa', ` +${add}`), el('span', 'pd', ` −${del}`));
+    box.append(sum, ...r.files.map(f => {
+      const row = el('button', 'frow'); row.type = 'button';
+      const p = el('span', 'p', ltr(f.path)); p.title = f.path;
+      row.append(p);
+      if (f.add == null) row.append(el('span', 'pm', 'nhị phân'));
+      else row.append(el('span', 'pm pa', `+${f.add}`), el('span', 'pm pd', `−${f.del}`), plusMinusBar(f.add, f.del));
+      row.onclick = () => diff.querySelector(`[data-file="${CSS.escape(f.path)}"]`)?.scrollIntoView({ block: 'start' });
+      return row;
+    }));
+  }
+  box.append(diff);
+  openViewer(title, box);
 });
 
 // ---------- Git ----------
 const loadGit = safely(async dir => {
   await loadRepos($('g-repo'), dir);
+  for (const o of $('g-repo').options) { o.title = o.value; o.textContent = o.value.split('/').pop() || o.value; } // tên repo ngắn
   dir ||= $('g-repo').value;
   if (!dir) return $('g-changes').replaceChildren(el('div', 'empty', 'Không tìm thấy repo git nào'));
   let g;
@@ -1148,7 +1195,13 @@ const loadGit = safely(async dir => {
   }
   S.git = g;
   const [branch, track = ''] = g.head.split('...');
-  $('g-track').textContent = (track.match(/\[(.*)\]/)?.[1] || (track ? 'đồng bộ' : 'chưa có upstream')).replace('ahead', '↑').replace('behind', '↓');
+  // Trước/sau remote: "origin/main [ahead 1, behind 2]" → ↑1 ↓2
+  const ahead = /ahead (\d+)/.exec(track)?.[1], behind = /behind (\d+)/.exec(track)?.[1];
+  const chip = $('g-track');
+  chip.className = 'chip' + (behind ? ' behind' : ahead ? ' ahead' : track ? ' synced' : '');
+  chip.textContent = !track ? 'chưa có upstream' : /\[gone\]/.test(track) ? 'upstream đã mất'
+    : ahead || behind ? [ahead && `↑${ahead}`, behind && `↓${behind}`].filter(Boolean).join(' ') : '✓ đồng bộ';
+  chip.title = !track ? 'Nhánh chưa liên kết với remote' : `${ahead || 0} commit chưa push · ${behind || 0} commit chưa pull`;
   $('g-branch').replaceChildren(...[...new Set([branch, ...g.branches])].map(b => {
     const o = el('option', null, b === branch ? `⎇ ${b}` : b); o.value = b; o.selected = b === branch; return o;
   }));

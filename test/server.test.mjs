@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -132,4 +132,13 @@ test('đánh dấu git trong tab File', () => {
   assert.deepEqual(Object.fromEntries(marksFromStatus(raw, '')), { src: '•', docs: '•', 'README.md': 'A' });
   assert.deepEqual(Object.fromEntries(marksFromStatus(raw, 'src')), { 'server.mjs': 'M', sub: '•' });
   assert.deepEqual(Object.fromEntries(marksFromStatus('?? newdir/\0', '')), { newdir: 'U' });
+});
+
+test('bỏ markdown cho xem trước', () => {
+  assert.equal(plainText('## Xong\n\n**Đã sửa** `server.mjs`:\n- một [link](http://x)\n```js\ncode()\n```\nHết.'), 'Xong Đã sửa server.mjs: một link Hết.');
+});
+
+test('git --numstat', () => {
+  assert.deepEqual(parseNumstat('12\t3\tsrc/a.js\n-\t-\tlogo.png\n'), [
+    { path: 'src/a.js', add: 12, del: 3 }, { path: 'logo.png', add: null, del: null }]);
 });
