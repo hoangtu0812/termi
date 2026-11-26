@@ -1,9 +1,9 @@
 #!/bin/bash
 # Cài termi thành dịch vụ launchd (tự chạy khi đăng nhập, tự khởi động lại khi chết)
 # và mở ra tailnet qua `tailscale serve` (chỉ máy trong tailnet của bạn truy cập được).
-# Chạy lại an toàn. Gỡ: ./install.sh uninstall
+# Chạy lại an toàn. Gỡ: scripts/install.sh uninstall
 set -euo pipefail
-DIR="$(cd "$(dirname "$0")" && pwd)"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 LA="$HOME/Library/LaunchAgents"
 ROOTS="${TERMI_ROOTS:-$HOME:/Volumes/ST1000LM 03}"
 PATHS="/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin:$HOME/.local/bin"
@@ -51,11 +51,11 @@ plist() {
 }
 
 mkdir -p "$LA"
-chmod +x "$DIR/attach.sh"
-plist server /opt/homebrew/bin/node "$DIR/server.mjs"
+chmod +x "$ROOT/scripts/attach.sh"
+plist server /opt/homebrew/bin/node "$ROOT/src/server.mjs"
 plist ttyd /opt/homebrew/bin/ttyd -i lo0 -p 7681 -W -a -O -P 20 \
   -t fontSize=14 -t 'fontFamily=Menlo,Consolas,Droid Sans Mono,monospace' -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' \
-  "$DIR/attach.sh"
+  "$ROOT/scripts/attach.sh"
 
 # Lần đầu tailscale sẽ in link để bật Serve/HTTPS cho tailnet và chờ: mở link đó rồi lệnh tự chạy tiếp
 $TS serve --bg --https=443 http://127.0.0.1:7680

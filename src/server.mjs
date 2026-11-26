@@ -11,7 +11,7 @@ import path from 'node:path';
 import os from 'node:os';
 
 const run = promisify(execFile);
-const HERE = import.meta.dirname;
+const PUBLIC = path.join(import.meta.dirname, '..', 'public');
 const PORT = Number(process.env.TERMI_PORT) || 7680;
 const DATA = path.join(os.homedir(), '.termi');
 const UPLOADS = path.join(DATA, 'uploads');
@@ -414,7 +414,7 @@ async function handle(req, res) {
   const url = new URL(req.url, 'http://x');
   const st = req.method === 'GET' && STATIC[url.pathname];
   if (st) {
-    const file = await fs.readFile(path.join(HERE, 'public', st[0]));
+    const file = await fs.readFile(path.join(PUBLIC, st[0]));
     res.writeHead(200, { 'content-type': st[1], 'cache-control': 'no-cache' });
     return res.end(file);
   }
@@ -437,7 +437,7 @@ async function handle(req, res) {
     data = await fn(url.searchParams, req.method === 'POST' ? await readBody(req) : {});
   }
   // Phiên bản giao diện = thời điểm sửa index.html; trang cũ thấy khác thì tự tải lại
-  const build = String((await fs.stat(path.join(HERE, 'public', 'index.html'))).mtimeMs);
+  const build = String((await fs.stat(path.join(PUBLIC, 'index.html'))).mtimeMs);
   res.writeHead(200, { 'content-type': 'application/json', 'x-termi-build': build });
   res.end(JSON.stringify(data));
 }

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, claudeState, parseStatus, graphLayout } from './server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, claudeState, parseStatus, graphLayout } from '../src/server.mjs';
 
 test('trạng thái Claude', () => {
   assert.equal(claudeState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');

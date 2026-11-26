@@ -1,0 +1,16 @@
+{
+  "name": "termi",
+  "version": "0.1.0",
+  "description": "Điều khiển Claude Code, tmux và git trên Mac mini từ điện thoại",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.mjs",
+    "test": "node --test test/",
+    "service:install": "scripts/install.sh",
+    "service:uninstall": "scripts/install.sh uninstall"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
