@@ -57,6 +57,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 |---|---|---|
 | 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại Claude cũ (`claude --resume`). |
 | 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
+| ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |

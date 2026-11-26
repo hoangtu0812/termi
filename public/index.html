@@ -105,7 +105,8 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .compose { display:flex; align-items:flex-end; gap:6px; padding:8px; }
 .compose textarea { flex:1; min-height:40px; max-height:160px; padding:9px 12px; border-radius:20px; border:1px solid var(--line2); background:var(--card); resize:none; line-height:1.4; }
 .compose textarea:focus { outline:none; border-color:var(--acc); }
-.compose .ibtn { width:40px; height:40px; border-radius:50%; }
+.compose .ibtn { width:36px; height:40px; border-radius:50%; flex:none; }
+.compose .ibtn.send { width:40px; }
 .compose .send { background:var(--acc); color:#fff; }
 
 /* ---------- File ---------- */
@@ -170,6 +171,10 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
 #hist-list button { text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; padding:12px 18px; display:flex; flex-direction:column; gap:3px; }
 #hist-list .t1 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
 #hist-list .t2 { font-size:12px; color:var(--faint); }
+.quick { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.quick button { display:flex; flex-direction:column; align-items:flex-start; gap:2px; text-align:left; padding:10px 12px; border-radius:12px; border:1px solid var(--line2); background:var(--card); }
+.quick button b { font-size:14px; }
+.quick button span { font-size:12px; color:var(--dim); line-height:1.35; }
 .menu { display:flex; flex-direction:column; gap:4px; }
 .menu button { justify-content:flex-start; height:46px; }
 #toast { position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--fg); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:14px; max-width:min(92vw,520px); z-index:20; box-shadow:0 8px 24px #0005; white-space:pre-wrap; }
@@ -253,12 +258,13 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
         <div class="keys" id="keys"></div>
         <div class="atts" id="atts" hidden></div>
         <div class="compose">
+          <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với Claude" data-i="zap"></button>
           <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
           <button class="ibtn" id="b-attach" title="Gửi file" aria-label="Gửi file" data-i="clip"></button>
           <!-- accept="image/*" làm Android/iOS mở trình chọn ảnh thay vì menu Máy ảnh/Files -->
           <input type="file" id="f-photo" accept="image/*" multiple hidden>
           <input type="file" id="f-input" multiple hidden>
-          <textarea id="text" rows="1" placeholder="Nhắn cho Claude… (gõ tiếng Việt thoải mái)" aria-label="Nội dung gửi"></textarea>
+          <textarea id="text" rows="1" placeholder="Nhắn cho Claude…" aria-label="Nội dung gửi"></textarea>
           <button class="ibtn send" id="b-send" title="Gửi" aria-label="Gửi" data-i="send"></button>
         </div>
       </div>
@@ -342,6 +348,14 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   </form>
 </dialog>
 
+<dialog id="d-quick">
+  <form method="dialog">
+    <h3>Thao tác nhanh</h3>
+    <div class="quick" id="quick-list"></div>
+    <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
+  </form>
+</dialog>
+
 <dialog id="d-menu">
   <form method="dialog" class="menu">
     <h3 id="m-title"></h3>
@@ -369,7 +383,7 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>',
+  minus:'<path d="M5 12h14"/>', zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
 };
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
 const fillIcons = root => root.querySelectorAll('[data-i]').forEach(e => { e.insertAdjacentHTML('afterbegin', icon(e.dataset.i)); e.removeAttribute('data-i'); });
@@ -688,6 +702,35 @@ $('keys').append(...KEYS.map(([label, key]) => {
   b.onclick = () => setFont(fontSize + d);
   return b;
 }));
+// ---- Thao tác nhanh: gửi lời nhắn soạn sẵn cho Claude trong phiên hiện tại ----
+// [biểu tượng, tên, mô tả ngắn, nội dung gửi, cần xác nhận]
+const QUICK = [
+  ['📋', 'Tình trạng', 'Nhánh, thay đổi, commit chưa push', 'Cho tôi biết ngắn gọn: đang ở nhánh nào, có thay đổi gì chưa commit, có commit nào chưa push.'],
+  ['💾', 'Commit', 'Xem thay đổi và commit', 'Xem các thay đổi hiện tại và commit với message rõ ràng (tách thành nhiều commit nếu hợp lý).'],
+  ['⬆️', 'Push', 'Đẩy nhánh lên remote', 'Push nhánh hiện tại lên remote.', true],
+  ['🔀', 'Tạo PR', 'Pull request kèm mô tả', 'Tạo pull request cho nhánh hiện tại bằng gh, viết tiêu đề và mô tả tóm tắt các thay đổi.', true],
+  ['✅', 'Merge PR', 'Kiểm tra CI rồi merge', 'Kiểm tra CI của pull request cho nhánh hiện tại; nếu tất cả đều qua thì merge, nếu không thì báo lại lỗi.', true],
+  ['🔍', 'Review', 'Rà lỗi trong thay đổi', '/code-review'],
+  ['🧪', 'Chạy test', 'Báo kết quả, giải thích lỗi', 'Chạy test của dự án và báo kết quả; nếu có lỗi thì giải thích nguyên nhân.'],
+  ['🗜️', 'Thu gọn', 'Giảm ngữ cảnh hội thoại', '/compact'],
+];
+$('quick-list').append(...QUICK.map(([emoji, name, desc, text, ask]) => {
+  const b = el('button'); b.type = 'button';
+  b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
+  b.onclick = safely(async () => {
+    $('d-quick').close();
+    if (ask && !confirm(`${name}: gửi yêu cầu này cho Claude?\n\n${text}`)) return;
+    await api('/api/send', { session: st().s, text, enter: true });
+    toast(`Đã gửi: ${name}`);
+  });
+  return b;
+}));
+$('b-quick').onclick = () => {
+  // Phiên chỉ có shell thì gửi câu tiếng Việt vào sẽ thành lệnh shell lỗi
+  if (cur() && !cur().claude) return toast('Phiên này chưa chạy Claude', true);
+  $('d-quick').showModal();
+};
+
 const send = safely(async () => {
   const t = $('text');
   if (S.atts.some(a => !a.path)) throw new Error('Đợi tải lên xong đã');
