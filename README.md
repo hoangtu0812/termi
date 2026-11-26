@@ -1,0 +1,191 @@
+<div align="center">
+
+<img src="public/icon.svg" alt="termi" width="112">
+
+# termi
+
+**Điều khiển Claude Code trên Mac từ điện thoại: phiên không bao giờ mất, gõ tiếng Việt thoải mái, xem git ngay trên tay.**
+
+<p>
+  <img alt="Node.js" src="https://img.shields.io/badge/Node.js-24+-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white">
+  <img alt="JavaScript" src="https://img.shields.io/badge/JavaScript-ESM-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
+  <img alt="HTML5" src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white">
+  <img alt="CSS" src="https://img.shields.io/badge/CSS-663399?style=for-the-badge&logo=css&logoColor=white">
+  <img alt="PWA" src="https://img.shields.io/badge/PWA-5A0FC8?style=for-the-badge&logo=pwa&logoColor=white">
+</p>
+<p>
+  <img alt="Claude Code" src="https://img.shields.io/badge/Claude_Code-D97757?style=for-the-badge&logo=claude&logoColor=white">
+  <img alt="tmux" src="https://img.shields.io/badge/tmux-1BB91F?style=for-the-badge&logo=tmux&logoColor=white">
+  <img alt="ttyd" src="https://img.shields.io/badge/ttyd-4EAA25?style=for-the-badge&logo=gnubash&logoColor=white">
+  <img alt="Tailscale" src="https://img.shields.io/badge/Tailscale-242424?style=for-the-badge&logo=tailscale&logoColor=white">
+  <img alt="Git" src="https://img.shields.io/badge/Git-F05032?style=for-the-badge&logo=git&logoColor=white">
+  <img alt="macOS" src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white">
+</p>
+
+<sub>Không framework · không dependency · khoảng 1.400 dòng code</sub>
+
+</div>
+
+---
+
+## Vì sao có termi?
+
+Dùng Claude Code CLI qua app SSH trên điện thoại rất khổ: mất mạng là mất phiên, bàn phím ảo không gõ được tiếng Việt, và không có cách nào xem nhanh git hay các phiên đang chạy.
+
+termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ điện thoại (Android và iOS) qua Tailscale:
+
+- **Phiên không mất:** mọi phiên Claude chạy trong `tmux`, app chỉ là lớp hiển thị. Tắt app, mất sóng, khoá máy thì phiên vẫn còn nguyên.
+- **Gõ tiếng Việt:** ô nhắn dùng bàn phím gốc của điện thoại (Gboard, Laban Key…), gửi cả đoạn vào Claude bằng bracketed paste.
+- **Biết Claude đang làm gì:** trạng thái *Đang chạy / Chờ bạn xác nhận / Rảnh* cho từng phiên, kèm thông báo đẩy khi Claude xong việc hoặc cần bạn duyệt lệnh.
+
+## Ảnh chụp
+
+<table>
+  <tr>
+    <td width="68%"><img src="docs/screenshots/desktop-git.png" alt="Cây git trên máy tính"></td>
+    <td><img src="docs/screenshots/mobile-git.png" alt="Git trên điện thoại"></td>
+  </tr>
+  <tr>
+    <td><img src="docs/screenshots/desktop-files.png" alt="Duyệt file trên máy tính"></td>
+    <td><img src="docs/screenshots/mobile-sessions.png" alt="Danh sách phiên trên điện thoại"></td>
+  </tr>
+</table>
+
+## Tính năng
+
+| | Tính năng | Chi tiết |
+|---|---|---|
+| 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại Claude cũ (`claude --resume`). |
+| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại. |
+| ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
+| 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
+| 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
+| 📁 | **Duyệt file** | Xem thư mục, đọc file và ảnh, chèn đường dẫn vào prompt. |
+| 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
+| 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Tự theo chế độ sáng/tối; cài được như app (PWA). |
+
+## Kiến trúc
+
+```mermaid
+flowchart LR
+    phone["📱 Điện thoại / 💻 Máy tính<br/>(PWA trong trình duyệt)"]
+    subgraph mac["Mac mini"]
+        ts["tailscale serve<br/>HTTPS :443 / :8443"]
+        server["src/server.mjs<br/>Node · 127.0.0.1:7680"]
+        ttyd["ttyd<br/>127.0.0.1:7681"]
+        tmux[("tmux<br/>phiên Claude Code")]
+        git[("git repo")]
+    end
+    phone -- "Tailnet (WireGuard)" --> ts
+    ts -- ":443" --> server
+    ts -- ":8443" --> ttyd
+    server -- "list / send-keys / capture-pane" --> tmux
+    ttyd -- "scripts/attach.sh" --> tmux
+    server -- "status / log / diff / commit" --> git
+```
+
+- **tmux** giữ toàn bộ trạng thái, nên server hay trình duyệt chết thì phiên vẫn còn.
+- **Server** chỉ dùng thư viện chuẩn của Node (`http`, `child_process`, `crypto`…) và gọi `tmux`/`git` qua `execFile`, không qua shell.
+- **Ra ngoài** chỉ qua `tailscale serve`: chỉ thiết bị trong tailnet của bạn truy cập được, không mở port ra internet.
+
+## Yêu cầu
+
+- macOS có [Homebrew](https://brew.sh)
+- Node.js ≥ 24
+- [Claude Code](https://claude.com/claude-code) đã đăng nhập
+- Tài khoản [Tailscale](https://tailscale.com), đã bật **Serve/HTTPS** cho tailnet
+
+## Cài đặt
+
+```bash
+# 1. Công cụ
+brew install tmux ttyd lazygit mosh
+
+# 2. Lấy code
+git clone <repo> termi && cd termi
+
+# 3. Chọn thư mục termi được phép truy cập (mặc định trong script là ~ và một ổ ngoài)
+export TERMI_ROOTS="$HOME:/Volumes/Data"
+
+# 4. Cài dịch vụ launchd + mở ra tailnet
+npm run service:install
+```
+
+Script in ra địa chỉ dạng `https://<máy>.<tailnet>.ts.net`. Mở địa chỉ đó trên điện thoại (đã bật Tailscale), rồi:
+
+- **Android (Chrome):** ⋮ → *Thêm vào màn hình chính*
+- **iOS (Safari):** Chia sẻ → *Thêm vào MH chính* (bắt buộc nếu muốn nhận thông báo)
+
+Gỡ cài đặt: `npm run service:uninstall` (các phiên tmux vẫn được giữ).
+
+## Sử dụng nhanh
+
+1. Bấm **+ Phiên mới**, chọn thư mục, tick *Chạy Claude ngay*.
+2. Nhắn cho Claude ở ô dưới cùng; dùng 🖼️ / 📎 để gửi ảnh hoặc file.
+3. Bấm 🔔 để bật thông báo; bấm 🕘 để mở lại hội thoại cũ.
+4. Chuyển sang tab **Git** hoặc **File** để xem Claude đã sửa gì.
+
+Trên Mac có thể vào cùng phiên bằng `tmux attach -t <tên>`. Thêm hàm sau vào `~/.zshrc` để tạo hoặc vào lại phiên nhanh:
+
+```bash
+tm() { tmux new -A -s "${1:-main}"; }
+```
+
+## Cấu trúc thư mục
+
+```
+termi/
+├── src/
+│   └── server.mjs        # HTTP server + API: phiên, file, git, push, upload
+├── public/               # PWA (giao diện tĩnh, không build)
+│   ├── index.html        # Toàn bộ UI: HTML + CSS + JS
+│   ├── sw.js             # Service worker cho thông báo đẩy
+│   ├── manifest.json
+│   └── icon.svg
+├── scripts/
+│   ├── install.sh        # Tạo dịch vụ launchd + tailscale serve
+│   └── attach.sh         # ttyd gọi để gắn vào phiên tmux theo tên
+├── test/
+│   └── server.test.mjs   # node:test, không cần thư viện
+├── docs/screenshots/
+└── package.json
+```
+
+## Phát triển
+
+```bash
+npm test     # chạy test (node --test)
+npm start    # chạy server ở 127.0.0.1:7680 (dừng dịch vụ launchd trước nếu trùng cổng)
+
+# Khởi động lại server đang chạy dưới launchd sau khi sửa src/
+launchctl kickstart -k gui/$UID/vn.termi.server
+```
+
+Sửa `public/index.html` không cần khởi động lại: trang đang mở sẽ tự tải lại khi thấy bản mới (trừ lúc bạn đang gõ dở).
+
+| Biến môi trường | Mặc định | Ý nghĩa |
+|---|---|---|
+| `TERMI_ROOTS` | `$HOME` | Các thư mục gốc được phép truy cập, cách nhau bằng `:` |
+| `TERMI_PORT` | `7680` | Cổng của server |
+
+Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết bị nhận thông báo và file tải lên (`uploads/`, không tự xoá). Log ở `~/Library/Logs/termi.*.log`.
+
+## Bảo mật
+
+termi cho quyền điều khiển shell trên máy của bạn, nên được thiết kế để **chỉ chạy trong tailnet riêng**:
+
+- Server và ttyd chỉ nghe trên `127.0.0.1`; đường vào duy nhất là `tailscale serve`. **Không bật Tailscale Funnel.**
+- Chặn DNS rebinding (chỉ nhận Host là localhost hoặc `*.ts.net`) và CSRF (mọi POST phải có header `X-Termi`); ttyd bật kiểm tra origin.
+- Mọi đường dẫn đều được `realpath` và phải nằm trong `TERMI_ROOTS`; tên phiên, branch và commit được kiểm tra bằng regex; lệnh gọi qua `execFile`.
+- Chỉ phục vụ trực tiếp file ảnh (không SVG/HTML) để file trong repo không chạy được script trên origin của app.
+
+## Giới hạn đã biết
+
+- Trạng thái Claude được đoán từ chữ trên màn hình terminal; Claude Code đổi giao diện thì có thể nhận sai.
+- Khởi động lại Mac sẽ mất các phiên tmux (hội thoại vẫn mở lại được bằng 🕘 hoặc `claude --resume`).
+- Cây git hiện 200 commit gần nhất, tối đa 10 làn.
+- Trên iOS, thông báo chỉ hoạt động khi mở termi từ biểu tượng ở màn hình chính.
+
+---
+
+<div align="center"><sub>Làm bằng ☕ và <a href="https://claude.com/claude-code">Claude Code</a>.</sub></div>
