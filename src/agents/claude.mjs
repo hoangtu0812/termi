@@ -1,7 +1,7 @@
 import path from 'node:path';
 import { validUuid } from '../validate.mjs';
 import {
-  fileExists, isRealPrompt, lastJson, newestFiles, readJsonFile, readTail, toMessage,
+  cachedJsonFile, fileExists, isRealPrompt, lastJson, newestFiles, readJsonFile, readTail, toMessage,
 } from './jsonl.mjs';
 import { binaryName } from './process.mjs';
 import { toolSummary } from './tools.mjs';
@@ -70,7 +70,7 @@ export function createClaudeAgent({ home, dataDir }) {
   const usageFile = path.join(dataDir, 'claude-usage.json');
   const projectDir = cwd => path.join(projectsDir, cwd.replace(/[^A-Za-z0-9]/g, '-'));
   const processInfo = pid => (pid ? readJsonFile(path.join(claudeDir, 'sessions', `${pid}.json`)) : null);
-  const readUsage = () => readJsonFile(usageFile);
+  const readUsage = cachedJsonFile(usageFile);
 
   async function conversationId(pid) {
     const info = await processInfo(pid);

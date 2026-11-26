@@ -191,6 +191,7 @@ termi/
 │   ├── errors.mjs        # Lỗi HTTP
 │   ├── paths.mjs         # Kiểm tra đường dẫn theo TERMI_ROOTS
 │   ├── sessions.mjs      # Danh sách phiên: pane tmux, agent, trạng thái, xem trước
+│   ├── shared-result.mjs # Dùng chung một kết quả, cache ngắn, cho các lần gọi trùng lúc
 │   ├── snapshot.mjs      # Lưu phiên và khôi phục sau khi khởi động lại máy
 │   ├── machines.mjs      # Các máy khác trong tailnet, danh tính chủ máy
 │   ├── repos.mjs         # Các repo git trong TERMI_ROOTS

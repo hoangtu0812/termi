@@ -2,6 +2,7 @@ import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { executableOf } from './agents/process.mjs';
 import { fail } from './errors.mjs';
+import { sharedResult } from './shared-result.mjs';
 import { prettyModel } from './text.mjs';
 import { target, tmux } from './tmux/client.mjs';
 import { agentState, parseChoices, parseMulti, screenPreview } from './tmux/screen.mjs';
@@ -18,6 +19,8 @@ const MAX_ANCESTORS = 64;
 const INIT_PID = '1';
 const CHANGE_CACHE_MS = 15_000;
 const GIT_STATUS_TIMEOUT_MS = 5000;
+const LIST_CACHE_MS = 1000;
+const RENAME_REFUSED = 'Không đổi tên được (trùng tên?)';
 const NO_RESUME = 'Agent này không mở lại được hội thoại cũ';
 
 export function agentPanes(psOutput, detect) {
@@ -55,9 +58,9 @@ function createChangeCounter(now) {
   };
 }
 
-async function readPanes() {
+async function readPanes(scope = ['-a']) {
   try {
-    return (await tmux('list-panes', '-a', '-F', PANE_FORMAT)).stdout.trim().split('\n');
+    return (await tmux('list-panes', ...scope, '-F', PANE_FORMAT)).stdout.trim().split('\n');
   } catch {
     return null;
   }
@@ -73,7 +76,7 @@ function newSession(fields) {
   return { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
 }
 
-async function groupPanes(lines, owners, agents) {
+export function groupPanes(lines, owners) {
   const byName = new Map();
   for (const line of lines) {
     const fields = line.split('\t');
@@ -84,14 +87,24 @@ async function groupPanes(lines, owners, agents) {
       session.output = Number(output);
     }
     if (!session.agent && owners.has(pid)) Object.assign(session, owners.get(pid));
-    if (session.agent && session.agentPid && !session.convId) {
-      const conversation = await agents.get(session.agent).conversation(session.agentPid);
-      if (conversation?.id) session.convId = conversation.id;
-      if (conversation?.title) session.title = conversation.title;
-    }
     byName.set(name, session);
   }
   return [...byName.values()].sort((a, b) => b.activity - a.activity);
+}
+
+async function addConversation(agents, session) {
+  if (!session.agent || !session.agentPid) return;
+  const conversation = await agents.get(session.agent).conversation(session.agentPid);
+  if (conversation?.id) session.convId = conversation.id;
+  if (conversation?.title) session.title = conversation.title;
+}
+
+async function readSessions(agents, scope) {
+  const lines = await readPanes(scope);
+  if (!lines) return [];
+  const sessions = groupPanes(lines, await paneOwners(agents));
+  await Promise.all(sessions.map(session => addConversation(agents, session)));
+  return sessions;
 }
 
 async function addAgentReply({ agents, lastReply }, session) {
@@ -136,7 +149,41 @@ function validateCreate(agents, request) {
   return agent;
 }
 
-export function createSessions({ agents, lastReply, paths, now = Date.now }) {
+async function createSession(agents, paths, request) {
+  const agent = validateCreate(agents, request);
+  const dir = await paths.need(request.dir);
+  const exists = () => { throw fail(409, 'Phiên đã tồn tại'); };
+  await tmux('new-session', '-d', '-s', request.name, '-c', dir).catch(exists);
+  if (!agent) return;
+  const command = request.resume ? agent.resumeCommand(request.resume) : agent.command;
+  await tmux('send-keys', '-t', target(request.name), command, 'Enter');
+}
+
+async function renameSession(name, to) {
+  if (!validName(name) || !validName(to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
+  await tmux('rename-session', '-t', target(name), to).catch(() => { throw fail(409, RENAME_REFUSED); });
+}
+
+async function killSession(name) {
+  if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
+  await tmux('kill-session', '-t', target(name)).catch(() => { throw fail(404, 'Không tìm thấy phiên'); });
+}
+
+async function locateSession(agents, name) {
+  if (!validName(name)) return null;
+  const [session] = await readSessions(agents, ['-s', '-t', target(name)]);
+  return session?.name === name ? session : null;
+}
+
+async function findSession(agents, name) {
+  if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
+  const session = await locateSession(agents, name);
+  if (!session) throw fail(404, 'Không tìm thấy phiên');
+  await readScreen(session);
+  return session;
+}
+
+export function createSessions({ agents, lastReply, paths, now = Date.now, cacheMs = LIST_CACHE_MS }) {
   const changeCount = createChangeCounter(now);
   const stateSince = createStateClock(now);
 
@@ -146,34 +193,25 @@ export function createSessions({ agents, lastReply, paths, now = Date.now }) {
     session.since = stateSince(session);
   }
 
-  async function list() {
-    const lines = await readPanes();
-    if (!lines) return [];
-    const sessions = await groupPanes(lines, await paneOwners(agents), agents);
+  async function build() {
+    const sessions = await readSessions(agents);
     const counts = await Promise.all(sessions.map(session => changeCount(session.dir)));
     sessions.forEach((session, index) => { session.changes = counts[index]; });
     await Promise.all(sessions.map(describe));
     return sessions;
   }
 
-  async function find(name) {
-    if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
-    const session = (await list()).find(item => item.name === name);
-    if (!session) throw fail(404, 'Không tìm thấy phiên');
-    return session;
-  }
+  const shared = sharedResult(build, { ttlMs: cacheMs, now });
+  const thenInvalidate = action => (...args) => action(...args).finally(shared.invalidate);
 
-  async function create(request) {
-    const agent = validateCreate(agents, request);
-    const dir = await paths.need(request.dir);
-    const exists = () => { throw fail(409, 'Phiên đã tồn tại'); };
-    await tmux('new-session', '-d', '-s', request.name, '-c', dir).catch(exists);
-    if (!agent) return;
-    const command = request.resume ? agent.resumeCommand(request.resume) : agent.command;
-    await tmux('send-keys', '-t', target(request.name), command, 'Enter');
-  }
-
-  const resumeId = async session => (session.agent ? agents.get(session.agent).resumeId(session) : null);
-
-  return { list, find, create, resumeId };
+  return {
+    list: shared.get,
+    invalidate: shared.invalidate,
+    locate: name => locateSession(agents, name),
+    find: name => findSession(agents, name),
+    create: thenInvalidate(request => createSession(agents, paths, request)),
+    rename: thenInvalidate(renameSession),
+    kill: thenInvalidate(killSession),
+    resumeId: async session => (session.agent ? agents.get(session.agent).resumeId(session) : null),
+  };
 }

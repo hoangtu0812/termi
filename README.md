@@ -191,6 +191,7 @@ termi/
 │   ├── errors.mjs        # HTTP error helper
 │   ├── paths.mjs         # Path checks against TERMI_ROOTS
 │   ├── sessions.mjs      # Session list: tmux panes, agent, state, preview
+│   ├── shared-result.mjs # One shared, briefly cached result for concurrent callers
 │   ├── snapshot.mjs      # Saved sessions and restore after a reboot
 │   ├── machines.mjs      # Other machines in the tailnet, owner identity
 │   ├── repos.mjs         # git repositories under TERMI_ROOTS

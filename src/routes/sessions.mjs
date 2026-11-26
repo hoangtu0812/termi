@@ -1,9 +1,3 @@
-import { fail } from '../errors.mjs';
-import { target, tmux } from '../tmux/client.mjs';
-import { validName } from '../validate.mjs';
-
-const RENAME_REFUSED = 'Không đổi tên được (trùng tên?)';
-
 async function restoreAll({ sessions, snapshots }) {
   const done = [];
   const failed = [];
@@ -31,14 +25,12 @@ export function sessionRoutes({ sessions, snapshots }) {
     },
 
     async 'POST /api/sessions/rename'(_, body) {
-      if (!validName(body.name) || !validName(body.to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
-      await tmux('rename-session', '-t', target(body.name), body.to).catch(() => { throw fail(409, RENAME_REFUSED); });
+      await sessions.rename(body.name, body.to);
       return { ok: true };
     },
 
     async 'POST /api/sessions/kill'(_, body) {
-      if (!validName(body.name)) throw fail(400, 'Phiên không hợp lệ');
-      await tmux('kill-session', '-t', target(body.name)).catch(() => { throw fail(404, 'Không tìm thấy phiên'); });
+      await sessions.kill(body.name);
       await snapshots.forget(body.name);
       return { ok: true };
     },

@@ -84,6 +84,10 @@ test('session lifecycle in tmux', async t => {
   const usage = (await app.get('/api/usage?session=alpha')).json();
   assert.equal(usage.session.name, 'alpha');
   assert.equal(usage.session.agent, null);
+  assert.equal((await app.get('/api/usage?session=nobody')).json().session, null);
+  const burst = await Promise.all([1, 2, 3].map(() => app.get('/api/sessions').then(res => res.json())));
+  assert.deepEqual(burst[1], burst[0]);
+  assert.deepEqual(burst[2], burst[0]);
 
   const projects = (await app.get('/api/projects')).json();
   assert.deepEqual(projects.map(p => [p.dir, p.sessions]), [[app.work, ['alpha']]]);

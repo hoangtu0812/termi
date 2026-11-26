@@ -1,15 +1,9 @@
 import { machineUsage } from '../system.mjs';
-import { validName } from '../validate.mjs';
-
-async function findSession(sessions, name) {
-  if (!validName(name)) return null;
-  return (await sessions.list()).find(session => session.name === name) || null;
-}
 
 export function usageRoutes({ sessions, agents, machines, home }) {
   return {
     async 'GET /api/usage'(query) {
-      const session = await findSession(sessions, query.get('session'));
+      const session = await sessions.locate(query.get('session'));
       const [machine, limits, tokens] = await Promise.all([
         machineUsage(home),
         agents.limits(),

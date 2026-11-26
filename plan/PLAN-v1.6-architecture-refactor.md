@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.5 |
+| Version | 1.6 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 | Applies to | termi 0.12.0 → 1.0.0 |
@@ -31,7 +31,7 @@ Bring the codebase in line with `AGENTS.md` without changing user-visible behavi
 
 - Behavior-preserving: refactor phases change structure only. Any bug fix found on the way gets its own `fix:` commit and test.
 - Move first, then improve: extract code verbatim into its new module, run tests, then clean it up in a separate commit.
-- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.3-implementation-notes.md` (or an `ADR`), in the same commit.
+- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.4-implementation-notes.md` (or an `ADR`), in the same commit.
 - Each phase ends green: `npm test` passes and CI is green.
 
 ## 4. Phases
@@ -65,7 +65,7 @@ Result: 35 tests pass; `npm run check` reports 0 errors and 21 allowlisted legac
 - [x] `vapid.json` is read strictly: a corrupt key stops the server with a clear message instead of being regenerated.
 - [x] `sessions.json` is changed only through `store.update`, so the snapshot, close, restore and dismiss paths no longer overwrite each other.
 - [x] The former `src/server.mjs` moved to `src/app.mjs` (see its line history from before the move with `git blame -C -C src/app.mjs`), which exports `init(config)` and `start(config)`; all top-level `await` and timers moved into them. `src/server.mjs` is a 9-line entry point, so the installers keep working unchanged.
-- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.3-implementation-notes.md`.
+- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.4-implementation-notes.md`.
 - [x] Tests: atomic writes, 50 concurrent updates, write order, failed updates, corrupt files (strict and lenient), `init` keeps the VAPID key and refuses a corrupt one, config parsing, and a child-process test that imports every library module with an empty `HOME` and asserts nothing was created.
 
 Done when: importing any module has no side effects.
@@ -78,7 +78,7 @@ Result: 48 tests pass. Running the old `server.mjs` under the same test creates 
 - [x] `src/tmux/screen.mjs` (`agentState`, `parseChoices`, `parseMulti`, `stepsToSubmit`), `src/tmux/client.mjs` (`tmux`, `target`, `serverStartTime`).
 - [x] `src/validate.mjs` (all `valid*` functions, `validKey`, `safePath`, `safeDir`); `safePath` now always takes the roots explicitly.
 - [x] `src/text.mjs` (`plainText`, `prettyModel`, `clip`); `src/errors.mjs` (`fail`).
-- [x] Moved code was rewritten to the rules (no comments, small functions, named constants); rationale moved to `docs/NOTES-v1.3-implementation-notes.md`.
+- [x] Moved code was rewritten to the rules (no comments, small functions, named constants); rationale moved to `docs/NOTES-v1.4-implementation-notes.md`.
 - [x] Before the old code was deleted, old and new implementations were compared on 702 inputs (validators, model names, markdown, 15 agent screens, git status/numstat/log, the real commit history of this repo and 400 random commit graphs) with identical results.
 - [x] Tests split: `test/git.test.mjs` (including stage/unstage/commit against a temporary repository), `test/screen.test.mjs`, `test/validate.test.mjs`, `test/text.test.mjs`.
 
@@ -112,12 +112,25 @@ Done when: `src/app.mjs` no longer exists; its code lives in the modules above. 
 
 Result: 103 tests pass. The baseline tests found a Phase 4 regression (the snapshot threw for sessions without an agent), fixed in its own commit before the split. Old and new servers were run side by side on the development machine's real tmux and agent data: 27 of 27 responses identical, including chat, capture and usage of two live Claude Code sessions. Server logs are now in English. The Codex adapter was split into smaller functions to meet the 40-line limit.
 
-### Phase 6 — Session performance (v0.18.0)
+### Phase 6 — Session performance (v0.18.0) — done
 
-- One `SessionService` that shares an in-flight `sessions()` call and caches the result for 1 s; all routes and the watcher read from it.
-- `usage(name)` looks up one session without rebuilding the list.
-- Parallelize per-pane `claudeSessionInfo` and read the usage file once per refresh.
-- Measure before and after (`sessions()` time with 10 panes) and record the numbers in the release notes.
+- [x] `src/shared-result.mjs`: callers that arrive while the session list is being built share that build, and the result is reused for 1 s. Creating, renaming and killing a session invalidates it, so the next request sees the change at once. Routes, the snapshot and the watcher all read from it.
+- [x] `sessions.locate(name)` lists the panes of one session only and skips screen capture, git and transcripts. `/api/usage` uses it; `/api/chat` and `/api/capture` use `sessions.find(name)`, which adds the screen state for that one session.
+- [x] The conversation of each agent pane is looked up in parallel instead of one pane at a time.
+- [x] `claude-usage.json` is parsed once per change (inode, mtime and size) instead of once per session on every refresh.
+- [x] Measured with `createSessions` directly, median of 15 runs, cache expired between runs:
+
+  | Case | Before | After |
+  |---|---|---|
+  | One list, 10 agent panes | 18–19 ms | 18–19 ms |
+  | 5 concurrent lists, 10 agent panes | 63–68 ms | 19 ms |
+  | Usage lookup of one session, 10 panes | 18 ms | 6–7 ms |
+  | One list, 2 real Claude Code sessions | 11.6 ms | 10.9 ms |
+  | 5 concurrent lists, 2 real sessions | 27 ms | 11 ms |
+
+  A single list is not faster: its time is the tmux, `ps` and `git` processes it starts. The gain is that the watcher and every open device share one build per second instead of starting their own.
+
+Result: 109 tests pass. Old and new servers returned identical responses for 27 requests against the real tmux and agent data.
 
 ### Phase 7 — Client split (v0.19.0)
 
@@ -156,5 +169,6 @@ Update the checkboxes and this document's version when a phase lands.
 | 1.3 | 2026-11-26 | Phase 3 done; statusline data directory added to Phase 4. |
 | 1.4 | 2026-11-26 | Phase 4 done; HTTP guard tests partly delivered early. |
 | 1.5 | 2026-11-26 | Phase 5 done; `src/app.mjs` removed. |
+| 1.6 | 2026-11-26 | Phase 6 done; measurements recorded. |
 
 Each phase's release notes link back to this plan.

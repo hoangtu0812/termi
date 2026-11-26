@@ -67,3 +67,13 @@ export function toMessage(who, text) {
   if (!text?.trim() || isInjected(text)) return null;
   return { who, text: text.trim() };
 }
+
+export function cachedJsonFile(file) {
+  let cached = { version: null, value: null };
+  return async function read() {
+    const stat = await fs.stat(file).catch(() => null);
+    const version = stat && `${stat.ino}:${stat.mtimeMs}:${stat.size}`;
+    if (version !== cached.version) cached = { version, value: version && await readJsonFile(file) };
+    return cached.value;
+  };
+}
