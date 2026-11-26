@@ -1,0 +1,662 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover,interactive-widget=resizes-content">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#111318">
+<link rel="manifest" href="/manifest.json">
+<link rel="icon" href="/icon.svg">
+<link rel="apple-touch-icon" href="/icon.svg">
+<title>termi</title>
+<style>
+:root {
+  --bg:#111318; --panel:#171a21; --card:#1d2129; --hover:#252a34; --line:#2a2f3a; --line2:#353b48;
+  --fg:#e8eaee; --dim:#8d94a3; --faint:#5d6473;
+  --acc:#e07a55; --acc-soft:#e07a5522; --ok:#4fbf7f; --ok-soft:#4fbf7f22; --warn:#e8b339; --warn-soft:#e8b33922;
+  --add:#4fbf7f; --del:#ef6b73; --blue:#6aa7ff;
+  --r:12px; --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: light) {
+  :root { --bg:#f6f7f9; --panel:#ffffff; --card:#ffffff; --hover:#eef0f4; --line:#e4e7ec; --line2:#d5d9e0;
+    --fg:#171a21; --dim:#5f6675; --faint:#9aa1ae; --acc:#c95f3a; --acc-soft:#c95f3a1a; --ok:#1f9d5c; --ok-soft:#1f9d5c1a;
+    --warn:#b7810c; --warn-soft:#b7810c1a; --add:#1f9d5c; --del:#d33f49; --blue:#2f6fdf; }
+}
+* { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+html,body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.45 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+button,select,input,textarea { font:inherit; color:inherit; }
+button { cursor:pointer; }
+svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stroke-width:2; stroke-linecap:round; stroke-linejoin:round; }
+[hidden] { display:none !important; }
+
+/* ---------- Khung ---------- */
+#app { display:grid; grid-template-columns:300px minmax(0,1fr); grid-template-rows:minmax(0,1fr); height:100dvh; }
+#side, #main { min-width:0; }
+#side { display:flex; flex-direction:column; min-height:0; background:var(--panel); border-right:1px solid var(--line); padding-top:env(safe-area-inset-top); }
+#main { display:flex; flex-direction:column; min-width:0; min-height:0; padding-top:env(safe-area-inset-top); }
+#tabbar { display:none; }
+
+.bar { display:flex; align-items:center; gap:8px; padding:10px 12px; min-height:56px; border-bottom:1px solid var(--line); }
+.brand { display:flex; align-items:center; gap:8px; font-weight:700; font-size:17px; flex:1; letter-spacing:-.01em; }
+.brand img { width:26px; height:26px; border-radius:7px; }
+.ibtn { display:inline-grid; place-items:center; width:38px; height:38px; border-radius:10px; border:0; background:transparent; color:var(--dim); }
+.ibtn:hover { background:var(--hover); color:var(--fg); }
+.ibtn.on { color:var(--acc); }
+.btn { display:inline-flex; align-items:center; justify-content:center; gap:6px; height:38px; padding:0 14px; border-radius:10px; border:1px solid var(--line2); background:var(--card); font-size:14px; font-weight:500; white-space:nowrap; }
+.btn:hover { background:var(--hover); }
+.btn.pri { background:var(--acc); border-color:var(--acc); color:#fff; }
+.btn.pri:hover { filter:brightness(1.08); }
+.btn.sm { height:32px; padding:0 10px; font-size:13px; }
+.btn:disabled { opacity:.5; cursor:default; }
+.btn.danger { color:var(--del); }
+
+/* ---------- Danh sách phiên ---------- */
+#sessions { flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:4px; }
+.sess { display:flex; flex-direction:column; gap:4px; text-align:left; width:100%; padding:10px 12px; border-radius:var(--r); border:1px solid transparent; background:transparent; }
+.sess:hover { background:var(--hover); }
+.sess.cur { background:var(--card); border-color:var(--line2); }
+.sess .top { display:flex; align-items:center; gap:8px; }
+.sess .nm { font-weight:600; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sess .dir { font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sess .pv { font:11.5px/1.45 var(--mono); color:var(--dim); white-space:pre; overflow:hidden; text-overflow:ellipsis; max-height:3.1em; }
+.state { display:inline-flex; align-items:center; gap:6px; font-size:12px; color:var(--dim); white-space:nowrap; }
+.dot { width:8px; height:8px; border-radius:50%; background:var(--faint); flex:none; }
+.st-working .dot { background:var(--acc); animation:pulse 1.2s infinite; } .st-working { color:var(--acc); }
+.st-waiting .dot { background:var(--warn); animation:pulse .8s infinite; } .st-waiting { color:var(--warn); }
+.st-idle .dot { background:var(--ok); } .st-idle { color:var(--ok); }
+@keyframes pulse { 50% { opacity:.3; } }
+.empty { padding:32px 16px; text-align:center; color:var(--dim); display:flex; flex-direction:column; align-items:center; gap:12px; }
+.side-foot { padding:10px 12px calc(10px + env(safe-area-inset-bottom)); border-top:1px solid var(--line); display:flex; gap:8px; }
+.side-foot .btn { flex:1; }
+
+/* ---------- Thanh trên của phần chính ---------- */
+#top .title { flex:1; min-width:0; display:flex; flex-direction:column; }
+#top .title b { font-size:16px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+#top .title span { font-size:12px; }
+.seg { display:flex; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:3px; gap:2px; }
+.seg button { display:flex; align-items:center; gap:6px; border:0; background:transparent; color:var(--dim); padding:6px 12px; border-radius:7px; font-size:14px; font-weight:500; }
+.seg button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
+
+#panes { flex:1; min-height:0; position:relative; }
+.pane { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
+.scroll { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; }
+
+/* ---------- Terminal ---------- */
+#frame { flex:1; width:100%; border:0; background:#16181d; }
+.keys { display:flex; gap:6px; padding:8px 8px 0; overflow-x:auto; scrollbar-width:none; }
+.keys::-webkit-scrollbar { display:none; }
+.keys button { flex:none; height:34px; min-width:44px; padding:0 10px; border-radius:8px; border:1px solid var(--line2); background:var(--card); font:13px var(--mono); }
+.keys button:active { background:var(--hover); }
+.compose { display:flex; align-items:flex-end; gap:6px; padding:8px; }
+.compose textarea { flex:1; min-height:40px; max-height:160px; padding:9px 12px; border-radius:20px; border:1px solid var(--line2); background:var(--card); resize:none; line-height:1.4; }
+.compose textarea:focus { outline:none; border-color:var(--acc); }
+.compose .ibtn { width:40px; height:40px; border-radius:50%; }
+.compose .send { background:var(--acc); color:#fff; }
+.compose .send:hover { background:var(--acc); filter:brightness(1.1); color:#fff; }
+
+/* ---------- File ---------- */
+.toolbar { display:flex; align-items:center; gap:8px; padding:10px 12px; border-bottom:1px solid var(--line); flex-wrap:wrap; }
+.crumb { flex:1; min-width:0; font:13px var(--mono); color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
+.row { display:flex; align-items:center; gap:10px; width:100%; padding:10px 14px; border:0; border-bottom:1px solid var(--line); background:transparent; text-align:left; min-height:46px; }
+.row:hover { background:var(--hover); }
+.row .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.row .meta { font-size:12px; color:var(--faint); white-space:nowrap; }
+.row .i { color:var(--dim); }
+.row.dir .i { color:var(--blue); }
+select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid var(--line2); background:var(--card); max-width:100%; min-width:0; }
+
+/* ---------- Git ---------- */
+.grp { padding:12px 14px 4px; display:flex; align-items:center; gap:8px; font-size:12px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; }
+.grp span { flex:1; }
+.chg { display:flex; align-items:center; gap:10px; padding:6px 8px 6px 14px; min-height:44px; border-bottom:1px solid var(--line); }
+.chg .p { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; cursor:pointer; direction:rtl; text-align:left; }
+.chg .p:hover { color:var(--acc); }
+.badge { display:inline-grid; place-items:center; width:20px; height:20px; border-radius:5px; font:700 11px var(--mono); background:var(--hover); color:var(--dim); flex:none; }
+.badge.M { color:var(--warn); background:var(--warn-soft); } .badge.A, .badge.U { color:var(--ok); background:var(--ok-soft); }
+.badge.D { color:var(--del); background:#ef6b7322; } .badge.R { color:var(--blue); background:#6aa7ff22; }
+.chip { font:12px var(--mono); padding:4px 8px; border-radius:6px; background:var(--hover); color:var(--dim); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; }
+.commit { display:flex; gap:8px; padding:12px 14px; align-items:flex-end; }
+.commit textarea { flex:1; min-height:40px; max-height:140px; padding:9px 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); resize:vertical; }
+.log { padding:4px 0 24px; }
+.log div { padding:3px 14px; white-space:pre; font:12px/1.5 var(--mono); color:var(--faint); }
+.log div.c { cursor:pointer; color:var(--fg); } .log div.c:hover { background:var(--hover); }
+.log .h { color:var(--acc); } .log .r { color:var(--ok); font-weight:600; } .log .t { color:var(--faint); }
+
+/* ---------- Xem file/diff ---------- */
+#viewer { position:absolute; inset:0; background:var(--bg); display:flex; flex-direction:column; z-index:5; }
+#viewer .bar b { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
+#v-body pre { margin:0; padding:12px 14px 40px; font:12.5px/1.55 var(--mono); white-space:pre; tab-size:4; }
+#v-body img { max-width:100%; display:block; margin:16px auto; border-radius:8px; }
+.diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
+.diff .f { color:var(--blue); font-weight:600; } .diff .hk { color:var(--faint); }
+
+/* ---------- Hộp thoại & thông báo ---------- */
+dialog { background:var(--panel); color:var(--fg); border:1px solid var(--line2); border-radius:16px; padding:0; width:min(94vw,460px); max-height:85dvh; }
+dialog::backdrop { background:#000a; }
+dialog form { display:flex; flex-direction:column; gap:12px; padding:18px; }
+dialog h3 { margin:0; font-size:17px; }
+dialog label { display:flex; flex-direction:column; gap:6px; font-size:13px; color:var(--dim); }
+dialog input:not([type=checkbox]), dialog select { height:42px; padding:0 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--fg); font-size:15px; width:100%; }
+dialog .chk { flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:14px; }
+dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+#hist-list { display:flex; flex-direction:column; overflow:auto; max-height:60dvh; margin:0 -18px; border-top:1px solid var(--line); }
+#hist-list button { text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; padding:12px 18px; display:flex; flex-direction:column; gap:3px; }
+#hist-list button:hover { background:var(--hover); }
+#hist-list .t1 { display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; }
+#hist-list .t2 { font-size:12px; color:var(--faint); }
+.menu { display:flex; flex-direction:column; gap:4px; }
+.menu button { justify-content:flex-start; height:46px; }
+#toast { position:fixed; left:50%; bottom:calc(84px + env(safe-area-inset-bottom)); transform:translateX(-50%); background:var(--fg); color:var(--bg); padding:10px 16px; border-radius:12px; font-size:14px; max-width:min(92vw,520px); z-index:20; box-shadow:0 8px 24px #0005; white-space:pre-wrap; }
+#toast.err { background:var(--del); color:#fff; }
+
+/* ---------- Điện thoại ---------- */
+@media (max-width: 899px) {
+  #app { grid-template-columns:minmax(0,1fr); grid-template-rows:minmax(0,1fr) auto; }
+  #side, #main { grid-row:1; grid-column:1; }
+  #side { border-right:0; }
+  body:not([data-tab=sessions]) #side { display:none; }
+  body[data-tab=sessions] #main { display:none; }
+  .side-foot { display:none; }
+  #top .seg { display:none; }
+  #tabbar { display:flex; grid-row:2; background:var(--panel); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
+  #tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0 6px; border:0; background:transparent; color:var(--faint); font-size:11px; font-weight:500; }
+  #tabbar button.on { color:var(--acc); }
+  #tabbar svg.i { width:22px; height:22px; }
+  .sess { padding:12px; border-color:var(--line); background:var(--card); margin-bottom:4px; }
+  #toast { bottom:calc(76px + env(safe-area-inset-bottom)); }
+}
+@media (min-width: 900px) { .only-mobile { display:none !important; } }
+</style>
+</head>
+<body data-tab="sessions">
+<div id="app">
+  <aside id="side">
+    <div class="bar">
+      <div class="brand"><img src="/icon.svg" alt="">termi</div>
+      <button class="ibtn" id="b-hist" title="Hội thoại Claude cũ" aria-label="Hội thoại Claude cũ" data-i="history"></button>
+      <button class="ibtn" id="b-bell" title="Thông báo" aria-label="Bật thông báo" data-i="bell"></button>
+      <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
+    </div>
+    <div id="sessions"></div>
+    <div class="side-foot"><button class="btn pri" id="b-new"><span data-i="plus"></span>Phiên mới</button></div>
+  </aside>
+
+  <section id="main">
+    <div class="bar" id="top">
+      <button class="ibtn only-mobile" id="b-back" aria-label="Danh sách phiên" data-i="back"></button>
+      <div class="title"><b id="t-name">termi</b><span id="t-state" class="state"></span></div>
+      <div class="seg" id="seg">
+        <button data-t="term"><span data-i="term"></span>Terminal</button>
+        <button data-t="files"><span data-i="folder"></span>File</button>
+        <button data-t="git"><span data-i="git"></span>Git</button>
+      </div>
+      <button class="ibtn" id="b-menu" aria-label="Tuỳ chọn phiên" data-i="more"></button>
+    </div>
+
+    <div id="panes">
+      <div class="pane" id="p-none">
+        <div class="empty" style="margin:auto">
+          <span data-i="term" style="opacity:.5"></span>
+          <div>Chọn một phiên hoặc tạo phiên mới</div>
+          <button class="btn pri" data-new><span data-i="plus"></span>Phiên mới</button>
+        </div>
+      </div>
+
+      <div class="pane" id="p-term" hidden>
+        <iframe id="frame" title="Terminal"></iframe>
+        <div class="keys" id="keys"></div>
+        <div class="compose">
+          <button class="ibtn" id="b-attach" title="Gửi ảnh/file" aria-label="Gửi ảnh hoặc file" data-i="clip"></button>
+          <input type="file" id="f-input" multiple hidden>
+          <textarea id="text" rows="1" placeholder="Nhắn cho Claude… (gõ tiếng Việt thoải mái)" aria-label="Nội dung gửi"></textarea>
+          <button class="ibtn send" id="b-send" title="Gửi" aria-label="Gửi" data-i="send"></button>
+        </div>
+      </div>
+
+      <div class="pane" id="p-files" hidden>
+        <div class="toolbar">
+          <button class="ibtn" id="f-up" aria-label="Lên thư mục cha" data-i="up"></button>
+          <button class="ibtn" id="f-home" aria-label="Về thư mục phiên" data-i="home"></button>
+          <div class="crumb" id="f-crumb"></div>
+          <button class="ibtn" id="f-reload" aria-label="Tải lại" data-i="refresh"></button>
+        </div>
+        <div class="scroll" id="f-list"></div>
+      </div>
+
+      <div class="pane" id="p-git" hidden>
+        <div class="scroll">
+          <div class="toolbar">
+            <select class="sel" id="g-repo" aria-label="Repo" style="flex:1"></select>
+            <button class="ibtn" id="g-reload" aria-label="Tải lại" data-i="refresh"></button>
+          </div>
+          <div class="toolbar">
+            <select class="sel" id="g-branch" aria-label="Branch" style="flex:1"></select>
+            <span class="chip" id="g-track"></span>
+            <button class="btn sm" data-op="fetch">Fetch</button>
+            <button class="btn sm" data-op="pull">Pull</button>
+            <button class="btn sm" data-op="push">Push</button>
+          </div>
+          <div id="g-changes"></div>
+          <div class="commit" id="g-commit-box">
+            <textarea id="g-msg" rows="1" placeholder="Nội dung commit…" aria-label="Nội dung commit"></textarea>
+            <button class="btn pri" id="g-commit">Commit</button>
+          </div>
+          <div class="grp"><span>Lịch sử</span><button class="btn sm" id="g-all">Xem toàn bộ thay đổi</button></div>
+          <div class="log" id="g-log"></div>
+        </div>
+      </div>
+
+      <div id="viewer" hidden>
+        <div class="bar">
+          <button class="ibtn" id="v-close" aria-label="Đóng" data-i="back"></button>
+          <b id="v-title"></b>
+          <button class="btn sm" id="v-insert" hidden>Chèn vào prompt</button>
+        </div>
+        <div class="scroll" id="v-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <nav id="tabbar">
+    <button data-t="sessions"><span data-i="list"></span>Phiên</button>
+    <button data-t="term"><span data-i="term"></span>Terminal</button>
+    <button data-t="files"><span data-i="folder"></span>File</button>
+    <button data-t="git"><span data-i="git"></span>Git</button>
+  </nav>
+</div>
+
+<dialog id="d-new">
+  <form method="dialog">
+    <h3>Phiên mới</h3>
+    <label>Tên phiên<input name="name" placeholder="vd: termi" pattern="[A-Za-z0-9_\-]{1,40}" required autocapitalize="off" autocomplete="off"></label>
+    <label>Thư mục<select name="dir" required></select></label>
+    <label class="chk"><input type="checkbox" name="claude" checked> Chạy Claude ngay</label>
+    <div class="acts"><button class="btn" value="cancel" formnovalidate>Huỷ</button><button class="btn pri" value="ok">Tạo phiên</button></div>
+  </form>
+</dialog>
+
+<dialog id="d-hist">
+  <form method="dialog">
+    <h3>Mở lại hội thoại Claude</h3>
+    <div id="hist-list"></div>
+    <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
+  </form>
+</dialog>
+
+<dialog id="d-menu">
+  <form method="dialog" class="menu">
+    <h3 id="m-title"></h3>
+    <button class="btn" value="rename"><span data-i="edit"></span>Đổi tên phiên</button>
+    <button class="btn danger" value="kill"><span data-i="trash"></span>Đóng phiên (dừng Claude)</button>
+    <button class="btn" value="cancel">Huỷ</button>
+  </form>
+</dialog>
+
+<div id="toast" hidden></div>
+
+<script>
+// ---------- Tiện ích ----------
+const $ = id => document.getElementById(id);
+const P = {
+  history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
+  bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
+  plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="m15 18-6-6 6-6"/>', more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
+  term:'<path d="m4 17 6-5-6-5M12 19h8"/>', folder:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
+  git:'<circle cx="6" cy="6" r="2.5"/><circle cx="6" cy="18" r="2.5"/><circle cx="18" cy="8" r="2.5"/><path d="M6 8.5v7M18 10.5c0 4-6 3-11 6"/>',
+  list:'<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>', clip:'<path d="m21.4 11-9.2 9.2a6 6 0 0 1-8.5-8.5l9.2-9.2a4 4 0 0 1 5.7 5.7l-9.2 9.2a2 2 0 0 1-2.8-2.8l8.5-8.5"/>',
+  send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
+  refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
+  edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
+  minus:'<path d="M5 12h14"/>',
+};
+const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
+const fillIcons = root => root.querySelectorAll('[data-i]').forEach(e => { e.insertAdjacentHTML('afterbegin', icon(e.dataset.i)); e.removeAttribute('data-i'); });
+fillIcons(document);
+
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const short = d => (d || '').replace(/^\/Users\/[^/]+/, '~');
+// Ô dùng direction:rtl để cắt phần đầu đường dẫn; ký tự LRM giữ dấu / đúng chỗ
+const ltr = s => '‎' + s + '‎';
+const ago = t => { const s = (Date.now() - t) / 1000; return s < 60 ? 'vừa xong' : s < 3600 ? `${s / 60 | 0} phút trước` : s < 86400 ? `${s / 3600 | 0} giờ trước` : `${s / 86400 | 0} ngày trước`; };
+const size = n => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+const STATE = { working:'Đang chạy', waiting:'Chờ bạn xác nhận', idle:'Rảnh', shell:'Shell' };
+const wide = () => matchMedia('(min-width: 900px)').matches;
+const TERM = location.protocol === 'https:' ? `https://${location.hostname}:8443` : `http://${location.hostname}:7681`;
+
+async function api(path, body) {
+  const r = await fetch(path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
+  const j = await r.json().catch(() => ({ error: r.statusText }));
+  if (!r.ok) throw new Error(j.error || r.status);
+  return j;
+}
+let toastT;
+function toast(msg, err) {
+  const t = $('toast'); t.textContent = msg; t.className = err ? 'err' : ''; t.hidden = false;
+  clearTimeout(toastT); toastT = setTimeout(() => t.hidden = true, err ? 6000 : 2500);
+}
+const safely = fn => (...a) => fn(...a).catch(e => toast(e.message, true));
+function autosize(t) { t.style.height = 'auto'; t.style.height = Math.min(t.scrollHeight, 160) + 'px'; }
+
+// ---------- Trạng thái trong URL: s=phiên, t=tab, d=thư mục file, g=repo git, v=đang xem ----------
+const st = () => Object.fromEntries(new URLSearchParams(location.hash.slice(1)));
+function go(patch) {
+  const n = { ...st(), ...patch };
+  for (const k in n) if (n[k] == null || n[k] === '') delete n[k];
+  location.hash = new URLSearchParams(n).toString();
+}
+addEventListener('hashchange', render);
+
+const S = { list: [], repos: null, seen: {} };
+const cur = () => S.list.find(x => x.name === st().s);
+
+function render() {
+  const s = st();
+  if (s.v && !$('v-body').childElementCount) return go({ v: null });
+  let tab = s.t || (s.s ? 'term' : 'sessions');
+  if (wide() && tab === 'sessions') tab = 'term';
+  document.body.dataset.tab = tab;
+  for (const b of document.querySelectorAll('#tabbar button, #seg button')) b.classList.toggle('on', b.dataset.t === tab);
+  $('viewer').hidden = !s.v;
+  renderSessions(); renderTop();
+  const needSession = tab === 'term' || tab === 'files';
+  const show = needSession && !s.s ? 'none' : tab;
+  for (const p of ['none', 'term', 'files', 'git']) $('p-' + p).hidden = p !== show;
+  if (s.v) return; // đang xem file/diff: giữ nguyên pane phía sau, không tải lại
+  if (show === 'term') ensureTerm(s.s);
+  if (show === 'files') loadFiles(s.d || cur()?.dir);
+  if (show === 'git') loadGit(s.g || cur()?.dir);
+}
+
+// ---------- Phiên ----------
+function stateEl(state) {
+  const e = el('span', 'state st-' + state); e.append(el('span', 'dot'), STATE[state] || ''); return e;
+}
+function renderSessions() {
+  const box = $('sessions'), sel = st().s;
+  if (!S.list.length) {
+    const e = el('div', 'empty'); e.append(el('div', null, 'Chưa có phiên nào'));
+    const b = el('button', 'btn pri'); b.innerHTML = icon('plus') + 'Tạo phiên'; b.onclick = newSession; e.append(b);
+    return box.replaceChildren(e);
+  }
+  box.replaceChildren(...S.list.map(x => {
+    const b = el('button', 'sess' + (x.name === sel ? ' cur' : ''));
+    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state));
+    b.append(top, el('div', 'dir', short(x.dir)));
+    if (x.preview) b.append(el('div', 'pv', x.preview));
+    b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
+    return b;
+  }));
+}
+function renderTop() {
+  const x = cur(), s = st();
+  $('t-name').textContent = s.s || 'termi';
+  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state) : el('span', 'state'), { id: 't-state' }));
+  if (x) $('t-state').append(' · ' + short(x.dir));
+  $('b-menu').hidden = !x;
+}
+async function poll() {
+  try {
+    const list = await api('/api/sessions');
+    for (const x of list) {
+      // Báo trong app khi đang mở (khi đóng app thì thông báo đẩy lo)
+      if (x.state === 'waiting' && S.seen[x.name] && S.seen[x.name] !== 'waiting') { toast(`${x.name}: Claude đang chờ bạn xác nhận`); navigator.vibrate?.(200); }
+      S.seen[x.name] = x.state;
+    }
+    S.list = list;
+    renderSessions(); renderTop();
+  } catch {}
+}
+setInterval(() => document.visibilityState === 'visible' && poll(), 3000);
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && poll());
+
+async function loadRepos(select, selected) {
+  S.repos ??= await api('/api/repos').catch(() => []);
+  const opts = [...new Set([selected, ...S.list.map(x => x.dir), ...S.repos].filter(Boolean))];
+  select.replaceChildren(...opts.map(d => { const o = el('option', null, short(d)); o.value = d; o.selected = d === selected; return o; }));
+}
+async function newSession() {
+  const f = $('d-new').querySelector('form');
+  await loadRepos(f.dir, cur()?.dir);
+  $('d-new').showModal();
+}
+for (const b of [$('b-new'), $('b-new-m'), ...document.querySelectorAll('[data-new]')]) b.onclick = newSession;
+$('d-new').onclose = safely(async () => {
+  if ($('d-new').returnValue !== 'ok') return;
+  const f = $('d-new').querySelector('form');
+  await api('/api/sessions', { name: f.name.value, dir: f.dir.value, claude: f.claude.checked });
+  const name = f.name.value; f.reset();
+  await poll(); go({ s: name, t: 'term', d: null, g: null });
+});
+
+$('b-hist').onclick = safely(async () => {
+  const box = $('hist-list');
+  box.replaceChildren(el('div', 'empty', 'Đang tải…'));
+  $('d-hist').showModal();
+  const list = await api('/api/history');
+  box.replaceChildren(...list.map(h => {
+    const b = el('button'); b.type = 'button';
+    b.append(el('span', 't1', h.title), el('span', 't2', `${short(h.cwd)} · ${ago(h.mtime)}`));
+    b.onclick = safely(async () => {
+      const base = (h.cwd.split('/').pop() || 'claude').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30) || 'claude';
+      const name = prompt('Tên phiên mới để mở lại hội thoại:', base);
+      if (!name) return;
+      await api('/api/sessions', { name, dir: h.cwd, resume: h.id });
+      $('d-hist').close(); await poll(); go({ s: name, t: 'term', d: null, g: null });
+    });
+    return b;
+  }));
+  if (!list.length) box.replaceChildren(el('div', 'empty', 'Không có hội thoại nào'));
+});
+
+$('b-menu').onclick = () => { $('m-title').textContent = st().s; $('d-menu').showModal(); };
+$('d-menu').onclose = safely(async () => {
+  const name = st().s, v = $('d-menu').returnValue;
+  if (v === 'rename') {
+    const to = prompt('Tên mới (chữ, số, - và _):', name);
+    if (!to || to === name) return;
+    await api('/api/sessions/rename', { name, to });
+    S.termName = null; await poll(); go({ s: to });
+  } else if (v === 'kill') {
+    if (!confirm(`Đóng phiên "${name}"? Claude và mọi tiến trình trong phiên sẽ dừng.`)) return;
+    await api('/api/sessions/kill', { name });
+    await poll(); go({ s: null, t: wide() ? null : 'sessions' });
+  }
+});
+$('b-back').onclick = () => go({ t: 'sessions', v: null });
+for (const b of document.querySelectorAll('#tabbar button, #seg button')) b.onclick = () => go({ t: b.dataset.t, v: null });
+
+// ---------- Terminal ----------
+function ensureTerm(name) {
+  if (S.termName === name) return;
+  S.termName = name;
+  $('frame').src = `${TERM}/?arg=${encodeURIComponent(name)}`;
+}
+const KEYS = [['Esc','Escape'],['⇧Tab','BTab'],['^C','C-c'],['↑','Up'],['↓','Down'],['←','Left'],['→','Right'],['Tab','Tab'],['⏎','Enter'],['PgUp','PageUp'],['PgDn','PageDown'],['^D','C-d']];
+$('keys').append(...KEYS.map(([label, key]) => {
+  const b = el('button', null, label); b.type = 'button';
+  b.onpointerdown = e => e.preventDefault(); // giữ bàn phím không bị đóng
+  b.onclick = safely(() => api('/api/send', { session: st().s, key }));
+  return b;
+}));
+const send = safely(async () => {
+  const t = $('text');
+  if (!t.value.trim()) return api('/api/send', { session: st().s, key: 'Enter' });
+  await api('/api/send', { session: st().s, text: t.value, enter: true });
+  t.value = ''; autosize(t);
+});
+$('b-send').onclick = send;
+$('text').oninput = e => autosize(e.target);
+$('text').onkeydown = e => {
+  // Máy tính: Enter gửi, Shift+Enter xuống dòng. Điện thoại: Enter luôn xuống dòng
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && wide()) { e.preventDefault(); send(); }
+};
+$('b-attach').onclick = () => $('f-input').click();
+$('f-input').onchange = safely(async e => {
+  const files = [...e.target.files]; e.target.value = '';
+  for (const f of files) {
+    toast(`Đang tải lên ${f.name}…`);
+    const r = await fetch('/api/upload', { method:'POST', headers:{ 'x-termi':'1', 'x-filename':encodeURIComponent(f.name) }, body:f });
+    const j = await r.json();
+    if (!r.ok) throw new Error(j.error);
+    insertText(j.path);
+  }
+  toast('Đã tải lên, đường dẫn đã chèn vào ô nhắn');
+});
+function insertText(s) {
+  const t = $('text');
+  t.value = (t.value && !t.value.endsWith(' ') ? t.value + ' ' : t.value) + s + ' ';
+  autosize(t);
+}
+
+// ---------- File ----------
+const loadFiles = safely(async dir => {
+  const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
+  S.filesDir = r.dir;
+  $('f-crumb').textContent = ltr(short(r.dir));
+  $('f-up').disabled = !r.parent;
+  $('f-up').onclick = () => go({ d: r.parent });
+  $('f-list').replaceChildren(...r.entries.map(f => {
+    const b = el('button', 'row' + (f.dir ? ' dir' : ''));
+    b.innerHTML = icon(f.dir ? 'folder' : 'file');
+    b.append(el('span', 'nm', f.name), el('span', 'meta', f.dir ? '' : `${size(f.size)} · ${ago(f.mtime)}`));
+    b.onclick = () => f.dir ? go({ d: f.path }) : openFile(f.path);
+    return b;
+  }));
+  if (!r.entries.length) $('f-list').replaceChildren(el('div', 'empty', 'Thư mục trống'));
+});
+$('f-home').onclick = () => go({ d: null });
+$('f-reload').onclick = () => loadFiles(S.filesDir);
+
+// ---------- Xem file / diff ----------
+function openViewer(title, node, insertPath) {
+  $('v-title').textContent = ltr(title);
+  $('v-body').replaceChildren(node);
+  $('v-body').scrollTop = 0;
+  $('v-insert').hidden = !insertPath || !st().s;
+  $('v-insert').onclick = () => { insertText(insertPath); go({ t: 'term', v: null }); };
+  go({ v: 1 });
+}
+$('v-close').onclick = () => history.back();
+const openFile = safely(async p => {
+  const r = await api('/api/file?path=' + encodeURIComponent(p));
+  let node;
+  if (r.image) { node = el('img'); node.src = '/api/raw?path=' + encodeURIComponent(p); node.alt = p; }
+  else node = el('pre', null, r.binary ? '(file nhị phân, không hiển thị được)' : r.text);
+  openViewer(short(p), node, p);
+});
+function diffNode(text) {
+  const pre = el('pre', 'diff');
+  pre.append(...text.split('\n').map(l => el('span',
+    /^(diff |\+\+\+ |--- |index )/.test(l) ? 'f' : l.startsWith('@@') ? 'hk' : l[0] === '+' ? 'a' : l[0] === '-' ? 'd' : '', l + '\n')));
+  return pre;
+}
+const openDiff = safely(async (title, qs) => {
+  const { text } = await api('/api/show?' + new URLSearchParams(qs));
+  openViewer(title, diffNode(text));
+});
+
+// ---------- Git ----------
+const loadGit = safely(async dir => {
+  await loadRepos($('g-repo'), dir);
+  dir ||= $('g-repo').value;
+  if (!dir) return $('g-changes').replaceChildren(el('div', 'empty', 'Không tìm thấy repo git nào'));
+  let g;
+  try { g = await api('/api/git?dir=' + encodeURIComponent(dir)); }
+  catch (e) {
+    $('g-changes').replaceChildren(el('div', 'empty', e.message)); $('g-log').replaceChildren();
+    $('g-branch').replaceChildren(); $('g-track').textContent = '';
+    return;
+  }
+  S.git = g;
+  const [branch, track = ''] = g.head.split('...');
+  $('g-track').textContent = (track.match(/\[(.*)\]/)?.[1] || (track ? 'đồng bộ' : 'chưa có upstream')).replace('ahead', '↑').replace('behind', '↓');
+  $('g-branch').replaceChildren(...[...new Set([branch, ...g.branches])].map(b => {
+    const o = el('option', null, b === branch ? `⎇ ${b}` : b); o.value = b; o.selected = b === branch; return o;
+  }));
+  $('g-branch').dataset.cur = branch;
+
+  const staged = g.files.filter(f => f.x !== ' ' && f.x !== '?');
+  const changed = g.files.filter(f => f.y !== ' ');
+  const group = (title, files, isStaged) => {
+    if (!files.length) return [];
+    const h = el('div', 'grp'); h.append(el('span', null, `${title} (${files.length})`));
+    const all = el('button', 'btn sm', isStaged ? 'Bỏ stage hết' : 'Stage hết');
+    all.onclick = () => gitOp(isStaged ? 'unstage' : 'stage', { paths: files.map(f => f.path) });
+    h.append(all);
+    return [h, ...files.map(f => {
+      const code = isStaged ? f.x : f.y === '?' ? 'U' : f.y;
+      const r = el('div', 'chg');
+      const p = el('span', 'p', ltr(f.path)); p.title = f.path;
+      p.onclick = () => f.y === '?' ? openFile(g.dir + '/' + f.path)
+        : openDiff(f.path, { dir: g.dir, file: f.path, ...(isStaged ? { staged: 1 } : {}) });
+      const act = el('button', 'ibtn'); act.innerHTML = icon(isStaged ? 'minus' : 'plus');
+      act.setAttribute('aria-label', isStaged ? 'Bỏ stage' : 'Stage');
+      act.onclick = () => gitOp(isStaged ? 'unstage' : 'stage', { paths: [f.path] });
+      r.append(el('span', 'badge ' + code, code), p, act);
+      return r;
+    })];
+  };
+  const nodes = [...group('Đã stage', staged, true), ...group('Thay đổi', changed, false)];
+  $('g-changes').replaceChildren(...(nodes.length ? nodes : [el('div', 'empty', 'Không có thay đổi nào ✓')]));
+  $('g-commit-box').hidden = !staged.length;
+
+  $('g-log').replaceChildren(...g.log.split('\n').filter(Boolean).map(line => {
+    const [head, refs = '', when = ''] = line.split('\t');
+    const m = head.match(/^(.*?)([0-9a-f]{7,40})$/);
+    const d = el('div', m ? 'c' : '');
+    if (!m) { d.textContent = head; return d; }
+    const close = refs.indexOf(')');
+    const [r, msg] = refs.startsWith(' (') && close > 0 ? [refs.slice(1, close + 1), refs.slice(close + 1)] : ['', refs];
+    d.append(m[1], el('span', 'h', m[2]), ' ', el('span', 'r', r), msg, '  ', el('span', 't', when));
+    d.onclick = () => openDiff(m[2], { dir: g.dir, rev: m[2] });
+    return d;
+  }));
+});
+const gitOp = safely(async (op, extra = {}) => {
+  const btns = document.querySelectorAll('#p-git button'); btns.forEach(b => b.disabled = true);
+  try {
+    if (['fetch', 'pull', 'push'].includes(op)) toast(`Đang ${op}…`);
+    const r = await api('/api/git/op', { dir: S.git.dir, op, ...extra });
+    if (r.output && op !== 'stage' && op !== 'unstage') toast(r.output.split('\n').slice(-3).join('\n'));
+    if (op === 'commit') $('g-msg').value = '';
+  } finally { btns.forEach(b => b.disabled = false); await loadGit(S.git.dir); }
+});
+for (const b of document.querySelectorAll('[data-op]')) b.onclick = () => gitOp(b.dataset.op);
+$('g-commit').onclick = () => gitOp('commit', { message: $('g-msg').value });
+$('g-msg').oninput = e => autosize(e.target);
+$('g-repo').onchange = () => go({ g: $('g-repo').value });
+$('g-reload').onclick = () => loadGit(S.git?.dir || $('g-repo').value);
+$('g-all').onclick = () => openDiff('Thay đổi chưa commit', { dir: S.git.dir });
+$('g-branch').onchange = e => {
+  const b = e.target.value;
+  if (confirm(`Chuyển sang branch "${b}"?`)) gitOp('checkout', { branch: b });
+  else e.target.value = e.target.dataset.cur;
+};
+
+// ---------- Thông báo đẩy ----------
+const b64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
+async function pushState() {
+  const reg = await navigator.serviceWorker?.getRegistration();
+  $('b-bell').classList.toggle('on', !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted');
+}
+$('b-bell').onclick = safely(async () => {
+  if (!('serviceWorker' in navigator) || !('PushManager' in window))
+    throw new Error('Trình duyệt chưa hỗ trợ thông báo. Trên iPhone: thêm termi vào Màn hình chính rồi mở từ biểu tượng đó.');
+  if (await Notification.requestPermission() !== 'granted') throw new Error('Bạn chưa cho phép thông báo');
+  const reg = await navigator.serviceWorker.ready;
+  const { key } = await api('/api/push/key');
+  const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
+  await api('/api/push/sub', sub.toJSON());
+  await api('/api/push/test', {});
+  toast('Đã bật thông báo: sẽ báo khi Claude xong việc hoặc cần bạn xác nhận');
+  pushState();
+});
+navigator.serviceWorker?.register('/sw.js').then(pushState).catch(() => {});
+
+addEventListener('resize', () => { const t = wide() ? 'w' : 'n'; if (S.layout && S.layout !== t) render(); S.layout = t; });
+poll().then(render);
+</script>
+</body>
+</html>
