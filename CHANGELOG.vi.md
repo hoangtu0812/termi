@@ -10,8 +10,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thêm
 - Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
-- Kế hoạch refactor kiến trúc `plan/PLAN-v1.6-architecture-refactor.md`.
-- Ghi chú cài đặt `docs/NOTES-v1.4-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
+- Kế hoạch refactor kiến trúc `plan/PLAN-v1.7-architecture-refactor.md`.
+- Ghi chú cài đặt `docs/NOTES-v1.5-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
 - `npm run check`: kiểm tra comment, độ dài file và dòng, cú pháp và tên tài liệu, không cần dependency; có allowlist cho file cũ và danh sách này chỉ được thu hẹp.
 - `npm run verify` (kiểm tra + test) và CI trên GitHub Actions cho Ubuntu và macOS.
 - `.editorconfig`.
@@ -31,6 +31,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Code riêng của từng agent (Claude Code, Codex, Antigravity) chuyển vào adapter riêng trong `src/agents/`.
 - Không còn `src/app.mjs`: lớp HTTP nằm trong `src/http/`, API chia mỗi nhóm một file trong `src/routes/`, Web Push trong `src/push/`; phiên, bản lưu phiên, máy trong tailnet và watchdog ttyd có module riêng; `src/start.mjs` nối chúng lại.
 - Log của server viết bằng tiếng Anh.
+- Giao diện web tách thành `public/css/` (10 file CSS) và `public/js/` (ES module gốc của trình duyệt); `index.html` chỉ còn markup. Sửa bất kỳ file giao diện nào cũng làm các trang đang mở tự tải lại.
 
 ### Hiệu năng
 - Danh sách phiên được dựng tối đa một lần mỗi giây và dùng chung cho mọi thiết bị đang mở cùng bộ theo dõi thông báo; 5 request cùng lúc với 10 phiên agent giảm từ khoảng 65 ms xuống 19 ms.

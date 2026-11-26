@@ -204,7 +204,9 @@ termi/
 │   ├── git/              # git runner, operations, parsers, commit graph
 │   └── tmux/             # tmux client and agent screen parsing
 ├── public/               # PWA (static UI, no build)
-│   ├── index.html        # The whole UI: HTML + CSS + JS
+│   ├── index.html        # Markup only
+│   ├── css/              # Stylesheets, linked in cascade order
+│   ├── js/               # Native ES modules; main.mjs is the entry point
 │   ├── sw.js             # Service worker for push notifications
 │   ├── manifest.json
 │   └── icon.svg

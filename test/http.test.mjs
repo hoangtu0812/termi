@@ -54,6 +54,19 @@ test('static files carry security headers', async () => {
   assert.equal((await app.request('POST', '/', { headers: { 'x-termi': '1' } })).status, 404);
 });
 
+test('client styles and modules are served', async () => {
+  const css = await app.get('/css/base.css');
+  assert.equal(css.status, 200);
+  assert.equal(css.headers['content-type'], 'text/css');
+  const main = await app.get('/js/main.mjs');
+  assert.equal(main.headers['content-type'], 'text/javascript');
+  assert.equal(main.headers['cache-control'], 'no-cache');
+  assert.equal((await app.get('/js/theme-init.js')).headers['content-type'], 'text/javascript');
+  assert.equal((await app.get('/js/../index.html')).status, 404);
+  assert.equal((await app.get('/js/missing.mjs')).status, 404);
+  assert.equal((await app.get('/css/base.css.map')).status, 404);
+});
+
 test('bundled fonts are served', async () => {
   const css = await app.get('/fonts/fonts.css');
   assert.equal(css.headers['content-type'], 'text/css');

@@ -204,7 +204,9 @@ termi/
 │   ├── git/              # Chạy git, thao tác, parser, cây commit
 │   └── tmux/             # Gọi tmux, đọc màn hình agent
 ├── public/               # PWA (giao diện tĩnh, không build)
-│   ├── index.html        # Toàn bộ UI: HTML + CSS + JS
+│   ├── index.html        # Chỉ có markup
+│   ├── css/              # Các file CSS, nạp theo đúng thứ tự cascade
+│   ├── js/               # ES module gốc của trình duyệt; main.mjs là điểm vào
 │   ├── sw.js             # Service worker cho thông báo đẩy
 │   ├── manifest.json
 │   └── icon.svg

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.4 |
+| Version | 1.5 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 
@@ -145,3 +145,49 @@ Rationale that used to live in code comments. Source files carry no comments (se
 ## Static files
 
 - Bundled fonts are served from `/fonts/<name>.woff2` and `/fonts/fonts.css`. Only file names matching `^[a-z0-9-]+\.(woff2|css)$` are exposed.
+- The client is served from `/css/<name>.css` and `/js/<name>.mjs` (plus the classic `/js/theme-init.js`). Only names matching `^[a-z0-9-]+\.css$` and `^[a-z0-9-]+\.m?js$` in those folders are exposed, and the list is read once at startup: a new file needs a restart.
+- `x-termi-build` is the newest modification time of all those files, recomputed at most once per second, so editing any stylesheet or module makes open pages reload.
+
+## Client (`public/`)
+
+### Structure
+
+- `index.html` is markup only. Stylesheets are linked in their original cascade order: `fonts`, `base`, `sessions`, `topbar`, `panes`, `viewer`, `chat`, `widgets`, `dialogs`, `mobile`. Moving a rule to another file can change which rule wins.
+- `js/theme-init.js` is a blocking classic script in `<head>`: it sets `data-theme` before the first paint so the page does not flash the wrong theme.
+- Every other script is an ES module. Modules only declare; statements that register listeners or start timers live in an exported `setup…()` function. `js/main.mjs` calls the setups in the order the old single script ran them, then starts polling. This keeps import order irrelevant even though modules import each other in cycles.
+- A module must not call another module's function while it is being loaded (for example `const x = safely(...)` at the top level) if that module imports it back: the binding is not initialized yet. `state.mjs`, `dom.mjs`, `storage.mjs` and `api.mjs` import nothing that leads back to them, so they are safe to use at load time.
+- Imported bindings are read-only. State that several modules change lives in the shared `S` object (`state.mjs`) or behind a function exported by its owner (for example `resetRetryDelay()` in `reconnect.mjs`).
+- Known gaps, left for Phase 8: a few modules still read `localStorage` or create an element at load time (`terminal.mjs`, `keys.mjs`, `theme.mjs`), many client functions are longer than 40 lines, and some markup is still built with `innerHTML` from escaped strings.
+
+### Behaviour notes
+
+- Theme and terminal font size are stored per device in `localStorage`. The terminal palette follows the app theme.
+- The screen wake lock is requested again whenever the page becomes visible; some browsers only grant it after a user gesture, so it is also requested on `pointerdown`. A refusal (battery saver) is ignored.
+- All API and terminal traffic goes through `/m/<machine>` when another machine is selected; the machine list, events, notification settings, quick actions and push always go to the local hub, which watches every machine.
+- A network failure shows the "connection lost" bar; the regular refresh loops retry by themselves.
+- A new UI build reloads the page, but never while the user is typing in the composer or a commit message, has attachments, or has a dialog open.
+- URL hash state: `s` session, `t` tab, `d` file folder, `g` git repo, `v` viewer open, `m` machine. A hash that points to a closed session does not open a terminal for it. Drafts are kept per machine and session.
+- On wide screens (≥ 1200 px) File and Git open next to the terminal.
+- The session list is a project tree. Projects with a running session are open by default; while searching all are open. Right-click or long-press a project to pin it; swipe a session left (or long-press) for rename and close.
+- The terminal is ttyd under `/term` on the same origin, so the app can reach `window.term` in the iframe: it sets the font size through the URL (ttyd prefers URL options over the server's on every reconnect), loads JetBrains Mono into the ttyd page and switches the font once it is loaded (xterm draws on a canvas and does not pick up new fonts), pads the terminal and copies text tmux sends with OSC 52 to the clipboard.
+- The device that is being touched or typed on resizes the tmux window to its own size, because another device may have shrunk it.
+- tmux has the mouse enabled, so xterm does not scroll on touch; vertical swipes are turned into wheel events and tmux scrolls its history. A short touch still counts as a tap.
+- Reconnect: ttyd shows a disconnect overlay; termi replaces it with a large button. Retries back off 1, 2, 4 … 30 s, and reset after a connection lasts 10 s. Tapping, returning to the app or coming back online retries at once.
+- Half-dead connections (a sleeping phone or a network change can kill the WebSocket silently): after the app was hidden for more than 10 s, or when the server reports new output (`window_activity`, not `session_activity`, which also changes on clicks and keys) that the terminal did not receive for 5 s, termi asks tmux to redraw and reconnects only if nothing arrives within 4 s. Reloading right away would make the screen flash.
+- Long-press on the terminal opens the session's text as a plain page, because tmux captures touch selection.
+- Chat replies can contain HTML. They are parsed into an inert `<template>` and filtered against an allow-list of tags and attributes before being shown. Rendered bubbles are cached by content.
+- Quick confirm buttons: tapping a choice sends a digit key (menus react to key presses). The bar hides only after the menu has been gone for 4 s or a choice was made, because showing and hiding it resizes the terminal, which makes the agent redraw and could hide the menu for one refresh, which would flicker.
+- Multi-select menus send a digit to toggle a box and use `/api/menu-submit` to submit.
+- "Unread" is stored per device: the last time each session was opened; a newer agent reply shows a dot.
+- Ctrl/Cmd+K opens the command palette, also from inside the terminal. Search ignores Vietnamese diacritics.
+- Quick actions are stored on the server so every device shares them; agent-specific commands fall back to plain prompts, and actions are hidden for shell-only sessions because a Vietnamese sentence sent to a shell becomes a failing command.
+- The send button prevents focus on `pointerdown`: otherwise the keyboard closes, the page shrinks and the button moves before the tap registers, so it needed two taps.
+- The keyboard is considered open when the viewport height drops well below the tallest height seen for the current width (rotation changes it). While it is open the tab bar is hidden.
+- On desktop Enter sends and Shift+Enter adds a line; on phones Enter always adds a line. Pasting a screenshot or dropping files attaches them; plain text pastes normally. Attachment paths are added only when sending.
+- `marked`, `highlight.js` and Mermaid load from a CDN only when needed, pinned with Subresource Integrity. Files that are too large are not highlighted.
+- Markdown previews render in a sandboxed iframe without `allow-same-origin`, so the page cannot read the app or post to its API. Scripts are allowed only when the document has diagrams, and its CSP allows only the Mermaid file (SRI) and the init snippet (hash).
+- Diffs show a GitHub-style +/− bar; desktop defaults to two columns (removed lines left, added right, changed lines side by side). Hard-wrapped text at 80 columns is re-joined for narrow screens.
+- The commit graph caps at 10 lanes to leave room for text.
+- Push: a test notification shows the push service's response code. A subscription the browser kept but the push service dropped is removed and re-created once. New events while the app is open show a toast and vibrate.
+- Hover styles apply only on devices with a mouse; on touch screens hover sticks after a tap.
+- The terminal iframe has `min-height: 0`: an iframe defaults to a 150 px minimum and would push the composer off screen when the keyboard opens.

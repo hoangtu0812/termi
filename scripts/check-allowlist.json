@@ -1,5 +1,4 @@
 {
-  "public/index.html": ["comments", "file-length", "line-length"],
   "public/offline.html": ["comments", "line-length"],
   "public/sw.js": ["comments", "line-length"],
   "scripts/attach.sh": ["comments"],

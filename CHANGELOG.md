@@ -8,8 +8,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
-- Architecture refactor plan `plan/PLAN-v1.6-architecture-refactor.md`.
-- Implementation notes `docs/NOTES-v1.4-implementation-notes.md` for rationale moved out of code comments.
+- Architecture refactor plan `plan/PLAN-v1.7-architecture-refactor.md`.
+- Implementation notes `docs/NOTES-v1.5-implementation-notes.md` for rationale moved out of code comments.
 - `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
 - `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
 - `.editorconfig`.
@@ -29,6 +29,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Agent-specific code (Claude Code, Codex, Antigravity) moved into one adapter per agent under `src/agents/`.
 - `src/app.mjs` is gone: the HTTP layer lives in `src/http/`, the API in one file per area under `src/routes/`, Web Push in `src/push/`, and sessions, snapshots, machines and the ttyd watchdog in their own modules; `src/start.mjs` wires them together.
 - Server logs are in English.
+- The web client is split into `public/css/` (10 stylesheets) and `public/js/` (native ES modules); `index.html` is markup only. Any change to a UI file now makes open pages reload.
 
 ### Performance
 - The session list is built at most once per second and shared by every open device and the notification watcher; five concurrent requests with 10 agent sessions dropped from about 65 ms to 19 ms.
