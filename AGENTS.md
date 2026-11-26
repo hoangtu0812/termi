@@ -76,7 +76,8 @@ These rules apply to every human and AI agent that changes this repository. They
 - Use `node:test` and `node:assert/strict` only.
 - Every bug fix comes with a test that fails before the fix. Every new pure function comes with tests.
 - Tests must not touch the real home directory, `~/.termi`, tmux, git remotes or the network. Use temp directories and injected dependencies.
-- Run `npm test` and make it pass before declaring a task done.
+- Run `npm run verify` (rule checks + tests) and make it pass before declaring a task done.
+- Never add an entry to `scripts/check-allowlist.json`. Remove entries as files are cleaned up.
 
 ## 7. Documentation naming
 
@@ -143,7 +144,7 @@ When you change a document that has a translation, update both files in the same
 
 ## 11. Definition of done
 
-- `npm test` passes.
+- `npm run verify` passes.
 - No comments were added, and no file, function or line exceeds the size limits.
 - Changelogs, README and docs (both languages where a translation exists) reflect the change.
 - Security guards from section 4 are intact.

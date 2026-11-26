@@ -10,7 +10,11 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thêm
 - Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
-- Kế hoạch refactor kiến trúc `plan/PLAN-v1.0-architecture-refactor.md`.
+- Kế hoạch refactor kiến trúc `plan/PLAN-v1.1-architecture-refactor.md`.
+- `npm run check`: kiểm tra comment, độ dài file và dòng, cú pháp và tên tài liệu, không cần dependency; có allowlist cho file cũ và danh sách này chỉ được thu hẹp.
+- `npm run verify` (kiểm tra + test) và CI trên GitHub Actions cho Ubuntu và macOS.
+- `.editorconfig`.
+- Biến môi trường `TERMI_DATA` để chọn thư mục dữ liệu (mặc định `~/.termi`).
 - Nhật ký thay đổi bằng tiếng Anh và tiếng Việt.
 
 ### Thay đổi
@@ -18,6 +22,10 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Ảnh chụp chuyển vào `docs/assets/screenshots/`.
 - Tài liệu trong `docs/` và `plan/` đặt tên theo quy tắc `<TIỀN_TỐ>-v<MAJOR>.<MINOR>-<slug>.md`.
 - Commit, release và changelog viết bằng tiếng Anh.
+
+### Sửa lỗi
+- `npm test` lỗi trên Node 24 (`MODULE_NOT_FOUND`) và không chạy test nào.
+- Test không còn ghi vào `~/.termi` thật.
 
 ## [0.12.0] - 2026-11-26
 

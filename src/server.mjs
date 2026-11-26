@@ -16,7 +16,7 @@ import os from 'node:os';
 const run = promisify(execFile);
 const PUBLIC = path.join(import.meta.dirname, '..', 'public');
 const PORT = Number(process.env.TERMI_PORT) || 7680;
-const DATA = path.join(os.homedir(), '.termi');
+const DATA = process.env.TERMI_DATA ? path.resolve(process.env.TERMI_DATA) : path.join(os.homedir(), '.termi');
 const UPLOADS = path.join(DATA, 'uploads');
 const MAX_OUT = 300_000; // ký tự trả về cho diff/file, tránh treo trình duyệt điện thoại
 const MAX_UPLOAD = 25 * 1024 * 1024;

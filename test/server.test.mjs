@@ -1,9 +1,25 @@
-import { test } from 'node:test';
+import { test, after } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel, chatItems, toolSummary, parseMulti, stepsToSubmit, shouldPush } from '../src/server.mjs';
+
+const dataDir = await fs.mkdtemp(path.join(os.tmpdir(), 'termi-data-'));
+process.env.TERMI_DATA = dataDir;
+after(() => fs.rm(dataDir, { recursive: true, force: true }));
+const {
+  validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus,
+  graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText,
+  parseNumstat, computePending, orphanCount, parseChoices, prettyModel, chatItems, toolSummary,
+  parseMulti, stepsToSubmit, shouldPush,
+} = await import('../src/server.mjs');
+
+test('state is written to TERMI_DATA, not the home directory', async () => {
+  const files = await fs.readdir(dataDir);
+  assert.ok(files.includes('vapid.json'));
+  assert.ok(files.includes('uploads'));
+  assert.equal((await fs.stat(dataDir)).mode & 0o777, 0o700);
+});
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');

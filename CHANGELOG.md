@@ -8,7 +8,11 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
-- Architecture refactor plan `plan/PLAN-v1.0-architecture-refactor.md`.
+- Architecture refactor plan `plan/PLAN-v1.1-architecture-refactor.md`.
+- `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
+- `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
+- `.editorconfig`.
+- `TERMI_DATA` environment variable to choose the data directory (default `~/.termi`).
 - Changelog in English and Vietnamese.
 
 ### Changed
@@ -16,6 +20,10 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Screenshots moved to `docs/assets/screenshots/`.
 - Documents in `docs/` and `plan/` follow the `<PREFIX>-v<MAJOR>.<MINOR>-<slug>.md` naming rule.
 - Commits, releases and the changelog are written in English.
+
+### Fixed
+- `npm test` failed on Node 24 (`MODULE_NOT_FOUND`) and ran no tests.
+- Tests no longer write to the real `~/.termi`.
 
 ## [0.12.0] - 2026-11-26
 

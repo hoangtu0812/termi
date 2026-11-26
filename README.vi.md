@@ -217,6 +217,8 @@ Trước khi sửa code, đọc [AGENTS.vi.md](AGENTS.vi.md): quy tắc kiến t
 
 ```bash
 npm test     # chạy test (node --test)
+npm run check   # quy tắc: không comment, giới hạn kích thước, cú pháp, tên tài liệu
+npm run verify  # check + test, giống CI
 npm start    # chạy server ở 127.0.0.1:7680 (dừng dịch vụ launchd trước nếu trùng cổng)
 
 # Khởi động lại server đang chạy dưới launchd sau khi sửa src/
@@ -230,6 +232,7 @@ Sửa `public/index.html` không cần khởi động lại: trang đang mở s�
 | `TERMI_ROOTS` | `$HOME` | Các thư mục gốc được phép truy cập, cách nhau bằng `:` |
 | `TERMI_PORT` | `7680` | Cổng của server |
 | `TERMI_TTYD_PORT` | `7681` | Cổng của ttyd |
+| `TERMI_DATA` | `~/.termi` | Thư mục dữ liệu (khoá, đăng ký thông báo, file tải lên) |
 | `TERMI_ALLOWED_USERS` | Chủ máy | Tài khoản Tailscale được phép vào, cách nhau bằng dấu phẩy |
 
 Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết bị nhận thông báo và file tải lên (`uploads/`, không tự xoá). Log ở `~/Library/Logs/termi.*.log`.

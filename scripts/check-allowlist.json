@@ -1,0 +1,12 @@
+{
+  "public/index.html": ["comments", "file-length", "line-length"],
+  "public/offline.html": ["comments", "line-length"],
+  "public/sw.js": ["comments", "line-length"],
+  "scripts/attach.sh": ["comments"],
+  "scripts/claude-statusline.mjs": ["comments", "line-length"],
+  "scripts/get.sh": ["comments", "line-length"],
+  "scripts/install-linux.sh": ["comments", "line-length"],
+  "scripts/install.sh": ["comments", "line-length"],
+  "src/server.mjs": ["comments", "file-length", "line-length"],
+  "test/server.test.mjs": ["comments", "line-length"]
+}

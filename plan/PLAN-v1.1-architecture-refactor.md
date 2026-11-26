@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.0 |
+| Version | 1.1 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 | Applies to | termi 0.12.0 → 1.0.0 |
@@ -44,16 +44,19 @@ Bring the codebase in line with `AGENTS.md` without changing user-visible behavi
 - [x] `CHANGELOG.md` and `CHANGELOG.vi.md` rebuilt from the release history.
 - [x] Screenshots moved to `docs/assets/screenshots/`.
 
-### Phase 1 — Tooling and test isolation (v0.13.0)
+### Phase 1 — Tooling and test isolation (v0.13.0) — done
 
-- Fix `npm test`: `node --test`.
-- Add `scripts/check.mjs` (zero-dependency) that fails on: comments in `src/`, `public/`, `scripts/`; files > 300 lines; lines > 120 chars; doc names in `docs/` and `plan/` that break the naming rule. Start in report-only mode for legacy files listed in an allowlist that shrinks every phase.
-- Add `npm run check` and `npm run verify` (`check` + `test` + `node --check` on every `.mjs`).
-- Add `.github/workflows/ci.yml` running `npm run verify` on Node 24 (ubuntu + macOS).
-- Add `.editorconfig`.
-- Introduce `TERMI_DATA` (default `~/.termi`) so tests use a temp directory.
+- [x] Fix `npm test`: `node --test` (auto-discovers `test/**/*.test.mjs`).
+- [x] Add `scripts/check.mjs` and `scripts/check-comments.mjs` (zero-dependency). They fail on comments in `src/`, `public/`, `scripts/`, `test/`; files > 300 lines; lines > 120 chars; syntax errors in `.mjs`/`.js`; document names in `docs/` and `plan/` that break the naming rule. Vendored fonts in `public/fonts/` are skipped.
+- [x] Legacy violations are listed per file and rule in `scripts/check-allowlist.json` and reported as `legacy`. An entry that is no longer violated is an error, so the list can only shrink.
+- [x] Add `npm run check` and `npm run verify` (`check` + `test`).
+- [x] Add `.github/workflows/ci.yml` running `npm run verify` and `npm pack --dry-run` on Node 24 (ubuntu + macOS).
+- [x] Add `.editorconfig`.
+- [x] Introduce `TERMI_DATA` (default `~/.termi`); tests run against a temp directory and remove it afterwards.
 
 Done when: CI is green and no test touches the real home directory.
+
+Result: 35 tests pass; `npm run check` reports 0 errors and 21 allowlisted legacy violations across 10 files.
 
 ### Phase 2 — Configuration, startup and persistence (v0.14.0)
 
@@ -139,4 +142,9 @@ Done when: `src/server.mjs` is under 50 lines.
 
 ## 6. Tracking
 
-Update the checkboxes and this document's version when a phase lands. Each phase's release notes link back to this plan.
+Update the checkboxes and this document's version when a phase lands.
+
+| Version | Date | Change |
+|---|---|---|
+| 1.0 | 2026-11-26 | Initial plan. |
+| 1.1 | 2026-11-26 | Phase 1 done. | Each phase's release notes link back to this plan.

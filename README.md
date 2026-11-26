@@ -217,6 +217,8 @@ Before changing code, read [AGENTS.md](AGENTS.md): architecture rules, no commen
 
 ```bash
 npm test     # run tests (node --test)
+npm run check   # rules: no comments, size limits, syntax, document names
+npm run verify  # check + test, what CI runs
 npm start    # run the server on 127.0.0.1:7680 (stop the launchd service first if the port is taken)
 
 # Restart the server running under launchd after editing src/
@@ -230,6 +232,7 @@ Editing `public/index.html` needs no restart: open pages reload themselves when 
 | `TERMI_ROOTS` | `$HOME` | Root folders termi may access, separated by `:` |
 | `TERMI_PORT` | `7680` | Server port |
 | `TERMI_TTYD_PORT` | `7681` | ttyd port |
+| `TERMI_DATA` | `~/.termi` | Data directory (keys, subscriptions, uploads) |
 | `TERMI_ALLOWED_USERS` | Machine owner | Tailscale logins allowed in, comma-separated |
 
 Local data lives in `~/.termi/`: the VAPID key, the list of devices receiving notifications, and uploaded files (`uploads/`, never cleaned automatically). Logs are in `~/Library/Logs/termi.*.log`.
