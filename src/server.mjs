@@ -319,6 +319,26 @@ async function usage(sessionName) {
   return { machine, limits: { claude, codex }, session: s && { name: s.name, agent: s.agent, ...tokens } };
 }
 
+// Trạng thái git của từng mục trong thư mục (tab File): file → M/A/D/U, thư mục con có thay đổi → •
+export function marksFromStatus(raw, rel) {
+  const marks = new Map(), prefix = rel ? rel + '/' : '';
+  for (const f of parseStatus('## x\0' + raw).files) {
+    if (!f.path.startsWith(prefix)) continue;
+    const rest = f.path.slice(prefix.length).replace(/\/$/, ''), slash = rest.indexOf('/');
+    const code = f.x === '?' ? 'U' : (f.x !== ' ' ? f.x : f.y);
+    if (slash < 0) marks.set(rest, code);
+    else marks.set(rest.slice(0, slash), '•');
+  }
+  return marks;
+}
+async function gitMarks(dir) {
+  try {
+    const top = (await git(dir, 'rev-parse', '--show-toplevel')).trim();
+    const raw = await git(top, 'status', '--porcelain=v1', '-z', '--untracked-files=normal');
+    return marksFromStatus(raw, path.relative(top, dir));
+  } catch { return new Map(); } // không phải repo git
+}
+
 // ---------- Git ----------
 const GIT_ENV = { ...process.env, GIT_TERMINAL_PROMPT: '0', GIT_OPTIONAL_LOCKS: '0' };
 const git = (dir, ...a) => run('git', ['-C', dir, '-c', 'color.ui=never', ...a], { maxBuffer: 2e7, timeout: 90_000, env: GIT_ENV })
@@ -522,6 +542,15 @@ const routes = {
     const out = await tmux('capture-pane', '-p', '-J', '-S', `-${lines}`, '-t', target(name));
     return { text: out.stdout.replace(/\s+$/, '') };
   },
+  // Khung tmux theo kích thước thiết bị đang xem. Mặc định tmux chỉ đổi khi có phím gõ, nên thiết bị
+  // còn lại thấy khung thừa (dấu chấm) hoặc bị cắt khi điện thoại và máy tính cùng mở một phiên.
+  async 'POST /api/resize'(_, b) {
+    const cols = Number(b.cols), rows = Number(b.rows);
+    if (!validName(b.session) || !Number.isInteger(cols) || !Number.isInteger(rows) || cols < 10 || cols > 1000 || rows < 3 || rows > 500)
+      throw fail(400, 'Kích thước không hợp lệ');
+    await tmux('resize-window', '-t', target(b.session), '-x', String(cols), '-y', String(rows)).catch(() => {});
+    return { ok: true };
+  },
   async 'POST /api/sessions/rename'(_, b) {
     if (!validName(b.name) || !validName(b.to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
     await tmux('rename-session', '-t', target(b.name), b.to).catch(() => { throw fail(409, 'Không đổi tên được (trùng tên?)'); });
@@ -561,6 +590,8 @@ const routes = {
       const st = await fs.stat(p).catch(() => null);
       return st && { name: e.name, path: p, dir: st.isDirectory(), size: st.size, mtime: st.mtimeMs };
     }));
+    const marks = await gitMarks(dir);
+    for (const e of list) if (e && marks.has(e.name)) e.git = marks.get(e.name);
     return { dir, parent: await safeDir(path.dirname(dir)) && path.dirname(dir),
       entries: list.filter(Boolean).sort((a, b) => b.dir - a.dir || a.name.localeCompare(b.name)) };
   },

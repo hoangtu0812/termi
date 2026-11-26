@@ -57,14 +57,14 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 |---|---|---|
 | 🖥️ | **Nhiều máy** | Điều khiển mọi máy cùng tài khoản Tailscale có chạy termi (Mac, Linux, Windows qua WSL) từ một app: chọn máy ở đầu sidebar; thông báo từ mọi máy về một chỗ. |
 | 🤖 | **Nhiều agent** | Claude Code, Codex, Antigravity (`agy`): chọn agent khi tạo phiên (chỉ hiện agent có cài), tự nhận ra phiên đang chạy agent nào, trạng thái và thông báo cho từng agent. |
-| 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
+| 🗂️ | **Quản lý phiên** | Màn hình chào tạo nhanh phiên Claude/Codex ở thư mục gần đây; danh sách xếp phiên cần chú ý lên đầu, tìm kiếm, nhóm theo thư mục, giữ lâu thẻ để đổi tên/đóng; tạo phiên ở bất kỳ thư mục nào, đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
 | 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, nút 📋 Chép mở chữ của phiên dạng văn bản để chọn và copy, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
 | ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
 | 📊 | **Usage** | Chip trên header: hạn mức gói của agent (Claude 5 giờ / 7 ngày, Codex), ngữ cảnh của phiên, CPU / RAM / ổ đĩa; chạm để xem chi tiết và lúc reset. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
-| 📁 | **Duyệt file** | Xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
+| 📁 | **Duyệt file** | Icon và màu theo loại file, đánh dấu file/thư mục đang thay đổi theo git; xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
 | 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
 | 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Giao diện Tự động / Sáng / Tối (nút ☀ ở đầu sidebar); giữ màn hình sáng khi đang mở app (Screen Wake Lock); cài được như app (PWA). |
 

@@ -56,6 +56,21 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 /* ---------- Danh sách phiên ---------- */
 .machines { padding:8px 8px 0; }
 .machines select { width:100%; }
+.sfind { padding:8px 8px 0; }
+.sfind input { width:100%; height:38px; padding:0 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--fg); }
+.sgrp { padding:10px 6px 2px; font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.welcome { display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 16px; margin:auto; width:100%; max-width:460px; text-align:center; }
+.welcome img { width:56px; height:56px; border-radius:14px; }
+.welcome h2 { margin:0; font-size:19px; }
+.welcome p { margin:0; color:var(--dim); font-size:14px; }
+.wl { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:6px; text-align:left; }
+.wcard { display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:var(--r); border:1px solid var(--line); background:var(--card); }
+.wcard .wd { display:flex; align-items:center; gap:8px; min-width:0; }
+.wcard .wd b { font-size:14px; } .wcard .wd small { color:var(--faint); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; flex:1; }
+.wcard .wd svg.i { color:var(--blue); flex:none; }
+.wcard .wa { display:flex; gap:6px; flex-wrap:wrap; }
+.wbtn { display:inline-flex; align-items:center; height:34px; padding:0 12px 0 6px; border-radius:99px; border:1px solid var(--line2); background:var(--panel); font-size:13px; font-weight:500; }
+.wbtn .av.sm { margin-right:6px; }
 #sessions { flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:4px; }
 .sess { display:flex; flex-direction:row; align-items:flex-start; gap:12px; text-align:left; width:100%; padding:10px 12px; border-radius:var(--r); border:1px solid transparent; background:transparent; }
 .sess.cur { background:var(--card); border-color:var(--line2); }
@@ -127,6 +142,7 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .row .nm { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .row .meta { font-size:12px; color:var(--faint); white-space:nowrap; }
 .row .i { color:var(--dim); }
+.row .gdot { width:8px; height:8px; border-radius:50%; background:var(--warn); flex:none; margin:0 6px; }
 .row.dir .i { color:var(--blue); }
 select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid var(--line2); background:var(--card); max-width:100%; min-width:0; }
 
@@ -262,6 +278,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
       <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
     </div>
     <div class="machines" id="machines" hidden><select class="sel" id="machine" aria-label="Chọn máy"></select></div>
+    <div class="sfind" id="sfind" hidden><input id="sq" type="search" placeholder="Tìm phiên…" aria-label="Tìm phiên" autocapitalize="off" autocomplete="off"></div>
     <div id="sessions"></div>
     <div class="side-foot"><button class="btn pri" id="b-new"><span data-i="plus"></span>Phiên mới</button></div>
   </aside>
@@ -280,13 +297,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
     </div>
 
     <div id="panes">
-      <div class="pane" id="p-none">
-        <div class="empty" style="margin:auto">
-          <span data-i="term" style="opacity:.5"></span>
-          <div>Chọn một phiên hoặc tạo phiên mới</div>
-          <button class="btn pri" data-new><span data-i="plus"></span>Phiên mới</button>
-        </div>
-      </div>
+      <div class="pane scroll" id="p-none"></div>
 
       <div class="pane" id="p-term" hidden>
         <div class="term-wrap">
@@ -429,7 +440,9 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>', rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
+  minus:'<path d="M5 12h14"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
+  braces:'<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>', rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
   gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
   calendar:'<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   layers:'<path d="m12 2 10 5-10 5L2 7z"/><path d="m2 17 10 5 10-5M2 12l10 5 10-5"/>',
@@ -556,6 +569,7 @@ function render() {
   const needSession = tab === 'term' || tab === 'files';
   const show = needSession && !s.s ? 'none' : tab;
   for (const p of ['none', 'term', 'files', 'git']) $('p-' + p).hidden = p !== show;
+  if (show === 'none') welcome($('p-none'));
   if (s.v) return; // đang xem file/diff: giữ nguyên pane phía sau, không tải lại
   if (show === 'term') ensureTerm(s.s);
   if (show === 'files') loadFiles(s.d || cur()?.dir);
@@ -570,20 +584,75 @@ function stateEl(state, agent) {
 }
 function renderSessions() {
   const box = $('sessions'), sel = st().s;
-  if (!S.list.length) {
-    const e = el('div', 'empty'); e.append(el('div', null, 'Chưa có phiên nào'));
-    const b = el('button', 'btn pri'); b.innerHTML = icon('plus') + 'Tạo phiên'; b.onclick = newSession; e.append(b);
-    return box.replaceChildren(e);
+  if (!S.list.length) { $('sfind').hidden = true; return welcome(box); }
+  $('sfind').hidden = S.list.length < 4;
+  const q = $('sq').value.trim().toLowerCase();
+  // Cần chú ý lên đầu: chờ xác nhận → đang chạy → còn lại; cùng mức thì mới hoạt động trước
+  const rank = { waiting: 0, working: 1 };
+  const list = S.list.filter(x => !q || (x.name + ' ' + x.dir).toLowerCase().includes(q))
+    .sort((a, b) => (rank[a.state] ?? 2) - (rank[b.state] ?? 2) || b.activity - a.activity);
+  // Nhóm theo thư mục khi các phiên nằm ở nhiều thư mục
+  const groups = new Map();
+  for (const x of list) groups.set(x.dir, [...(groups.get(x.dir) || []), x]);
+  const grouped = groups.size > 1 && list.length > 2;
+  const nodes = [];
+  for (const [dir, items] of groups) {
+    if (grouped) { const h = el('div', 'sgrp', `${dir.split('/').pop() || dir} · ${items.length}`); h.title = dir; nodes.push(h); }
+    nodes.push(...items.map(sessionCard));
   }
-  box.replaceChildren(...S.list.map(x => {
+  if (!nodes.length) nodes.push(el('div', 'empty', 'Không có phiên nào khớp'));
+  box.replaceChildren(...nodes);
+  function sessionCard(x) {
     const b = el('button', 'sess' + (x.name === sel ? ' cur' : '')), body = el('div', 'sb');
     const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, x.agent));
     body.append(top, el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`));
     if (x.preview) body.append(el('div', 'pv', x.preview));
     b.append(agentAvatar(x.agent), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
+    // Giữ lâu (hoặc chuột phải): menu đổi tên / đóng cho đúng phiên này
+    b.oncontextmenu = e => { e.preventDefault(); openSessionMenu(x.name); };
     return b;
+  }
+}
+$('sq').oninput = renderSessions;
+
+// ---- Màn hình chào: khi chưa có phiên / chưa chọn phiên. Tạo nhanh phiên ở thư mục gần đây ----
+async function welcome(box) {
+  if (box.querySelector('.welcome')) return; // đã vẽ: không vẽ lại mỗi lần poll (tránh nháy)
+  const w = el('div', 'welcome'), list = el('div', 'wl');
+  w.innerHTML = '<img src="/icon.svg" alt="">';
+  w.append(el('h2', null, S.list.length ? 'Chọn một phiên hoặc bắt đầu phiên mới' : 'Bắt đầu phiên đầu tiên'),
+    el('p', null, 'Chọn thư mục và agent. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.'), list);
+  const more = el('button', 'btn'); more.type = 'button'; more.innerHTML = icon('folder') + 'Thư mục khác…'; more.onclick = newSession;
+  w.append(more);
+  box.replaceChildren(w);
+  const [dirs, agents] = await Promise.all([api('/api/dirs').catch(() => ({ recent: [] })), api('/api/agents').catch(() => [])]);
+  list.replaceChildren(...dirs.recent.slice(0, 4).map(dir => {
+    const c = el('div', 'wcard'), d = el('div', 'wd'), a = el('div', 'wa');
+    d.innerHTML = icon('folder');
+    d.append(el('b', null, dir.split('/').pop() || dir), el('small', null, ltr(short(dir))));
+    for (const ag of agents) {
+      const b = el('button', 'wbtn'); b.type = 'button';
+      b.append(agentAvatar(ag.id, true), ag.name);
+      b.onclick = safely(() => quickStart(dir, ag.id));
+      a.append(b);
+    }
+    c.append(d, a);
+    return c;
   }));
+}
+// Tạo phiên đặt tên theo thư mục; trùng tên thì thêm -2, -3…
+async function quickStart(dir, agent) {
+  const base = (dir.split('/').pop() || 'phien').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'phien';
+  for (let i = 1; i < 10; i++) {
+    const name = i === 1 ? base : `${base}-${i}`;
+    try {
+      await api('/api/sessions', { name, dir, agent });
+      await poll();
+      return go({ s: name, t: 'term', d: null, g: null, v: null });
+    } catch (e) { if (!/tồn tại/.test(e.message)) throw e; }
+  }
+  throw new Error('Không tìm được tên phiên còn trống');
 }
 function renderTop() {
   const x = cur(), s = st();
@@ -682,18 +751,21 @@ $('b-hist').onclick = safely(async () => {
   if (!list.length) box.replaceChildren(el('div', 'empty', 'Không có hội thoại nào'));
 });
 
-$('b-menu').onclick = () => { $('m-title').textContent = st().s; $('d-menu').showModal(); };
+function openSessionMenu(name) { S.menuFor = name; $('m-title').textContent = name; $('d-menu').showModal(); }
+$('b-menu').onclick = () => openSessionMenu(st().s);
 $('d-menu').onclose = safely(async () => {
-  const name = st().s, v = $('d-menu').returnValue;
+  const name = S.menuFor || st().s, v = $('d-menu').returnValue, isOpen = name === st().s;
   if (v === 'rename') {
     const to = prompt('Tên mới (chữ, số, - và _):', name);
     if (!to || to === name) return;
     await api('/api/sessions/rename', { name, to });
-    S.termName = null; await poll(); go({ s: to });
+    await poll();
+    if (isOpen) { S.termName = null; go({ s: to }); }
   } else if (v === 'kill') {
     if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
     await api('/api/sessions/kill', { name });
-    await poll(); go({ s: null, t: wide() ? null : 'sessions' });
+    await poll();
+    if (isOpen) go({ s: null, t: wide() ? null : 'sessions' });
   }
 });
 $('b-back').onclick = () => go({ t: 'sessions', v: null });
@@ -709,6 +781,17 @@ function ensureTerm(name, force) {
   $('frame').src = `${base()}/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 }
 const termWin = () => { try { return $('frame').contentWindow; } catch { return null; } };
+
+// Báo kích thước terminal của thiết bị này cho tmux để khung vừa đúng màn hình đang xem
+let fitTimer;
+function fitTmux() {
+  clearTimeout(fitTimer);
+  fitTimer = setTimeout(() => {
+    const t = termWin()?.term;
+    if (t?.cols && st().s === S.termName) api('/api/resize', { session: S.termName, cols: t.cols, rows: t.rows }).catch(() => {});
+  }, 300);
+}
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && fitTmux());
 
 // Cỡ chữ terminal: lưu theo thiết bị
 let fontSize = (() => { try { return Number(localStorage.getItem('termi-font')); } catch { return 0; } })() || (wide() ? 14 : 12);
@@ -730,6 +813,8 @@ $('frame').addEventListener('load', () => {
     clearInterval(wait);
     if (!t?.element) return;
     t.options.fontSize = fontSize; t.fit();
+    t.onResize(fitTmux); // đổi cỡ chữ, xoay máy, bàn phím mở/đóng
+    fitTmux();
     touchScroll(w, t);
     watchDisconnect(t);
   }, 100);
@@ -894,6 +979,22 @@ function insertText(s) {
 }
 
 // ---------- File ----------
+// Icon + màu theo loại file (tab File)
+const FT = {};
+const ft = (exts, ic, color) => exts.split(' ').forEach(e => { FT[e] = [ic, color]; });
+ft('js mjs cjs jsx', 'code', '#d4b106'); ft('ts tsx', 'code', '#3178c6'); ft('py', 'code', '#4b8bbe');
+ft('sh bash zsh ps1 bat', 'code', '#4eaa25'); ft('html htm vue svelte', 'code', '#e34f26'); ft('css scss sass less', 'code', '#a074c4');
+ft('go', 'code', '#00add8'); ft('rs', 'code', '#dea584'); ft('java kt gradle', 'code', '#f89820'); ft('swift', 'code', '#f05138');
+ft('c h cpp hpp cc cs', 'code', '#659ad2'); ft('rb', 'code', '#cc342d'); ft('php', 'code', '#777bb4'); ft('dart', 'code', '#0175c2'); ft('sql', 'code', '#e38c00');
+ft('json jsonc json5', 'braces', '#cbcb41'); ft('md mdx txt rst', 'doc', '#6aa7ff'); ft('pdf', 'doc', '#ef6b73');
+ft('yml yaml toml ini env conf cfg xml lock', 'doc', 'var(--faint)');
+ft('png jpg jpeg gif webp svg ico bmp avif', 'image', '#c678dd');
+function fileIcon(f) {
+  if (f.dir) return ['folder', f.name.startsWith('.') ? 'var(--faint)' : 'var(--blue)'];
+  const ext = f.name.includes('.') ? f.name.split('.').pop().toLowerCase() : '';
+  return FT[ext] || ['file', 'var(--dim)'];
+}
+
 const loadFiles = safely(async dir => {
   const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
   S.filesDir = r.dir;
@@ -901,9 +1002,15 @@ const loadFiles = safely(async dir => {
   $('f-up').disabled = !r.parent;
   $('f-up').onclick = () => go({ d: r.parent });
   $('f-list').replaceChildren(...r.entries.map(f => {
-    const b = el('button', 'row' + (f.dir ? ' dir' : ''));
-    b.innerHTML = icon(f.dir ? 'folder' : 'file');
+    const b = el('button', 'row' + (f.dir ? ' dir' : '')), [ic, color] = fileIcon(f);
+    b.innerHTML = icon(ic);
+    b.firstChild.style.color = color;
     b.append(el('span', 'nm', f.name), el('span', 'meta', f.dir ? '' : `${size(f.size)} · ${ago(f.mtime)}`));
+    if (f.git) {
+      const g = el('span', f.git === '•' ? 'gdot' : 'badge ' + f.git, f.git === '•' ? '' : f.git);
+      g.title = f.git === '•' ? 'Có thay đổi bên trong' : { M: 'Đã sửa', A: 'Mới thêm', D: 'Đã xoá', U: 'Chưa theo dõi', R: 'Đổi tên' }[f.git] || f.git;
+      b.append(g);
+    }
     b.onclick = () => f.dir ? go({ d: f.path }) : openFile(f.path);
     return b;
   }));

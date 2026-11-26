@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -125,4 +125,11 @@ test('WebSocket chỉ nhận Origin của chính app', () => {
   assert.ok(sameOrigin({ host: 'may.tail1.ts.net' }));
   assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://evil.com' }));
   assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://may.tail1.ts.net.evil.com' }));
+});
+
+test('đánh dấu git trong tab File', () => {
+  const raw = ' M src/server.mjs\0?? docs/new.md\0A  README.md\0M  src/sub/deep.js\0';
+  assert.deepEqual(Object.fromEntries(marksFromStatus(raw, '')), { src: '•', docs: '•', 'README.md': 'A' });
+  assert.deepEqual(Object.fromEntries(marksFromStatus(raw, 'src')), { 'server.mjs': 'M', sub: '•' });
+  assert.deepEqual(Object.fromEntries(marksFromStatus('?? newdir/\0', '')), { newdir: 'U' });
 });
