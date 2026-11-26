@@ -29,7 +29,8 @@ export const validRev = s => typeof s === 'string' && /^[0-9a-f]{4,40}$/.test(s)
 export const validUuid = s => typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(s);
 export const validBranch = s => typeof s === 'string' && /^[A-Za-z0-9._\/-]{1,200}$/.test(s) && !s.startsWith('-') && !s.includes('..');
 export const validGitPath = s => typeof s === 'string' && s.length > 0 && s.length < 4096 && !s.includes('\0');
-export const KEYS = new Set(['Escape', 'C-c', 'C-d', 'Tab', 'BTab', 'Up', 'Down', 'Left', 'Right', 'Enter', 'PageUp', 'PageDown']);
+// Phím số 1–9: chọn nhanh trong menu xác nhận của agent (menu nhận phím bấm thật, không nhận chữ dán vào)
+export const KEYS = new Set(['Escape', 'C-c', 'C-d', 'Tab', 'BTab', 'Up', 'Down', 'Left', 'Right', 'Enter', 'PageUp', 'PageDown', ...'123456789']);
 // Chặn DNS rebinding: chỉ nhận Host là localhost hoặc tên Tailscale
 export const validHost = h => typeof h === 'string' && /^(localhost|127\.0\.0\.1|[a-z0-9-]+\.[a-z0-9-]+\.ts\.net)(:\d+)?$/i.test(h);
 
@@ -126,6 +127,7 @@ async function sessions() {
     const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
     if (active === '11') s.dir = dir;
     if (!s.agent && agentOf.has(pid)) { s.agent = agentOf.get(pid); s.agentPid = agentPidOf.get(pid); }
+    if (s.agent === 'claude' && s.agentPid && !s.convId) s.convId = await claudeSessionId(s.agentPid); // hội thoại đang chạy trong phiên
     by.set(name, s);
   }
   const list = [...by.values()].sort((a, b) => b.activity - a.activity);
@@ -134,6 +136,7 @@ async function sessions() {
   await Promise.all(list.map(async s => {
     const screen = (await tmux('capture-pane', '-p', '-J', '-t', target(s.name)).catch(() => ({ stdout: '' }))).stdout;
     s.state = s.agent ? agentState(screen) : 'shell';
+    if (s.state === 'waiting') Object.assign(s, parseChoices(screen)); // câu hỏi + các lựa chọn để hiện nút bấm
     // Bỏ các dòng khung/trang trí của agent để xem trước có nội dung thật
     s.preview = screen.split('\n').map(l => l.trimEnd())
       .filter(l => l.replace(/[─━│╭╮╰╯\s]/g, '').length > 1 && !/[▐▛▜▝▘█▀]/.test(l) && !/^\s*(⏵|\? for shortcuts)/.test(l))
@@ -200,22 +203,28 @@ async function readHead(file, bytes = 512 * 1024) {
   return buf.subarray(0, bytesRead).toString().split('\n');
 }
 // dir: chỉ lấy hội thoại của thư mục đó (đọc nhiều file hơn vì cwd chỉ biết sau khi đọc)
-async function history(dir) {
+// Bộ nhớ đệm theo file + thời điểm sửa: thư mục và tiêu đề của một hội thoại không đổi
+const historyCache = new Map();
+async function history(dir, limit = 40) {
   const files = [];
   for (const [agent, { dir, accept }] of Object.entries(HISTORY))
     for (const f of await fs.readdir(dir, { recursive: true }).catch(() => []))
       if (f.endsWith('.jsonl') && accept(f)) files.push({ agent, f: path.join(dir, f) });
   const stats = await Promise.all(files.map(x => fs.stat(x.f).then(s => ({ ...x, t: s.mtimeMs }), () => null)));
-  const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, dir ? 300 : 40);
+  const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, dir ? 300 : limit);
   return (await Promise.all(recent.map(async ({ agent, f, t }) => {
+    const c = historyCache.get(f);
+    if (c && c.t === t) return c.entry;
     const h = { id: agent === 'claude' ? path.basename(f, '.jsonl') : null };
     for (const line of await readHead(f)) {
       let o; try { o = JSON.parse(line); } catch { continue; }
       HISTORY[agent].parse(o, h);
       if (h.id && h.cwd && h.title) break;
     }
-    return validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
-  }))).filter(h => h && (!dir || h.cwd === dir)).slice(0, 40);
+    const entry = validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
+    historyCache.set(f, { t, entry });
+    return entry;
+  }))).filter(h => h && (!dir || h.cwd === dir)).slice(0, dir ? 40 : limit);
 }
 
 // Agent nào có cài trên máy này (tìm trong PATH)
@@ -342,6 +351,20 @@ async function sessionTokens(agent, cwd, pid) {
 }
 
 // Tin nhắn gần nhất (người dùng + agent) dạng văn bản: agent chạy màn hình phụ nên tmux không giữ lịch sử
+// Màn hình chờ xác nhận: câu hỏi và các lựa chọn đánh số ("❯ 1. Yes", "  2. No, and tell Claude…")
+export function parseChoices(screen) {
+  const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim());
+  const tail = lines.slice(-20), choices = [];
+  let first = -1;
+  tail.forEach((l, i) => {
+    const m = /^\s*(?:[❯›>]\s*)?(\d)[.)]\s+(.+)$/.exec(l);
+    if (m && Number(m[1]) === choices.length + 1) { if (first < 0) first = i; choices.push({ n: Number(m[1]), label: m[2].trim() }); }
+  });
+  if (!choices.length) return {};
+  const question = tail.slice(0, first).reverse().find(l => /\?\s*$/.test(l.trim()))?.trim() || null;
+  return { question, choices };
+}
+
 export function transcriptMessages(agent, lines, limit = 40) {
   const out = [];
   for (const l of lines) { // lines: mới nhất trước
@@ -357,7 +380,7 @@ export function transcriptMessages(agent, lines, limit = 40) {
       who = p.role;
     }
     if (!text?.trim() || text.startsWith('<') || text.startsWith('# AGENTS.md') || (who !== 'user' && who !== 'assistant')) continue;
-    out.push({ who, text: text.trim() });
+    out.push({ who, text: text.trim(), t: Date.parse(o.timestamp) || null });
     if (out.length >= limit) break;
   }
   return out.reverse();
@@ -657,6 +680,17 @@ const routes = {
     return { roots: ROOTS, recent };
   },
   'GET /api/history': q => history(q.get('dir') || undefined),
+  // Cây project (giống Claude Code desktop): phiên đang chạy + hội thoại cũ, gom theo thư mục
+  async 'GET /api/projects'() {
+    const [list, hist] = await Promise.all([sessions(), history(undefined, 250)]);
+    const map = new Map();
+    const get = dir => map.get(dir) || map.set(dir, { dir, sessions: [], conversations: [], last: 0 }).get(dir);
+    for (const x of list) { const p = get(x.dir); p.sessions.push(x.name); p.last = Math.max(p.last, x.activity * 1000); }
+    for (const h of hist) { const p = get(h.cwd); if (p.conversations.length < 20) p.conversations.push(h); p.last = Math.max(p.last, h.mtime); }
+    // Chỉ thư mục còn tồn tại và nằm trong TERMI_ROOTS (mở lại hội thoại cần vào được thư mục)
+    const ok = await Promise.all([...map.values()].map(async p => (await safeDir(p.dir)) && p));
+    return ok.filter(Boolean).sort((a, b) => b.sessions.length - a.sessions.length || b.last - a.last);
+  },
   'GET /api/agents': () => installedAgents(),
   'GET /api/usage': q => usage(q.get('session')),
   'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
@@ -813,6 +847,22 @@ const routes = {
   'GET /api/push/key': () => ({ key: vapid.pub }),
   'GET /api/push/alert': () => lastAlert,
   'GET /api/events': () => events,
+  // Chế độ Chat: các tin nhắn gần nhất của hội thoại trong phiên
+  async 'GET /api/chat'(q) {
+    const name = q.get('session');
+    if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
+    const s = (await sessions()).find(x => x.name === name);
+    if (!s) throw fail(404, 'Không tìm thấy phiên');
+    const f = s.agent && await transcriptFile(s.agent, s.dir, s.agentPid);
+    const limit = Math.min(200, Math.max(10, Number(q.get('limit')) || 80));
+    return { agent: s.agent, state: s.state, messages: f ? transcriptMessages(s.agent, await readTail(f, 4 * 1024 * 1024), limit) : [] };
+  },
+  // Trang Cài đặt
+  async 'GET /api/info'() {
+    const pkg = JSON.parse(await fs.readFile(path.join(PUBLIC, '..', 'package.json'), 'utf8').catch(() => '{}'));
+    const claudeUsage = await fs.access(path.join(DATA, 'claude-statusline.mjs')).then(() => true, () => false);
+    return { version: pkg.version || '?', roots: ROOTS, host: os.hostname(), platform: process.platform, claudeUsage, agents: await installedAgents() };
+  },
   async 'POST /api/push/sub'(_, b) {
     let u;
     try { u = new URL(b.endpoint); } catch { throw fail(400, 'Endpoint không hợp lệ'); }

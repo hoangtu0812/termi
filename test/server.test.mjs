@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -102,13 +102,13 @@ test('tin nhắn từ file hội thoại', () => {
     { type: 'user', message: { content: [{ type: 'tool_result', content: 'x' }] } },
     { type: 'assistant', message: { content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text: 'Đã sửa.' }] } },
   ].map(o => JSON.stringify(o)).reverse();
-  assert.deepEqual(transcriptMessages('claude', claude), [{ who: 'user', text: 'sửa lỗi đăng nhập' }, { who: 'assistant', text: 'Đã sửa.' }]);
+  assert.deepEqual(transcriptMessages('claude', claude), [{ who: 'user', text: 'sửa lỗi đăng nhập', t: null }, { who: 'assistant', text: 'Đã sửa.', t: null }]);
   const codex = [
     { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: '# AGENTS.md ...' }] } },
     { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'chạy test' }] } },
     { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '12 test qua' }] } },
   ].map(o => JSON.stringify(o)).reverse();
-  assert.deepEqual(transcriptMessages('codex', codex), [{ who: 'user', text: 'chạy test' }, { who: 'assistant', text: '12 test qua' }]);
+  assert.deepEqual(transcriptMessages('codex', codex), [{ who: 'user', text: 'chạy test', t: null }, { who: 'assistant', text: '12 test qua', t: null }]);
 });
 
 test('chỉ chủ máy được vào', () => {
@@ -158,4 +158,14 @@ test('đếm client tmux mồ côi của ttyd', () => {
   const ps = '  1 100\n100 201\n100 202\n100 203\n 55 204\n';
   assert.equal(orphanCount(ps, '100', new Set(['202'])), 2); // 201, 203 mồ côi; 202 đang gắn; 204 con của tiến trình khác
   assert.equal(orphanCount(ps, '100', new Set()), 3);
+});
+
+test('đọc lựa chọn khi agent chờ xác nhận', () => {
+  const claude = 'Bash command\n  rm -rf build\nDo you want to proceed?\n❯ 1. Yes\n  2. Yes, and don\'t ask again for rm commands\n  3. No, and tell Claude what to do differently (esc)\n';
+  assert.deepEqual(parseChoices(claude), { question: 'Do you want to proceed?', choices: [
+    { n: 1, label: 'Yes' }, { n: 2, label: "Yes, and don't ask again for rm commands" }, { n: 3, label: 'No, and tell Claude what to do differently (esc)' }] });
+  const codex = 'Would you like to run the following command?\n$ npm test\n› 1. Yes, proceed\n  2. No, and tell Codex what to do differently\nPress enter to confirm or esc to cancel';
+  assert.equal(parseChoices(codex).choices.length, 2);
+  assert.equal(parseChoices(codex).question, 'Would you like to run the following command?');
+  assert.deepEqual(parseChoices('không có lựa chọn nào\n1. dòng lẻ không bắt đầu từ menu\n3. ba'), { question: null, choices: [{ n: 1, label: 'dòng lẻ không bắt đầu từ menu' }] });
 });

@@ -78,6 +78,28 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .wcard .wa { display:flex; gap:6px; flex-wrap:wrap; }
 .wbtn { display:inline-flex; align-items:center; height:34px; padding:0 12px 0 6px; border-radius:99px; border:1px solid var(--line2); background:var(--panel); font-size:13px; font-weight:500; }
 .wbtn .av.sm { margin-right:6px; }
+/* Cây project */
+.pj { display:flex; align-items:center; gap:2px; margin-top:6px; }
+.pjt { flex:1; min-width:0; display:flex; align-items:center; gap:6px; height:36px; padding:0 6px; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:13px; font-weight:600; text-align:left; }
+.pjt svg.i { width:15px; height:15px; flex:none; } .pjt svg.i:first-child { transition:transform .12s; color:var(--faint); }
+.pj.open .pjt svg.i:first-child { transform:rotate(90deg); }
+.pjt svg.i:nth-child(2) { color:var(--blue); }
+.pjn { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg); }
+.pjc { flex:none; min-width:18px; height:18px; padding:0 5px; border-radius:99px; background:var(--hover); color:var(--dim); font:600 11px/18px var(--mono); text-align:center; }
+.pj .ibtn { width:32px; height:32px; flex:none; }
+.si, .ci { display:flex; align-items:flex-start; gap:10px; width:100%; padding:7px 8px 7px 26px; border:0; border-radius:10px; background:transparent; text-align:left; }
+.si.cur { background:var(--card); box-shadow:inset 0 0 0 1px var(--line2); }
+.si .av.sm, .ci .av.sm { margin:1px 0 0; }
+.sib { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
+.sit { display:flex; align-items:center; gap:8px; } .sit .nm { flex:1; min-width:0; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.sit .state { font-size:11.5px; } .sit .chgs { margin:0; font-size:11.5px; }
+.sip { font-size:12.5px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.ci .cit { font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg); }
+.ci .cim { font-size:11.5px; color:var(--faint); }
+.ci { opacity:.85; }
+.cmore { margin-left:26px; padding:4px 8px; border:0; background:transparent; color:var(--acc); font-size:12.5px; text-align:left; }
+.cnone { margin-left:34px; padding:4px 0; font-size:12.5px; color:var(--faint); }
+@media (hover: hover) { .si:hover, .ci:hover, .pjt:hover { background:var(--hover); } }
 #sessions { flex:1; overflow:auto; padding:8px; display:flex; flex-direction:column; gap:4px; }
 .sess { display:flex; flex-direction:row; align-items:flex-start; gap:12px; text-align:left; width:100%; padding:10px 12px; border-radius:var(--r); border:1px solid transparent; background:transparent; }
 .sess.cur { background:var(--card); border-color:var(--line2); }
@@ -257,6 +279,48 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 :root[data-theme=light] .hljs-built_in, :root[data-theme=light] .hljs-type { color:#c18401; }
 :root[data-theme=light] .hljs-attr, :root[data-theme=light] .hljs-attribute, :root[data-theme=light] .hljs-variable, :root[data-theme=light] .hljs-tag, :root[data-theme=light] .hljs-name { color:#e45649; }
 :root[data-theme=light] .hljs-meta { color:#0184bc; }
+
+/* Ô nhắn dùng chung */
+#composer { flex:none; border-top:1px solid var(--line); background:var(--bg); }
+/* Chat */
+.chat { padding:14px 12px 20px; display:flex; flex-direction:column; gap:10px; }
+.msg { display:flex; flex-direction:column; max-width:min(88%, 760px); gap:3px; }
+.msg.me { align-self:flex-end; align-items:flex-end; }
+.msg.ai { align-self:flex-start; }
+.msg .mb { padding:9px 13px; border-radius:16px; font-size:14.5px; line-height:1.55; overflow-wrap:anywhere; min-width:0; max-width:100%; }
+.msg.me .mb { background:var(--acc); color:#fff; border-bottom-right-radius:5px; white-space:pre-wrap; }
+.msg.ai .mb { background:var(--card); border:1px solid var(--line); border-bottom-left-radius:5px; }
+.msg time { font-size:11px; color:var(--faint); padding:0 6px; }
+.msg.ai .mb > :first-child { margin-top:0; } .msg.ai .mb > :last-child { margin-bottom:0; }
+.msg.ai .mb p { margin:.5em 0; } .msg.ai .mb ul, .msg.ai .mb ol { margin:.4em 0; padding-left:1.3em; }
+.msg.ai .mb h1, .msg.ai .mb h2, .msg.ai .mb h3, .msg.ai .mb h4 { font-size:1.05em; margin:.8em 0 .3em; }
+.msg.ai .mb code { font:.88em var(--mono); background:var(--hover); padding:.1em .35em; border-radius:5px; }
+.msg.ai .mb pre { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; overflow:auto; margin:.5em 0; }
+.msg.ai .mb pre code { background:none; padding:0; font-size:12.5px; line-height:1.5; }
+.msg.ai .mb table { border-collapse:collapse; display:block; overflow:auto; font-size:13px; } .msg.ai .mb th, .msg.ai .mb td { border:1px solid var(--line); padding:4px 8px; }
+.msg.ai .mb blockquote { margin:.4em 0; padding-left:10px; border-left:3px solid var(--line2); color:var(--dim); }
+.msg.ai .mb a { color:var(--acc); }
+.msg.typing .mb { color:var(--dim); font-style:italic; }
+.msg.typing i { width:30px; height:6px; margin-left:12px; border-radius:6px; background:linear-gradient(90deg, var(--acc) 0 30%, transparent 0) 0 0/10px 100% repeat-x; animation:pulse 1s infinite; }
+/* Xác nhận nhanh */
+.confirm { display:flex; flex-direction:column; gap:6px; margin:8px 8px 0; padding:10px; border-radius:12px; border:1px solid var(--warn); background:var(--warn-soft); }
+.confirm .cq { display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; }
+.confirm .cq svg.i { color:var(--warn); }
+.confirm .btn { justify-content:flex-start; height:auto; min-height:40px; padding:8px 12px; text-align:left; white-space:normal; }
+/* Micro */
+#b-mic.rec { color:#fff; background:var(--del); animation:pulse 1s infinite; }
+/* Cài đặt */
+.srow { display:flex; flex-direction:column; gap:8px; padding:12px 0; border-top:1px solid var(--line); }
+.srow:first-child { border-top:0; padding-top:0; }
+.srow .st { font-size:12px; font-weight:600; color:var(--dim); text-transform:uppercase; letter-spacing:.04em; }
+.srow .sv { font-size:14px; color:var(--fg); white-space:pre-wrap; overflow-wrap:anywhere; }
+.srow .sv.mono { font:13px var(--mono); }
+.srow a.sv { color:var(--acc); }
+.seg2 { display:flex; align-items:center; gap:4px; padding:3px; border-radius:10px; background:var(--panel); border:1px solid var(--line); align-self:flex-start; }
+.seg2 button { display:inline-flex; align-items:center; gap:6px; height:34px; padding:0 12px; border:0; border-radius:8px; background:transparent; color:var(--dim); font-size:14px; }
+.seg2 button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
+.seg2 .fsv { min-width:36px; text-align:center; font:600 14px var(--mono); }
+.agi { display:inline-flex; align-items:center; margin-right:12px; }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
@@ -354,7 +418,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
     <div class="bar">
       <div class="brand"><img src="/icon.svg" alt="">termi</div>
       <button class="ibtn" id="b-hist" title="Mở lại hội thoại cũ" aria-label="Mở lại hội thoại cũ" data-i="history"></button>
-      <button class="ibtn" id="b-theme"></button>
+      <button class="ibtn" id="b-settings" title="Cài đặt" aria-label="Cài đặt" data-i="gear"></button>
       <button class="ibtn" id="b-bell" title="Thông báo" aria-label="Bật thông báo" data-i="bell"></button>
       <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
     </div>
@@ -369,6 +433,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
       <button class="ibtn only-mobile" id="b-back" aria-label="Danh sách phiên" data-i="back"></button>
       <div class="title"><b id="t-name">termi</b><span id="t-state" class="state"></span></div>
       <div class="seg" id="seg">
+        <button data-t="chat"><span data-i="chat"></span>Chat</button>
         <button data-t="term"><span data-i="term"></span>Terminal</button>
         <button data-t="files"><span data-i="folder"></span>File</button>
         <button data-t="git"><span data-i="git"></span>Git</button>
@@ -387,19 +452,10 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
           <button class="t-down" id="t-down" type="button" hidden><span data-i="refresh"></span>Mất kết nối<small id="t-down-note">Chạm để kết nối lại</small></button>
         </div>
         <div class="keys" id="keys"></div>
-        <div class="atts" id="atts" hidden></div>
-        <div class="suggest" id="suggest" hidden></div>
-        <div class="compose">
-          <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với agent" data-i="zap"></button>
-          <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
-          <button class="ibtn" id="b-attach" title="Gửi file" aria-label="Gửi file" data-i="clip"></button>
-          <!-- accept="image/*" làm Android/iOS mở trình chọn ảnh thay vì menu Máy ảnh/Files -->
-          <input type="file" id="f-photo" accept="image/*" multiple hidden>
-          <input type="file" id="f-input" multiple hidden>
-          <textarea id="text" rows="1" placeholder="Nhắn cho agent…" aria-label="Nội dung gửi"></textarea>
-          <button class="ibtn send" id="b-send" title="Gửi" aria-label="Gửi" data-i="send"></button>
-        </div>
       </div>
+
+      <div class="pane" id="p-chat" hidden><div class="scroll chat" id="chat-list"></div></div>
+
 
       <div class="pane" id="p-files" hidden>
         <div class="toolbar">
@@ -444,10 +500,28 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
         <div class="scroll" id="v-body"></div>
       </div>
     </div>
+    <!-- Ô nhắn dùng chung cho Terminal và Chat -->
+    <div id="composer" hidden>
+      <div class="confirm" id="confirm" hidden></div>
+      <div class="atts" id="atts" hidden></div>
+      <div class="suggest" id="suggest" hidden></div>
+      <div class="compose">
+        <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với agent" data-i="zap"></button>
+        <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
+        <button class="ibtn" id="b-attach" title="Gửi file" aria-label="Gửi file" data-i="clip"></button>
+        <!-- accept="image/*" làm Android/iOS mở trình chọn ảnh thay vì menu Máy ảnh/Files -->
+        <input type="file" id="f-photo" accept="image/*" multiple hidden>
+        <input type="file" id="f-input" multiple hidden>
+        <button class="ibtn" id="b-mic" title="Nói để nhập" aria-label="Nhập bằng giọng nói" data-i="mic" hidden></button>
+        <textarea id="text" rows="1" placeholder="Nhắn cho agent…" aria-label="Nội dung gửi"></textarea>
+        <button class="ibtn send" id="b-send" title="Gửi" aria-label="Gửi" data-i="send"></button>
+      </div>
+    </div>
   </section>
 
   <nav id="tabbar">
     <button data-t="sessions"><span data-i="list"></span>Phiên</button>
+    <button data-t="chat"><span data-i="chat"></span>Chat</button>
     <button data-t="term"><span data-i="term"></span>Terminal</button>
     <button data-t="files"><span data-i="folder"></span>File</button>
     <button data-t="git"><span data-i="git"></span>Git</button>
@@ -499,6 +573,14 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   </div>
 </dialog>
 
+<dialog id="d-settings" class="sheet">
+  <div class="sheet-head">
+    <h3><span data-i="gear"></span>Cài đặt</h3>
+    <button class="ibtn" type="button" aria-label="Đóng" onclick="this.closest('dialog').close()" data-i="x"></button>
+  </div>
+  <div class="sheet-body" id="settings-body"></div>
+</dialog>
+
 <dialog id="d-quick">
   <form method="dialog">
     <h3>Thao tác nhanh</h3>
@@ -526,6 +608,9 @@ const P = {
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', contrast:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>',
   check:'<path d="M20 6 9 17l-5-5"/>',
+  chat:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
+  mic:'<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0M12 17v5"/>',
+  gear:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="m15 18-6-6 6-6"/>', more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
   term:'<path d="m4 17 6-5-6-5M12 19h8"/>', folder:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
@@ -535,7 +620,7 @@ const P = {
   send:'<path d="M12 19V5M5 12l7-7 7 7"/>', up:'<path d="M12 19V5M5 12l7-7 7 7"/>', home:'<path d="m3 10 9-7 9 7v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2Z"/>',
   refresh:'<path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/>', file:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/>',
   edit:'<path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>', trash:'<path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>',
-  minus:'<path d="M5 12h14"/>', down:'<path d="M12 5v14M19 12l-7 7-7-7"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
+  minus:'<path d="M5 12h14"/>', chevron:'<path d="m9 18 6-6-6-6"/>', down:'<path d="M12 5v14M19 12l-7 7-7-7"/>', code:'<path d="m16 18 6-6-6-6M8 6l-6 6 6 6"/>',
   doc:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>',
   braces:'<path d="M8 3H7a2 2 0 0 0-2 2v5a2 2 0 0 1-2 2 2 2 0 0 1 2 2v5a2 2 0 0 0 2 2h1M16 21h1a2 2 0 0 0 2-2v-5a2 2 0 0 1 2-2 2 2 0 0 1-2-2V5a2 2 0 0 0-2-2h-1"/>', rocket:'<path d="M4.5 16.5c-1.5 1.3-2 5-2 5s3.7-.5 5-2c.7-.8.7-2.1-.1-2.9a2.2 2.2 0 0 0-2.9-.1z"/><path d="m12 15-3-3a22 22 0 0 1 2-4A12.9 12.9 0 0 1 22 2c0 2.7-.8 7.5-6 11a22.4 22.4 0 0 1-4 2z"/><path d="M9 12H4s.6-3 2-4c1.6-1.1 5 0 5 0M12 15v5s3-.6 4-2c1.1-1.6 0-5 0-5"/>', x:'<path d="M18 6 6 18M6 6l12 12"/>',
   gauge:'<path d="M12 14l4-4"/><path d="M3.3 19a10 10 0 1 1 17.4 0"/>', clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
@@ -558,17 +643,12 @@ function applyTheme() {
   const pref = themePref(), theme = pref === 'auto' ? (lightQuery.matches ? 'light' : 'dark') : pref;
   document.documentElement.dataset.theme = theme;
   document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#111318';
-  const b = document.getElementById('b-theme');
-  b.innerHTML = icon(THEMES[pref][1]);
-  b.title = 'Giao diện: ' + THEMES[pref][0];
-  b.setAttribute('aria-label', b.title + ' (bấm để đổi)');
 }
-document.getElementById('b-theme').onclick = () => {
-  const order = Object.keys(THEMES), next = order[(order.indexOf(themePref()) + 1) % order.length];
-  try { localStorage.setItem('termi-theme', next); } catch {}
+function setTheme(pref) {
+  try { localStorage.setItem('termi-theme', pref); } catch {}
   applyTheme();
-  toast('Giao diện: ' + THEMES[next][0]);
-};
+}
+
 lightQuery.addEventListener('change', applyTheme);
 applyTheme();
 
@@ -658,7 +738,8 @@ function render() {
   const s = st();
   if ((s.m || '') !== S.machine) {
     S.machine = s.m || '';
-    Object.assign(S, { list: [], loaded: false, dirs: null, termName: null, seen: {}, git: null, restore: [] });
+    Object.assign(S, { list: [], loaded: false, dirs: null, termName: null, seen: {}, git: null, restore: [], projects: null });
+    loadProjects();
     loadRestore();
     $('machine').value = S.machine;
     poll();
@@ -670,19 +751,22 @@ function render() {
   for (const b of document.querySelectorAll('#tabbar button, #seg button')) b.classList.toggle('on', b.dataset.t === tab);
   $('viewer').hidden = !s.v;
   renderSessions(); renderTop();
-  const needSession = tab === 'term' || tab === 'files';
+  const needSession = tab === 'term' || tab === 'files' || tab === 'chat';
   const gone = s.s && S.loaded && !cur(); // phiên đã đóng (vd. mở lại đường dẫn cũ): không mở terminal cho nó
   const show = needSession && (!s.s || gone) ? 'none' : tab;
   // Màn hình rộng: đang xem File/Git của một phiên thì terminal hiện bên trái
   const split = splitWide() && s.s && !gone && (show === 'files' || show === 'git');
   document.body.classList.toggle('split', !!split);
-  for (const p of ['none', 'term', 'files', 'git']) $('p-' + p).hidden = p !== show && !(split && p === 'term');
+  for (const p of ['none', 'term', 'files', 'git', 'chat']) $('p-' + p).hidden = p !== show && !(split && p === 'term');
+  $('composer').hidden = !(s.s && !gone && (show === 'term' || show === 'chat' || split));
+  renderConfirm();
   // Bản nháp theo từng phiên: chuyển phiên không mất chữ đang gõ dở
   const dk = `${s.m || ''}/${s.s || ''}`;
   if (S.draftFor !== dk) { S.draftFor = dk; $('text').value = loadDraft(dk); autosize($('text')); }
   if (show === 'none') welcome($('p-none'));
   if (s.v) return; // đang xem file/diff: giữ nguyên pane phía sau, không tải lại
   if (show === 'term' || split) ensureTerm(s.s);
+  if (show === 'chat') loadChat(true);
   if (show === 'files') loadFiles(s.d || cur()?.dir);
   if (show === 'git') loadGit(s.g || cur()?.dir);
 }
@@ -696,46 +780,87 @@ function stateEl(state, agent, since) {
   e.append(el('span', 'dot'), (agent ? agentName(agent) + ' · ' : '') + (STATE[state] || '') + (live ? ' · ' + dur(since) : ''));
   return e;
 }
+// Danh sách phiên dạng cây project (giống Claude Code desktop): mỗi project thu/mở được, bên trong là
+// phiên đang chạy (dòng gọn) và hội thoại cũ của project (chạm để mở lại).
+const collapsedSet = () => new Set(JSON.parse(store.get('termi-collapsed') || '[]'));
+function toggleProject(dir, open) {
+  const c = collapsedSet(); open ? c.delete(dir) : c.add(dir);
+  store.set('termi-collapsed', JSON.stringify([...c])); renderSessions();
+}
 function renderSessions() {
   const box = $('sessions'), sel = st().s;
-  if (!S.list.length) { $('sfind').hidden = true; welcome(box); return renderRestore(box); }
-  $('sfind').hidden = S.list.length < 4;
+  const projects = S.projects || [];
+  if (!S.list.length && !projects.length) { $('sfind').hidden = true; welcome(box); return renderRestore(box); }
+  $('sfind').hidden = S.list.length + projects.length < 4;
   const q = $('sq').value.trim().toLowerCase();
-  // Cần chú ý lên đầu: chờ xác nhận → đang chạy → còn lại; cùng mức thì mới hoạt động trước
   const rank = { waiting: 0, working: 1 };
-  const list = S.list.filter(x => !q || (x.name + ' ' + x.dir).toLowerCase().includes(q))
-    .sort((a, b) => (rank[a.state] ?? 2) - (rank[b.state] ?? 2) || b.activity - a.activity);
-  // Nhóm theo thư mục khi các phiên nằm ở nhiều thư mục
-  const groups = new Map();
-  for (const x of list) groups.set(x.dir, [...(groups.get(x.dir) || []), x]);
-  // Project chưa có phiên nào: lấy từ thư mục gần đây, xếp sau (shortcut: tối đa 10, thêm "xem thêm" khi cần)
-  if (S.dirs) for (const d of S.dirs.recent.filter(d => !groups.has(d) && !S.list.some(x => x.dir === d) && (!q || d.toLowerCase().includes(q))).slice(0, 10)) groups.set(d, []);
-  const nodes = [];
-  for (const [dir, items] of groups) {
-    // Tiêu đề project: tên thư mục + nút tạo phiên mới ngay trong thư mục đó (cùng agent với phiên mới nhất)
-    const h = el('div', 'sgrp' + (items.length ? '' : ' idle')), add = el('button', 'ibtn');
-    h.append(el('span', null, (dir.split('/').pop() || dir) + (items.length ? ` · ${items.length}` : '')), add); h.title = dir;
-    add.type = 'button'; add.innerHTML = icon('plus'); add.setAttribute('aria-label', `Phiên mới trong ${dir}`); add.title = 'Phiên mới trong thư mục này';
-    add.onclick = safely(() => quickStart(dir, items.find(x => x.agent)?.agent || 'claude'));
+  const byDir = new Map();
+  for (const x of S.list) byDir.set(x.dir, [...(byDir.get(x.dir) || []), x]);
+  // Project từ máy chủ + project của phiên mới tạo (chưa kịp có trong danh sách project)
+  const dirs = [...new Set([...[...byDir.keys()], ...projects.map(p => p.dir)])];
+  const projOf = new Map(projects.map(p => [p.dir, p]));
+  const running = new Set(S.list.map(x => x.convId).filter(Boolean));
+  const collapsed = collapsedSet(), nodes = [];
+  for (const dir of dirs) {
+    const name = dir.split('/').pop() || dir;
+    const sess = (byDir.get(dir) || []).filter(x => !q || (x.name + ' ' + name).toLowerCase().includes(q))
+      .sort((a, b) => (rank[a.state] ?? 2) - (rank[b.state] ?? 2) || b.activity - a.activity);
+    const convs = (projOf.get(dir)?.conversations || []).filter(c => !running.has(c.id) && (!q || (c.title + ' ' + name).toLowerCase().includes(q)));
+    if (q && !sess.length && !convs.length && !name.toLowerCase().includes(q)) continue;
+    // Mặc định: project có phiên đang chạy thì mở; đang tìm kiếm thì mở hết
+    const open = q ? true : byDir.has(dir) ? !collapsed.has(dir) : collapsed.has('+' + dir);
+    const h = el('div', 'pj' + (open ? ' open' : '')), add = el('button', 'ibtn');
+    const t = el('button', 'pjt'); t.type = 'button';
+    t.innerHTML = icon('chevron') + icon('folder');
+    t.append(el('span', 'pjn', name));
+    if (sess.length) t.append(el('span', 'pjc', String(sess.length)));
+    const waiting = sess.some(x => x.state === 'waiting'), working = sess.some(x => x.state === 'working');
+    if (waiting || working) { const d = el('span', 'state st-' + (waiting ? 'waiting' : 'working')); d.append(el('span', 'dot')); t.append(d); }
+    t.title = dir;
+    t.onclick = () => byDir.has(dir) ? toggleProject(dir, !open) : toggleProject('+' + dir, open);
+    add.type = 'button'; add.innerHTML = icon('plus'); add.title = 'Phiên mới trong thư mục này'; add.setAttribute('aria-label', `Phiên mới trong ${dir}`);
+    add.onclick = safely(() => quickStart(dir, sess.find(x => x.agent)?.agent || convs[0]?.agent || 'claude'));
+    h.append(t, add);
     nodes.push(h);
-    nodes.push(...items.map(sessionCard));
+    if (!open) continue;
+    nodes.push(...sess.map(sessionRow));
+    const more = S.moreConv?.[dir], shown = more ? convs : convs.slice(0, 3);
+    nodes.push(...shown.map(c => convRow(dir, c)));
+    if (convs.length > shown.length) {
+      const m = el('button', 'cmore', `Xem thêm ${convs.length - shown.length} hội thoại`); m.type = 'button';
+      m.onclick = () => { S.moreConv = { ...S.moreConv, [dir]: true }; renderSessions(); };
+      nodes.push(m);
+    }
+    if (!sess.length && !convs.length) nodes.push(el('div', 'cnone', 'Chưa có phiên hay hội thoại nào'));
   }
-  if (!nodes.length) nodes.push(el('div', 'empty', 'Không có phiên nào khớp'));
+  if (!nodes.length) nodes.push(el('div', 'empty', 'Không có gì khớp'));
   box.replaceChildren(...nodes);
   renderRestore(box);
-  function sessionCard(x) {
-    const b = el('button', 'sess' + (x.name === sel ? ' cur' : '')), body = el('div', 'sb');
-    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, null, x.since)); // logo đã cho biết agent
-    const dirLine = el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`);
-    if (x.changes) { const c = el('span', 'chgs'); c.innerHTML = icon('git'); c.append(x.changes); c.title = `${x.changes} file chưa commit`; dirLine.prepend(c); }
-    body.append(top, dirLine);
-    if (x.preview) body.append(el('div', 'pv' + (x.previewKind === 'reply' ? ' reply' : ''), x.preview));
-    b.append(agentAvatar(x.agent), body);
+  // Phiên đang chạy: một dòng gọn (logo nhỏ, tên, trạng thái) + một dòng xem trước
+  function sessionRow(x) {
+    const b = el('button', 'si' + (x.name === sel ? ' cur' : '')); b.type = 'button';
+    const top = el('div', 'sit'); top.append(el('span', 'nm', x.name), stateEl(x.state, null, x.since));
+    if (x.changes) { const c = el('span', 'chgs'); c.innerHTML = icon('git'); c.append(x.changes); c.title = `${x.changes} file chưa commit`; top.append(c); }
+    const body = el('div', 'sib'); body.append(top);
+    if (x.preview) body.append(el('div', 'sip', x.preview.replace(/\s+/g, ' ')));
+    b.append(agentAvatar(x.agent, true), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
-    // Giữ lâu (hoặc chuột phải): menu đổi tên / đóng cho đúng phiên này
-    b.oncontextmenu = e => { e.preventDefault(); openSessionMenu(x.name); };
+    b.oncontextmenu = e => { e.preventDefault(); openSessionMenu(x.name); }; // giữ lâu: đổi tên / đóng
     return b;
   }
+  // Hội thoại cũ: chạm để mở lại đúng hội thoại trong một phiên mới
+  function convRow(dir, c) {
+    const b = el('button', 'ci'); b.type = 'button';
+    const body = el('div', 'sib'); body.append(el('div', 'cit', c.title), el('div', 'cim', `${agentName(c.agent)} · ${ago(c.mtime)}`));
+    b.append(agentAvatar(c.agent, true), body);
+    b.title = 'Mở lại hội thoại này';
+    b.onclick = safely(() => quickStart(dir, c.agent, c.id));
+    return b;
+  }
+}
+async function loadProjects() {
+  const p = await api('/api/projects').catch(() => null);
+  if (p) { S.projects = p; renderSessions(); }
 }
 $('sq').oninput = renderSessions;
 
@@ -791,12 +916,13 @@ async function welcome(box) {
   }));
 }
 // Tạo phiên đặt tên theo thư mục; trùng tên thì thêm -2, -3…
-async function quickStart(dir, agent) {
+async function quickStart(dir, agent, resume) {
   const base = (dir.split('/').pop() || 'phien').replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 32) || 'phien';
   for (let i = 1; i < 10; i++) {
     const name = i === 1 ? base : `${base}-${i}`;
     try {
-      await api('/api/sessions', { name, dir, agent });
+      await api('/api/sessions', { name, dir, agent, ...(resume ? { resume } : {}) });
+      loadProjects();
       await poll();
       return go({ s: name, t: 'term', d: null, g: null, v: null });
     } catch (e) { if (!/tồn tại/.test(e.message)) throw e; }
@@ -814,6 +940,7 @@ function renderTop() {
   $('t-state').title = x?.dir || '';
   $('b-menu').hidden = !x;
   renderTabs();
+  renderConfirm();
 }
 
 // ---- Chuyển phiên nhanh. Thứ tự theo tên: cố định, không nhảy chỗ khi trạng thái đổi ----
@@ -861,6 +988,7 @@ async function poll() {
     loadEvents();
     S.list = list; S.loaded = true;
     checkStale();
+    if (st().t === 'chat' && st().s) loadChat();
     renderSessions(); renderTop();
   } catch {}
 }
@@ -1112,6 +1240,158 @@ copyBtn.onclick = safely(async () => {
   requestAnimationFrame(() => { $('v-body').scrollTop = $('v-body').scrollHeight; }); // mới nhất nằm cuối
 });
 $('keys').prepend(copyBtn);
+// ==================== Chế độ Chat ====================
+// Hội thoại dạng bong bóng: bạn bên phải, agent bên trái (markdown). Lấy từ file hội thoại, tự cập nhật.
+const ALLOWED_TAGS = new Set('P BR STRONG EM B I DEL S CODE PRE BLOCKQUOTE UL OL LI H1 H2 H3 H4 H5 H6 A TABLE THEAD TBODY TR TH TD HR SPAN INPUT'.split(' '));
+// Câu trả lời của agent có thể chứa HTML (vd. trích code): dựng trong <template> trơ rồi lọc theo danh sách cho phép
+function sanitize(root) {
+  for (const n of [...root.querySelectorAll('*')]) {
+    if (!ALLOWED_TAGS.has(n.tagName)) { n.replaceWith(document.createTextNode(n.textContent)); continue; }
+    for (const a of [...n.attributes]) {
+      const ok = (n.tagName === 'A' && a.name === 'href' && /^(https?:|mailto:)/i.test(a.value.trim()))
+        || (n.tagName === 'CODE' && a.name === 'class' && /^language-[\w+-]+$/.test(a.value))
+        || (n.tagName === 'INPUT' && ((a.name === 'type' && a.value === 'checkbox') || a.name === 'checked' || a.name === 'disabled'))
+        || ((n.tagName === 'TH' || n.tagName === 'TD') && a.name === 'align');
+      if (!ok) n.removeAttribute(a.name);
+    }
+    if (n.tagName === 'A') { n.target = '_blank'; n.rel = 'noopener noreferrer'; }
+  }
+  return root;
+}
+async function mdSafe(text) {
+  const marked = await loadMarked();
+  const t = document.createElement('template');
+  t.innerHTML = marked.parse(text, { gfm: true, breaks: true });
+  sanitize(t.content);
+  const codes = t.content.querySelectorAll('pre > code');
+  if (codes.length) {
+    const hljs = await loadHljs().catch(() => null);
+    if (hljs) for (const c of codes) {
+      const lang = /language-([\w+-]+)/.exec(c.className)?.[1];
+      if (lang && hljs.getLanguage(lang) && c.textContent.length < 100_000) c.innerHTML = hljs.highlight(c.textContent, { language: lang, ignoreIllegals: true }).value;
+    }
+  }
+  return t.content;
+}
+const chatCache = new Map(); // nội dung → bong bóng đã dựng (khỏi dựng lại markdown mỗi lần làm mới)
+let chatKey = '';
+async function bubble(m) {
+  const key = m.who + '\u0000' + m.text;
+  if (chatCache.has(key)) return chatCache.get(key);
+  const b = el('div', 'msg ' + (m.who === 'user' ? 'me' : 'ai'));
+  const body = el('div', 'mb');
+  if (m.who === 'user') body.textContent = m.text;
+  else body.append(await mdSafe(m.text).catch(() => document.createTextNode(m.text)));
+  b.append(body);
+  if (m.t) b.append(el('time', null, new Date(m.t).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })));
+  chatCache.set(key, b);
+  return b;
+}
+const loadChat = safely(async first => {
+  const name = st().s;
+  if (!name) return;
+  const box = $('chat-list');
+  if (first && box.dataset.for !== name) { box.dataset.for = name; box.replaceChildren(...skel(4, 'sk tall')); chatKey = ''; }
+  const r = await api('/api/chat?session=' + encodeURIComponent(name));
+  if (st().s !== name) return;
+  const last = r.messages.at(-1);
+  const key = `${name}|${r.messages.length}|${last?.t}|${last?.text.length}|${r.state}`;
+  if (key === chatKey) return;
+  chatKey = key;
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
+  const nodes = await Promise.all(r.messages.map(bubble));
+  if (!r.agent) nodes.push(el('div', 'empty', 'Phiên này chưa chạy agent nào'));
+  else if (!r.messages.length) nodes.push(el('div', 'empty', 'Chưa có tin nhắn nào'));
+  if (r.state === 'working') { const t = el('div', 'msg ai typing'); t.append(el('div', 'mb', `${agentName(r.agent)} đang làm`), el('i')); nodes.push(t); }
+  box.replaceChildren(...nodes);
+  if (first || atBottom) box.scrollTop = box.scrollHeight;
+});
+
+// ==================== Nút xác nhận nhanh ====================
+// Agent hỏi xác nhận (Do you want to proceed? / Would you like to run…): hiện các lựa chọn thành nút to
+function renderConfirm() {
+  const x = cur(), box = $('confirm');
+  const show = x?.state === 'waiting' && x.choices?.length && !$('composer').hidden;
+  box.hidden = !show;
+  if (!show) return;
+  const sig = x.name + JSON.stringify(x.choices);
+  if (box.dataset.sig === sig) return;
+  box.dataset.sig = sig;
+  const head = el('div', 'cq'); head.innerHTML = icon('bell'); head.append(x.question || `${agentName(x.agent)} cần bạn xác nhận`);
+  box.replaceChildren(head, ...x.choices.map(c => {
+    const b = el('button', 'btn' + (c.n === 1 ? ' pri' : ''), `${c.n}. ${c.label}`); b.type = 'button';
+    b.onclick = safely(async () => {
+      await api('/api/send', { session: x.name, key: String(c.n) });
+      navigator.vibrate?.(15);
+      box.hidden = true; box.dataset.sig = '';
+      setTimeout(poll, 600);
+    });
+    return b;
+  }));
+}
+
+// ==================== Nhập bằng giọng nói ====================
+const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
+let rec = null;
+if (Speech) {
+  $('b-mic').hidden = false;
+  $('b-mic').onpointerdown = e => e.preventDefault(); // giữ bàn phím
+  $('b-mic').onclick = () => {
+    if (rec) return rec.stop();
+    const t = $('text'), base = t.value ? t.value.replace(/\s*$/, ' ') : '';
+    rec = new Speech();
+    rec.lang = 'vi-VN'; rec.interimResults = true; rec.continuous = true;
+    rec.onresult = e => {
+      t.value = base + [...e.results].map(r => r[0].transcript).join('');
+      autosize(t); saveDraft();
+    };
+    rec.onerror = e => { if (e.error !== 'aborted' && e.error !== 'no-speech') toast('Micro: ' + (e.error === 'not-allowed' ? 'chưa cho phép dùng micro' : e.error), true); };
+    rec.onend = () => { rec = null; $('b-mic').classList.remove('rec'); };
+    rec.start();
+    $('b-mic').classList.add('rec');
+    navigator.vibrate?.(15);
+  };
+}
+
+// ==================== Trang Cài đặt ====================
+function settingRow(title, ...children) { const r = el('div', 'srow'); r.append(el('div', 'st', title), ...children); return r; }
+$('b-settings').onclick = safely(async () => {
+  $('d-settings').showModal();
+  const body = $('settings-body');
+  body.replaceChildren(...skel(4));
+  const [info, reg] = await Promise.all([api('/api/info'), navigator.serviceWorker?.getRegistration()]);
+  const pushOn = !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted';
+  // Giao diện
+  const seg = el('div', 'seg2');
+  for (const [k, [name, ic]] of Object.entries(THEMES)) {
+    const b = el('button', themePref() === k ? 'on' : ''); b.type = 'button'; b.innerHTML = icon(ic); b.append(name);
+    b.onclick = () => { setTheme(k); seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b)); };
+    seg.append(b);
+  }
+  // Cỡ chữ terminal
+  const fs = el('div', 'seg2'), val = el('span', 'fsv', String(fontSize));
+  const fb = (label, d) => { const b = el('button', null, label); b.type = 'button'; b.onclick = () => { setFont(fontSize + d); val.textContent = fontSize; }; return b; };
+  fs.append(fb('A−', -1), val, fb('A+', 1));
+  // Thông báo
+  const nb = el('button', 'btn sm', pushOn ? 'Đang bật · gửi thử' : 'Bật thông báo đẩy'); nb.type = 'button'; nb.onclick = () => enablePush();
+  // Hạn mức Claude
+  const cu = el('div', 'sv', info.claudeUsage ? '✓ Đã bật (hiện trong chip Usage trên header)'
+    : 'Chưa bật. Trong một phiên Claude, gõ: ! node ~/.termi/app/current/scripts/claude-statusline.mjs install');
+  // Agent đã cài
+  const ag = el('div', 'sv');
+  ag.append(...(info.agents.length ? info.agents.map(a => { const s = el('span', 'agi'); s.append(agentAvatar(a.id, true), a.name); return s; }) : ['Chưa có agent nào']));
+  body.replaceChildren(
+    settingRow('Giao diện', seg),
+    settingRow('Cỡ chữ terminal', fs),
+    settingRow('Thông báo đẩy', nb),
+    settingRow('Hạn mức Claude trong Usage', cu),
+    settingRow('Agent trên máy này', ag),
+    settingRow('Thư mục được phép truy cập', el('div', 'sv mono', info.roots.map(short).join('\n'))),
+    settingRow('Máy chủ', el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
+    settingRow('Bản phát hành', Object.assign(el('a', 'sv', 'github.com/hoangtu0812/termi/releases'), { href: 'https://github.com/hoangtu0812/termi/releases', target: '_blank', rel: 'noopener' })),
+  );
+});
+
 // ---- Thao tác nhanh: gửi lời nhắn soạn sẵn cho agent trong phiên hiện tại ----
 // [biểu tượng, tên, mô tả ngắn, nội dung gửi, cần xác nhận]
 const QUICK = [
@@ -1750,6 +2030,8 @@ loadUsage();
 setInterval(() => document.visibilityState === 'visible' && loadMachines(), 60_000);
 
 S.machine = st().m || '';
+loadProjects();
+setInterval(() => document.visibilityState === 'visible' && loadProjects(), 20_000);
 if (!S.list.length) $('sessions').replaceChildren(...skel(3, 'sk tall'));
 poll().then(render);
 loadRestore();
