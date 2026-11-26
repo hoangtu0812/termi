@@ -54,7 +54,7 @@ mkdir -p "$LA"
 chmod +x "$DIR/attach.sh"
 plist server /opt/homebrew/bin/node "$DIR/server.mjs"
 plist ttyd /opt/homebrew/bin/ttyd -i lo0 -p 7681 -W -a -O -P 20 \
-  -t fontSize=14 -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' \
+  -t fontSize=14 -t 'fontFamily=Menlo,Consolas,Droid Sans Mono,monospace' -t disableLeaveAlert=true -t 'theme={"background":"#16181d"}' \
   "$DIR/attach.sh"
 
 # Lần đầu tailscale sẽ in link để bật Serve/HTTPS cho tailnet và chờ: mở link đó rồi lệnh tự chạy tiếp
