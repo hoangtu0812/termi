@@ -147,6 +147,7 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 #viewer .bar b { flex:1; min-width:0; font:13px var(--mono); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; }
 #v-body pre { margin:0; padding:12px 14px 40px; font:12.5px/1.55 var(--mono); white-space:pre; tab-size:4; }
 #v-body img { max-width:100%; display:block; margin:16px auto; border-radius:8px; }
+#v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
 .diff .f { color:var(--blue); font-weight:600; } .diff .hk { color:var(--faint); }
 
@@ -278,6 +279,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
         <div class="bar">
           <button class="ibtn" id="v-close" aria-label="Đóng" data-i="back"></button>
           <b id="v-title"></b>
+          <button class="btn sm" id="v-alt" hidden></button>
           <button class="btn sm" id="v-insert" hidden>Chèn vào prompt</button>
         </div>
         <div class="scroll" id="v-body"></div>
@@ -624,22 +626,80 @@ $('f-home').onclick = () => go({ d: null });
 $('f-reload').onclick = () => loadFiles(S.filesDir);
 
 // ---------- Xem file / diff ----------
-function openViewer(title, node, insertPath) {
+// alt = [nút, node khác] để chuyển qua lại, vd. xem trước Markdown ⇄ mã nguồn
+function openViewer(title, node, insertPath, alt) {
   $('v-title').textContent = ltr(title);
   $('v-body').replaceChildren(node);
   $('v-body').scrollTop = 0;
   $('v-insert').hidden = !insertPath || !st().s;
   $('v-insert').onclick = () => { insertText(insertPath); go({ t: 'term', v: null }); };
+  $('v-alt').hidden = !alt;
+  if (alt) {
+    const nodes = [node, alt[1]], labels = [alt[0], 'Xem trước'];
+    let i = 0;
+    $('v-alt').textContent = labels[0];
+    $('v-alt').onclick = () => {
+      i ^= 1;
+      $('v-body').replaceChildren(nodes[i]); $('v-body').scrollTop = 0;
+      $('v-alt').textContent = labels[i];
+    };
+  }
   go({ v: 1 });
 }
 $('v-close').onclick = () => history.back();
+const rawUrl = p => location.origin + '/api/raw?path=' + encodeURIComponent(p);
 const openFile = safely(async p => {
   const r = await api('/api/file?path=' + encodeURIComponent(p));
-  let node;
-  if (r.image) { node = el('img'); node.src = '/api/raw?path=' + encodeURIComponent(p); node.alt = p; }
-  else node = el('pre', null, r.binary ? '(file nhị phân, không hiển thị được)' : r.text);
-  openViewer(short(p), node, p);
+  if (r.image) {
+    const img = el('img'); img.src = rawUrl(p); img.alt = p;
+    return openViewer(short(p), img, p);
+  }
+  const raw = el('pre', null, r.binary ? '(file nhị phân, không hiển thị được)' : r.text);
+  if (!r.text || !/\.(md|markdown)$/i.test(p)) return openViewer(short(p), raw, p);
+  let md;
+  try { md = await markdownNode(r.text, p); } catch (e) { toast(e.message, true); return openViewer(short(p), raw, p); }
+  openViewer(short(p), md, p, ['Xem mã', raw]);
 });
+
+// ---- Xem trước Markdown ----
+// marked chỉ tải khi mở file .md; integrity chặn bản CDN bị sửa
+let markedP;
+const loadMarked = () => markedP ??= new Promise((ok, fail) => {
+  const s = Object.assign(document.createElement('script'), {
+    src: 'https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js', crossOrigin: 'anonymous',
+    integrity: 'sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi',
+  });
+  s.onload = () => ok(window.marked);
+  s.onerror = () => { markedP = null; fail(new Error('Không tải được trình hiển thị Markdown (cần mạng)')); };
+  document.head.append(s);
+});
+const MD_CSS = `:root{color-scheme:light dark;--bg:#f6f7f9;--fg:#171a21;--dim:#5f6675;--line:#e4e7ec;--code:#eceef2;--acc:#c95f3a}
+@media (prefers-color-scheme:dark){:root{--bg:#111318;--fg:#e8eaee;--dim:#8d94a3;--line:#2a2f3a;--code:#1d2129;--acc:#e07a55}}
+body{margin:0;padding:16px 18px 56px;background:var(--bg);color:var(--fg);font:15px/1.65 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow-wrap:break-word}
+h1,h2,h3,h4{line-height:1.3;margin:1.4em 0 .6em}h1{font-size:1.75em}h2{font-size:1.35em}h3{font-size:1.15em}
+h1,h2{padding-bottom:.3em;border-bottom:1px solid var(--line)}a{color:var(--acc)}img{max-width:100%;vertical-align:middle}
+code{font:.87em ui-monospace,"SF Mono",Menlo,monospace;background:var(--code);padding:.15em .4em;border-radius:5px}
+pre{background:var(--code);padding:12px 14px;border-radius:10px;overflow:auto;line-height:1.5}pre code{padding:0;background:none}
+table{border-collapse:collapse;display:block;overflow:auto;max-width:100%;margin:1em 0}th,td{border:1px solid var(--line);padding:6px 12px}th{background:var(--code)}
+blockquote{margin:0;padding:0 1em;color:var(--dim);border-left:3px solid var(--line)}hr{border:0;border-top:1px solid var(--line);margin:2em 0}
+p[align=center],div[align=center]{text-align:center}li+li{margin-top:.25em}`;
+async function markdownNode(text, file) {
+  const marked = await loadMarked();
+  // <template> không tải ảnh hay chạy gì khi gán innerHTML: chỉ để sửa đường dẫn ảnh tương đối
+  const t = document.createElement('template');
+  t.innerHTML = marked.parse(text, { gfm: true });
+  const base = 'file://' + file.slice(0, file.lastIndexOf('/') + 1);
+  for (const img of t.content.querySelectorAll('img[src]')) {
+    const src = img.getAttribute('src');
+    if (!/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(src)) img.src = rawUrl(decodeURIComponent(new URL(src, encodeURI(base)).pathname));
+  }
+  // sandbox không có allow-scripts / allow-same-origin: HTML trong file .md không chạy được script, không chạm được API
+  const f = el('iframe', 'md');
+  f.setAttribute('sandbox', 'allow-popups allow-popups-to-escape-sandbox');
+  f.title = 'Xem trước Markdown';
+  f.srcdoc = `<!doctype html><meta charset="utf-8"><base target="_blank"><style>${MD_CSS}</style><body>${t.innerHTML}</body>`;
+  return f;
+}
 function diffNode(text) {
   const pre = el('pre', 'diff');
   pre.append(...text.split('\n').map(l => el('span',

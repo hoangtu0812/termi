@@ -18,7 +18,7 @@ const UPLOADS = path.join(DATA, 'uploads');
 const MAX_OUT = 300_000; // ký tự trả về cho diff/file, tránh treo trình duyệt điện thoại
 const MAX_UPLOAD = 25 * 1024 * 1024;
 const SKIP = new Set(['node_modules', 'Library', 'Applications', 'Pictures', 'Music', 'Movies', 'Downloads']);
-const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp' };
+const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 const PUSH_HOSTS = /(^|\.)(fcm\.googleapis\.com|push\.apple\.com|notify\.windows\.com|push\.services\.mozilla\.com)$/;
 
 export const validName = s => typeof s === 'string' && /^[A-Za-z0-9_-]{1,40}$/.test(s);
@@ -419,12 +419,12 @@ async function handle(req, res) {
     return res.end(file);
   }
   if (req.method === 'GET' && url.pathname === '/api/raw') {
-    // Chỉ phục vụ ảnh (không SVG/HTML) để file trong repo không chạy được script trên origin này
+    // Chỉ phục vụ ảnh; CSP sandbox để SVG mở trực tiếp cũng không chạy được script trên origin này
     const f = await need(url.searchParams.get('path'), 'file');
     const type = IMAGES[path.extname(f).toLowerCase()];
     if (!type) throw fail(415, 'Chỉ xem trực tiếp được ảnh');
     const file = await fs.readFile(f);
-    res.writeHead(200, { 'content-type': type, 'x-content-type-options': 'nosniff' });
+    res.writeHead(200, { 'content-type': type, 'x-content-type-options': 'nosniff', 'content-security-policy': 'sandbox' });
     return res.end(file);
   }
   // Header tự đặt buộc trình duyệt preflight CORS (mà ta không trả lời) → chặn CSRF từ trang khác
