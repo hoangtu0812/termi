@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.1 |
+| Version | 1.2 |
 | Status | Active |
 | Last updated | 2026-11-26 |
 | Applies to | termi 0.12.0 → 1.0.0 |
@@ -58,14 +58,19 @@ Done when: CI is green and no test touches the real home directory.
 
 Result: 35 tests pass; `npm run check` reports 0 errors and 21 allowlisted legacy violations across 10 files.
 
-### Phase 2 — Configuration, startup and persistence (v0.14.0)
+### Phase 2 — Configuration, startup and persistence (v0.14.0) — done
 
-- `src/config.mjs`: every environment variable and constant (`PORT`, `TTYD_PORT`, `ROOTS`, `DATA`, limits).
-- `src/store.mjs`: `readJson`, `writeJsonAtomic` (temp file + `rename`, mode `0600`), and a per-file queue so read-modify-write cycles never interleave. Corrupt files are reported, never silently regenerated for `vapid.json`.
-- `src/server.mjs` becomes a bootstrap that calls `start(config)`; all top-level `await` and timers move into `start`.
-- Tests: atomic write under concurrent updates; corrupt `vapid.json` is not overwritten.
+- [x] `src/config.mjs`: `loadConfig(env, home)` returns every `TERMI_*` setting; `MAX_OUTPUT_CHARS` and `MAX_UPLOAD_BYTES` live here.
+- [x] `src/store.mjs`: `read`, `write`, `update`, `remove`. Writes are atomic (temp file + `fsync` + `rename`, mode `0600`) and serialized per file. A strict read of a corrupt file throws; a lenient read moves it aside as `<name>.corrupt-<timestamp>` and logs it.
+- [x] `vapid.json` is read strictly: a corrupt key stops the server with a clear message instead of being regenerated.
+- [x] `sessions.json` is changed only through `store.update`, so the snapshot, close, restore and dismiss paths no longer overwrite each other.
+- [x] The former `src/server.mjs` moved to `src/app.mjs` (see its line history from before the move with `git blame -C -C src/app.mjs`), which exports `init(config)` and `start(config)`; all top-level `await` and timers moved into them. `src/server.mjs` is a 9-line entry point, so the installers keep working unchanged.
+- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.0-implementation-notes.md`.
+- [x] Tests: atomic writes, 50 concurrent updates, write order, failed updates, corrupt files (strict and lenient), `init` keeps the VAPID key and refuses a corrupt one, config parsing, and a child-process test that imports every library module with an empty `HOME` and asserts nothing was created.
 
 Done when: importing any module has no side effects.
+
+Result: 48 tests pass. Running the old `server.mjs` under the same test creates `~/.termi`; the new modules create nothing.
 
 ### Phase 3 — Extract pure modules (v0.15.0)
 
@@ -102,11 +107,11 @@ Done when: `grep "agent === '" src` returns nothing outside `src/agents/`.
 
 - `src/http/router.mjs` (method + path table, body parsing, error mapping), `src/http/guard.mjs` (Host, identity, Origin, `X-Termi`), `src/http/static.mjs`, `src/http/proxy.mjs` (ttyd and peer proxy, WebSocket upgrade).
 - `src/routes/sessions.mjs`, `files.mjs`, `git.mjs`, `notify.mjs`, `usage.mjs`, `settings.mjs`.
-- `src/machines.mjs` with one cached `tailscaleStatus()` shared by peer discovery and `allowedUsers`.
+- `src/machines.mjs` with a cached `tailscaleStatus()` (already shared by peer discovery and `allowedUsers` since Phase 2).
 - `src/push/vapid.mjs`, `webpush.mjs`, `watcher.mjs`; `src/snapshot.mjs`; `src/ttyd-watchdog.mjs`.
 - Tests for the guard (spoofed Host, missing identity, foreign Origin, missing `X-Termi`) against a server started on an ephemeral port.
 
-Done when: `src/server.mjs` is under 50 lines.
+Done when: `src/app.mjs` no longer exists; its code lives in the modules above.
 
 ### Phase 6 — Session performance (v0.18.0)
 
@@ -147,4 +152,5 @@ Update the checkboxes and this document's version when a phase lands.
 | Version | Date | Change |
 |---|---|---|
 | 1.0 | 2026-11-26 | Initial plan. |
-| 1.1 | 2026-11-26 | Phase 1 done. | Each phase's release notes link back to this plan.
+| 1.1 | 2026-11-26 | Phase 1 done. |
+| 1.2 | 2026-11-26 | Phase 2 done; later phases now start from `src/app.mjs`. | Each phase's release notes link back to this plan.

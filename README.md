@@ -182,7 +182,10 @@ tm() { tmux new -A -s "${1:-main}"; }
 ```
 termi/
 ├── src/
-│   └── server.mjs        # HTTP server + API: sessions, files, git, push, upload
+│   ├── server.mjs        # Entry point: load config, start the app
+│   ├── app.mjs           # HTTP server + API: sessions, files, git, push, upload
+│   ├── config.mjs        # Environment variables and limits
+│   └── store.mjs         # JSON state files with atomic, serialized writes
 ├── public/               # PWA (static UI, no build)
 │   ├── index.html        # The whole UI: HTML + CSS + JS
 │   ├── sw.js             # Service worker for push notifications
@@ -194,7 +197,7 @@ termi/
 │   ├── claude-statusline.mjs # records Claude limits + context for Usage
 │   └── attach.sh         # called by ttyd to attach to a tmux session by name
 ├── test/
-│   └── server.test.mjs   # node:test, no libraries
+│   └── *.test.mjs        # node:test, no libraries
 ├── docs/                 # Documents <PREFIX>-v<X.Y>-<slug>.md, images in docs/assets/
 ├── plan/                 # Implementation plans PLAN-v<X.Y>-<slug>.md
 ├── AGENTS.md             # Engineering rules (Vietnamese: AGENTS.vi.md)

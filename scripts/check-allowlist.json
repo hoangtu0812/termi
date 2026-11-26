@@ -7,6 +7,6 @@
   "scripts/get.sh": ["comments", "line-length"],
   "scripts/install-linux.sh": ["comments", "line-length"],
   "scripts/install.sh": ["comments", "line-length"],
-  "src/server.mjs": ["comments", "file-length", "line-length"],
+  "src/app.mjs": ["comments", "file-length", "line-length"],
   "test/server.test.mjs": ["comments", "line-length"]
 }

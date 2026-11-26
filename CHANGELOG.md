@@ -8,7 +8,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
-- Architecture refactor plan `plan/PLAN-v1.1-architecture-refactor.md`.
+- Architecture refactor plan `plan/PLAN-v1.2-architecture-refactor.md`.
+- Implementation notes `docs/NOTES-v1.0-implementation-notes.md` for rationale moved out of code comments.
 - `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
 - `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
 - `.editorconfig`.
@@ -20,10 +21,15 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Screenshots moved to `docs/assets/screenshots/`.
 - Documents in `docs/` and `plan/` follow the `<PREFIX>-v<MAJOR>.<MINOR>-<slug>.md` naming rule.
 - Commits, releases and the changelog are written in English.
+- State files in the data directory are written atomically and one at a time per file.
+- A corrupt state file is moved aside as `<name>.corrupt-<timestamp>` and logged instead of being silently replaced.
+- A corrupt `vapid.json` stops the server with a clear error instead of generating a new key, which would break every push subscription.
+- `src/server.mjs` is now only the entry point; the server code moved to `src/app.mjs`, with configuration in `src/config.mjs` and persistence in `src/store.mjs`.
 
 ### Fixed
 - `npm test` failed on Node 24 (`MODULE_NOT_FOUND`) and ran no tests.
 - Tests no longer write to the real `~/.termi`.
+- Closing a session, restoring and the periodic snapshot could overwrite each other's changes to `sessions.json`.
 
 ## [0.12.0] - 2026-11-26
 

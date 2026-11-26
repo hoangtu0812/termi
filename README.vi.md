@@ -182,7 +182,10 @@ tm() { tmux new -A -s "${1:-main}"; }
 ```
 termi/
 ├── src/
-│   └── server.mjs        # HTTP server + API: phiên, file, git, push, upload
+│   ├── server.mjs        # Điểm khởi động: đọc cấu hình, chạy app
+│   ├── app.mjs           # HTTP server + API: phiên, file, git, push, upload
+│   ├── config.mjs        # Biến môi trường và giới hạn
+│   └── store.mjs         # File trạng thái JSON, ghi nguyên tử theo hàng đợi
 ├── public/               # PWA (giao diện tĩnh, không build)
 │   ├── index.html        # Toàn bộ UI: HTML + CSS + JS
 │   ├── sw.js             # Service worker cho thông báo đẩy
@@ -194,7 +197,7 @@ termi/
 │   ├── claude-statusline.mjs # lưu hạn mức + ngữ cảnh Claude cho mục Usage
 │   └── attach.sh         # ttyd gọi để gắn vào phiên tmux theo tên
 ├── test/
-│   └── server.test.mjs   # node:test, không cần thư viện
+│   └── *.test.mjs        # node:test, không cần thư viện
 ├── docs/                 # Tài liệu <TIỀN_TỐ>-v<X.Y>-<tên>.md, ảnh trong docs/assets/
 ├── plan/                 # Kế hoạch thực hiện PLAN-v<X.Y>-<tên>.md
 ├── AGENTS.md             # Quy tắc kỹ thuật (bản tiếng Việt: AGENTS.vi.md)
