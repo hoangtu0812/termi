@@ -89,6 +89,13 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .keys::-webkit-scrollbar { display:none; }
 .keys button { flex:none; height:34px; min-width:44px; padding:0 10px; border-radius:8px; border:1px solid var(--line2); background:var(--card); font:13px var(--mono); }
 .keys button:active { background:var(--hover); }
+.atts { display:flex; gap:8px; padding:8px 8px 0; overflow-x:auto; }
+.att { position:relative; flex:none; height:60px; border-radius:10px; overflow:hidden; border:1px solid var(--line2); background:var(--card); }
+.att img { width:60px; height:60px; object-fit:cover; display:block; }
+.att.file { display:flex; align-items:center; gap:6px; max-width:180px; padding:0 30px 0 10px; font-size:12px; color:var(--dim); }
+.att.file span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.att.busy { opacity:.5; }
+.att .x { position:absolute; top:3px; right:3px; width:22px; height:22px; border-radius:50%; border:0; background:#000b; color:#fff; font-size:13px; line-height:22px; padding:0; }
 .compose { display:flex; align-items:flex-end; gap:6px; padding:8px; }
 .compose textarea { flex:1; min-height:40px; max-height:160px; padding:9px 12px; border-radius:20px; border:1px solid var(--line2); background:var(--card); resize:none; line-height:1.4; }
 .compose textarea:focus { outline:none; border-color:var(--acc); }
@@ -222,6 +229,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
       <div class="pane" id="p-term" hidden>
         <iframe id="frame" title="Terminal"></iframe>
         <div class="keys" id="keys"></div>
+        <div class="atts" id="atts" hidden></div>
         <div class="compose">
           <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
           <button class="ibtn" id="b-attach" title="Gửi file" aria-label="Gửi file" data-i="clip"></button>
@@ -364,7 +372,7 @@ let build;
 function checkBuild(b) {
   if (!b) return;
   build ??= b;
-  if (b !== build && !$('text').value && !$('g-msg').value && !document.querySelector('dialog[open]')) location.reload();
+  if (b !== build && !$('text').value && !$('g-msg').value && !S.atts.length && !document.querySelector('dialog[open]')) location.reload();
 }
 let toastT;
 function toast(msg, err) {
@@ -383,7 +391,7 @@ function go(patch) {
 }
 addEventListener('hashchange', render);
 
-const S = { list: [], repos: null, seen: {} };
+const S = { list: [], repos: null, seen: {}, atts: [] };
 const cur = () => S.list.find(x => x.name === st().s);
 
 function render() {
@@ -544,9 +552,13 @@ $('keys').append(...KEYS.map(([label, key]) => {
 }));
 const send = safely(async () => {
   const t = $('text');
-  if (!t.value.trim()) return api('/api/send', { session: st().s, key: 'Enter' });
-  await api('/api/send', { session: st().s, text: t.value, enter: true });
+  if (S.atts.some(a => !a.path)) throw new Error('Đợi tải lên xong đã');
+  // Đường dẫn file đính kèm chỉ ghép vào lúc gửi, ô nhắn chỉ chứa chữ người dùng gõ
+  const text = [t.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
+  if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
+  await api('/api/send', { session: st().s, text, enter: true });
   t.value = ''; autosize(t);
+  S.atts.forEach(a => a.url && URL.revokeObjectURL(a.url)); S.atts = []; renderAtts();
 });
 $('b-send').onclick = send;
 $('text').oninput = e => autosize(e.target);
@@ -558,15 +570,35 @@ $('b-attach').onclick = () => $('f-input').click();
 $('b-photo').onclick = () => $('f-photo').click();
 $('f-photo').onchange = $('f-input').onchange = safely(async e => {
   const files = [...e.target.files]; e.target.value = '';
-  for (const f of files) {
-    toast(`Đang tải lên ${f.name}…`);
-    const r = await fetch('/api/upload', { method:'POST', headers:{ 'x-termi':'1', 'x-filename':encodeURIComponent(f.name) }, body:f });
-    const j = await r.json();
-    if (!r.ok) throw new Error(j.error);
-    insertText(j.path);
-  }
-  toast('Đã tải lên, đường dẫn đã chèn vào ô nhắn');
+  await Promise.all(files.map(async f => {
+    const a = { name: f.name, url: f.type.startsWith('image/') ? URL.createObjectURL(f) : null, path: null };
+    S.atts.push(a); renderAtts();
+    try {
+      const r = await fetch('/api/upload', { method:'POST', headers:{ 'x-termi':'1', 'x-filename':encodeURIComponent(f.name) }, body:f });
+      const j = await r.json();
+      if (!r.ok) throw new Error(j.error);
+      a.path = j.path;
+    } catch (err) { removeAtt(a); throw err; }
+    renderAtts();
+  }));
 });
+function removeAtt(a) {
+  if (a.url) URL.revokeObjectURL(a.url);
+  S.atts = S.atts.filter(x => x !== a); renderAtts();
+}
+function renderAtts() {
+  $('atts').hidden = !S.atts.length;
+  $('atts').replaceChildren(...S.atts.map(a => {
+    const c = el('div', 'att' + (a.url ? '' : ' file') + (a.path ? '' : ' busy'));
+    c.title = a.name;
+    if (a.url) c.append(Object.assign(el('img'), { src: a.url, alt: a.name }));
+    else { c.innerHTML = icon('file'); c.append(el('span', null, a.name)); }
+    const x = el('button', 'x', '✕'); x.type = 'button'; x.setAttribute('aria-label', 'Bỏ ' + a.name);
+    x.onclick = () => removeAtt(a);
+    c.append(x);
+    return c;
+  }));
+}
 function insertText(s) {
   const t = $('text');
   t.value = (t.value && !t.value.endsWith(' ') ? t.value + ' ' : t.value) + s + ' ';
