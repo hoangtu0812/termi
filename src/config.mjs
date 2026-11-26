@@ -14,6 +14,7 @@ const splitList = (value, separator) => value.split(separator).map(item => item.
 
 export function loadConfig(env = process.env, home = os.homedir()) {
   return {
+    home,
     port: Number(env.TERMI_PORT) || DEFAULT_PORT,
     host: env.TERMI_HOST || DEFAULT_HOST,
     ttydPort: Number(env.TERMI_TTYD_PORT) || DEFAULT_TTYD_PORT,

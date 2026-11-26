@@ -189,6 +189,7 @@ termi/
 │   ├── validate.mjs      # Kiểm tra dữ liệu vào và đường dẫn
 │   ├── text.mjs          # Xử lý chữ: cắt bớt, bỏ markdown, tên model
 │   ├── errors.mjs        # Lỗi HTTP
+│   ├── agents/           # Mỗi agent một adapter: Claude Code, Codex, Antigravity
 │   ├── git/              # Chạy git, thao tác, parser, cây commit
 │   └── tmux/             # Gọi tmux, đọc màn hình agent
 ├── public/               # PWA (giao diện tĩnh, không build)

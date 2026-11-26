@@ -10,8 +10,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thêm
 - Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
-- Kế hoạch refactor kiến trúc `plan/PLAN-v1.3-architecture-refactor.md`.
-- Ghi chú cài đặt `docs/NOTES-v1.1-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
+- Kế hoạch refactor kiến trúc `plan/PLAN-v1.4-architecture-refactor.md`.
+- Ghi chú cài đặt `docs/NOTES-v1.2-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
 - `npm run check`: kiểm tra comment, độ dài file và dòng, cú pháp và tên tài liệu, không cần dependency; có allowlist cho file cũ và danh sách này chỉ được thu hẹp.
 - `npm run verify` (kiểm tra + test) và CI trên GitHub Actions cho Ubuntu và macOS.
 - `.editorconfig`.
@@ -28,10 +28,13 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - `vapid.json` bị hỏng thì server dừng với thông báo rõ ràng, thay vì sinh khoá mới làm hỏng mọi đăng ký thông báo đẩy.
 - `src/server.mjs` giờ chỉ là điểm khởi động; code server chuyển sang `src/app.mjs`, cấu hình ở `src/config.mjs`, lưu trữ ở `src/store.mjs`.
 - Phần kiểm tra dữ liệu, xử lý chữ, git và tmux tách khỏi `src/app.mjs` sang `src/validate.mjs`, `src/text.mjs`, `src/git/` và `src/tmux/`, mỗi phần có test riêng.
+- Code riêng của từng agent (Claude Code, Codex, Antigravity) chuyển vào adapter riêng trong `src/agents/`.
 
 ### Sửa lỗi
 - `npm test` lỗi trên Node 24 (`MODULE_NOT_FOUND`) và không chạy test nào.
 - Test không còn ghi vào `~/.termi` thật.
+- Thiếu số liệu Usage của Claude khi server chạy với `TERMI_DATA` khác `~/.termi`; statusline giờ ghi vào cạnh bản đã cài của nó.
+- Chế độ Chat không còn lỗi khi tham số của một lần gọi công cụ là giá trị JSON `null`.
 - Đóng phiên, khôi phục phiên và bản lưu định kỳ có thể ghi đè thay đổi của nhau trong `sessions.json`.
 
 ## [0.12.0] - 2026-11-26

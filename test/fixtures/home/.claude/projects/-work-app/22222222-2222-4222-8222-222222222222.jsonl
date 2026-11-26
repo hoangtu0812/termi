@@ -1,0 +1,4 @@
+{"type":"summary","summary":"Tóm tắt cũ"}
+{"type":"user","cwd":"/work/app","message":{"content":[{"type":"text","text":"# AGENTS.md rules"},{"type":"text","text":"second"}]},"timestamp":"2026-11-26T10:00:00Z"}
+{"type":"user","cwd":"/work/app","message":{"content":[{"type":"text","text":"viết README"}]},"timestamp":"2026-11-26T10:01:00Z"}
+{"type":"assistant","message":{"model":"claude-sonnet-4-5-20250929","content":[{"type":"text","text":"Đã viết."}]},"timestamp":"2026-11-26T10:02:00Z"}

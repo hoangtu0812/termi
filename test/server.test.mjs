@@ -2,19 +2,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import {
-  AGENTS, matchPeer, transcriptMessages, isAllowed, sameOrigin, computePending, orphanCount, chatItems,
-  toolSummary, shouldPush,
+  matchPeer, isAllowed, sameOrigin, computePending, orphanCount, shouldPush,
 } from '../src/app.mjs';
-
-test('nhận ra tiến trình agent', () => {
-  const who = c => Object.keys(AGENTS).find(id => AGENTS[id].proc(c));
-  assert.equal(who('/Users/a/.local/share/claude/versions/2.1.332'), 'claude');
-  assert.equal(who('/Users/a/.local/bin/codex'), 'codex');
-  assert.equal(who('/usr/lib/node_modules/@openai/codex/bin/codex.js'), 'codex'); // Linux, cài qua npm
-  assert.equal(who('/opt/homebrew/bin/agy'), 'agy');
-  assert.equal(who('/Applications/Claude.app/Contents/MacOS/Claude'), undefined);
-  assert.equal(who('/bin/zsh'), undefined);
-});
 
 test('index.html: không có </script> lọt trong code JS (sẽ cắt ngang thẻ script)', async () => {
   const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
@@ -25,22 +14,6 @@ test('đường dẫn sang máy khác', () => {
   assert.deepEqual(matchPeer('/m/desktop-37bc1du/api/sessions?x=1'), { id: 'desktop-37bc1du', rest: '/api/sessions?x=1' });
   assert.deepEqual(matchPeer('/m/Desktop-ABC'), { id: 'desktop-abc', rest: '/' });
   for (const bad of ['/api/m/x', '/m/', '/m/a.b/api', '/m/evil.com/api', '/mx/a/api']) assert.equal(matchPeer(bad), null, bad);
-});
-
-test('tin nhắn từ file hội thoại', () => {
-  const claude = [
-    { type: 'user', message: { content: 'sửa lỗi đăng nhập' } },
-    { type: 'user', isMeta: true, message: { content: 'meta' } },
-    { type: 'user', message: { content: [{ type: 'tool_result', content: 'x' }] } },
-    { type: 'assistant', message: { content: [{ type: 'thinking', thinking: 'x' }, { type: 'text', text: 'Đã sửa.' }] } },
-  ].map(o => JSON.stringify(o)).reverse();
-  assert.deepEqual(transcriptMessages('claude', claude), [{ who: 'user', text: 'sửa lỗi đăng nhập', t: null }, { who: 'assistant', text: 'Đã sửa.', t: null }]);
-  const codex = [
-    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: '# AGENTS.md ...' }] } },
-    { type: 'response_item', payload: { type: 'message', role: 'user', content: [{ type: 'input_text', text: 'chạy test' }] } },
-    { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '12 test qua' }] } },
-  ].map(o => JSON.stringify(o)).reverse();
-  assert.deepEqual(transcriptMessages('codex', codex), [{ who: 'user', text: 'chạy test', t: null }, { who: 'assistant', text: '12 test qua', t: null }]);
 });
 
 test('chỉ chủ máy được vào', () => {
@@ -74,20 +47,6 @@ test('đếm client tmux mồ côi của ttyd', () => {
   const ps = '  1 100\n100 201\n100 202\n100 203\n 55 204\n';
   assert.equal(orphanCount(ps, '100', new Set(['202'])), 2); // 201, 203 mồ côi; 202 đang gắn; 204 con của tiến trình khác
   assert.equal(orphanCount(ps, '100', new Set()), 3);
-});
-
-test('Chat: tin nhắn + các bước agent làm', () => {
-  const lines = [
-    { type: 'user', message: { content: 'chạy test giúp tôi' }, timestamp: '2026-11-26T10:00:00Z' },
-    { type: 'assistant', message: { content: [{ type: 'text', text: 'Để tôi chạy.' }, { type: 'tool_use', name: 'Bash', input: { command: 'npm test', description: 'Chạy test' } }] } },
-    { type: 'assistant', message: { content: [{ type: 'tool_use', name: 'Read', input: { file_path: '/a/b/server.mjs' } }] } },
-    { type: 'assistant', message: { content: [{ type: 'text', text: '22 test qua.' }] } },
-  ].map(o => JSON.stringify(o)).reverse();
-  const items = chatItems('claude', lines);
-  assert.deepEqual(items.map(x => x.kind === 'tools' ? x.steps.map(s => s.verb + ' ' + s.detail) : x.who + ': ' + x.text), [
-    'user: chạy test giúp tôi', 'assistant: Để tôi chạy.', ['Chạy Chạy test', 'Đọc server.mjs'], 'assistant: 22 test qua.']);
-  assert.deepEqual(toolSummary('exec', 'const r = await tools.exec_command({cmd:"rg -n TODO src"})'), { verb: 'Chạy', detail: 'rg -n TODO src' });
-  assert.deepEqual(toolSummary('Edit', { file_path: '/x/y/index.html' }), { verb: 'Sửa', detail: 'index.html' });
 });
 
 test('tuỳ chỉnh thông báo', () => {

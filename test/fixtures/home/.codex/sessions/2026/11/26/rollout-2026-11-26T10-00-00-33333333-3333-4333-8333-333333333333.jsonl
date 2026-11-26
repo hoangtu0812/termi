@@ -1,0 +1,10 @@
+{"type":"session_meta","payload":{"id":"33333333-3333-4333-8333-333333333333","cwd":"/work/api"},"timestamp":"2026-11-26T10:00:00Z"}
+{"type":"turn_context","payload":{"model":"gpt-5-codex"},"timestamp":"2026-11-26T10:00:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"developer","content":[{"type":"input_text","text":"dev"}]},"timestamp":"2026-11-26T10:00:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"# AGENTS.md\nrules"}]},"timestamp":"2026-11-26T10:01:00Z"}
+{"type":"event_msg","payload":{"type":"user_message","message":"chạy test api"},"timestamp":"2026-11-26T10:01:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"chạy test api"}]},"timestamp":"2026-11-26T10:01:00Z"}
+{"type":"response_item","payload":{"type":"function_call","name":"shell","arguments":"{\"command\":[\"bash\",\"-lc\",\"npm test\"]}"},"timestamp":"2026-11-26T10:02:00Z"}
+{"type":"response_item","payload":{"type":"custom_tool_call","name":"exec","input":"const r = await tools.exec_command({cmd:\"rg -n TODO src\"})"},"timestamp":"2026-11-26T10:03:00Z"}
+{"type":"event_msg","payload":{"type":"token_count","info":{"last_token_usage":{"total_tokens":1234},"model_context_window":272000,"total_token_usage":{"total_tokens":99999}},"rate_limits":{"plan_type":"plus","primary":{"used_percent":12.6,"window_minutes":300,"resets_at":1795700000},"secondary":{"used_percent":40.2,"window_minutes":10080,"resets_at":1796000000}}},"timestamp":"2026-11-26T10:04:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"assistant","content":[{"type":"output_text","text":"12 test qua"},{"type":"output_text","text":"hết lỗi"}]},"timestamp":"2026-11-26T10:05:00Z"}

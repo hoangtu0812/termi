@@ -10,15 +10,17 @@ import os from 'node:os';
 import path from 'node:path';
 import { spawnSync } from 'node:child_process';
 
-const DIR = path.join(os.homedir(), '.termi');
+const cmd = process.argv[2];
+const isSetup = cmd === 'install' || cmd === 'uninstall';
+const DATA_DIR = process.env.TERMI_DATA ? path.resolve(process.env.TERMI_DATA) : path.join(os.homedir(), '.termi');
+const DIR = isSetup ? DATA_DIR : import.meta.dirname;
 const OUT = path.join(DIR, 'claude-usage.json');
 const NEXT = path.join(DIR, 'statusline-next.json'); // statusline cũ của người dùng
 const SELF = path.join(DIR, 'claude-statusline.mjs'); // bản chép: không phụ thuộc ổ chứa mã nguồn
 const SETTINGS = path.join(os.homedir(), '.claude', 'settings.json');
 const writeAtomic = (file, text) => { const tmp = `${file}.${process.pid}`; fs.writeFileSync(tmp, text); fs.renameSync(tmp, file); };
 
-const cmd = process.argv[2];
-if (cmd === 'install' || cmd === 'uninstall') {
+if (isSetup) {
   fs.mkdirSync(DIR, { recursive: true });
   const settings = fs.existsSync(SETTINGS) ? JSON.parse(fs.readFileSync(SETTINGS, 'utf8')) : {};
   const ours = settings.statusLine?.command?.includes('claude-statusline.mjs');

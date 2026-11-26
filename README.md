@@ -189,6 +189,7 @@ termi/
 │   ├── validate.mjs      # Input validation and path checks
 │   ├── text.mjs          # Text helpers: clip, plain text, model names
 │   ├── errors.mjs        # HTTP error helper
+│   ├── agents/           # One adapter per agent: Claude Code, Codex, Antigravity
 │   ├── git/              # git runner, operations, parsers, commit graph
 │   └── tmux/             # tmux client and agent screen parsing
 ├── public/               # PWA (static UI, no build)

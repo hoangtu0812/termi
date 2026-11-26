@@ -10,13 +10,19 @@ import fs from 'node:fs/promises';
 import net from 'node:net';
 import path from 'node:path';
 import os from 'node:os';
+import { chatItems, transcriptMessages } from './agents/chat.mjs';
+import { createHistory } from './agents/history.mjs';
+import { createAgents } from './agents/index.mjs';
+import { readTail } from './agents/jsonl.mjs';
+import { executableOf } from './agents/process.mjs';
+import { createReplyReader } from './agents/reply.mjs';
 import { MAX_OUTPUT_CHARS, MAX_UPLOAD_BYTES, resolveRoots } from './config.mjs';
 import { fail } from './errors.mjs';
 import { GIT_OPS } from './git/ops.mjs';
 import { graphLayout } from './git/graph.mjs';
 import { LOG_FORMAT, marksFromStatus, parseLog, parseNumstat, parseStatus } from './git/parse.mjs';
 import { git } from './git/run.mjs';
-import { clip, plainText, prettyModel } from './text.mjs';
+import { clip, prettyModel } from './text.mjs';
 import { serverStartTime, target, tmux } from './tmux/client.mjs';
 import { agentState, parseChoices, parseMulti, stepsToSubmit } from './tmux/screen.mjs';
 import {
@@ -29,20 +35,12 @@ let config;
 let allowedRoots = [];
 let store;
 let staticFiles = {};
+let agents;
+let history;
+let lastReply;
 const SKIP = new Set(['node_modules', 'Library', 'Applications', 'Pictures', 'Music', 'Movies', 'Downloads']);
 const IMAGES = { '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp', '.svg': 'image/svg+xml' };
 const PUSH_HOSTS = /(^|\.)(fcm\.googleapis\.com|push\.apple\.com|notify\.windows\.com|push\.services\.mozilla\.com)$/;
-
-
-// Các coding agent hỗ trợ. proc nhận ra tiến trình qua đường dẫn file chạy (cột comm của ps).
-// shortcut: agent chạy bằng node (comm = node) sẽ không nhận ra; khi cần thì so thêm tham số dòng lệnh
-const bin = c => path.basename(c).replace(/\.[cm]?js$/, ''); // codex cài qua npm chạy dạng node …/codex.js
-export const AGENTS = {
-  claude: { name: 'Claude', cmd: 'claude', resume: id => `claude --resume ${id}`,
-    proc: c => bin(c) === 'claude' || c.includes('/.local/share/claude/versions/') },
-  codex: { name: 'Codex', cmd: 'codex', resume: id => `codex resume ${id}`, proc: c => bin(c) === 'codex' },
-  agy: { name: 'Antigravity', cmd: 'agy', proc: c => bin(c) === 'agy' },
-};
 
 const inRoots = (candidate, kind = 'dir') => safePath(candidate, kind, allowedRoots);
 
@@ -79,9 +77,7 @@ async function sessions() {
     const m = l.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
     if (!m) continue;
     parent.set(m[1], m[2]);
-    const args = m[3].split(/\s+/);
-    const exe = /^(node|bun|deno)$/.test(path.basename(args[0])) ? args[1] || '' : args[0]; // agent viết bằng JS
-    const agent = Object.keys(AGENTS).find(id => AGENTS[id].proc(exe));
+    const agent = agents.detect(executableOf(m[3]));
     if (agent) found.push([m[1], agent]);
   }
   for (const [pid, agent] of found)
@@ -96,10 +92,10 @@ async function sessions() {
     const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
     if (active === '11') { s.dir = dir; s.output = Number(output); } // lần cuối cửa sổ đang mở có chữ mới
     if (!s.agent && agentOf.has(pid)) { s.agent = agentOf.get(pid); s.agentPid = agentPidOf.get(pid); }
-    if (s.agent === 'claude' && s.agentPid && !s.convId) {
-      const j = await claudeSessionInfo(s.agentPid); // hội thoại đang chạy trong phiên + tên của nó trong Claude
-      if (validUuid(j?.sessionId)) s.convId = j.sessionId;
-      if (j?.name && j.nameSource !== 'derived') s.title = String(j.name).slice(0, 120); // tên tự sinh (vd. termi-fb) thì bỏ
+    if (s.agent && s.agentPid && !s.convId) {
+      const conversation = await agents.get(s.agent).conversation(s.agentPid);
+      if (conversation?.id) s.convId = conversation.id;
+      if (conversation?.title) s.title = conversation.title;
     }
     by.set(name, s);
   }
@@ -121,11 +117,10 @@ async function sessions() {
     // Phiên có agent: câu trả lời gần nhất dễ đọc hơn chữ chụp từ terminal. Riêng lúc chờ xác nhận
     // thì giữ màn hình, vì câu hỏi xác nhận không có trong file hội thoại.
     if (s.agent) {
-      const r = await lastReply(s.agent, s.dir, s.agentPid).catch(() => null);
+      const adapter = agents.get(s.agent);
+      const r = await lastReply(adapter, s.dir, s.agentPid).catch(() => null);
       if (r?.text && s.state !== 'waiting') { s.preview = r.text; s.previewKind = 'reply'; }
-      // Model: tên hiển thị từ statusline nếu có (vd. "Opus 5.5"), không thì từ câu trả lời gần nhất
-      const live = s.convId && (await claudeUsageFile())?.sessions?.[s.convId];
-      s.model = live?.model || prettyModel(r?.model);
+      s.model = (await adapter.liveModel(s.convId)) || prettyModel(r?.model);
       s.replyAt = r?.replyAt || null; // để đánh dấu "chưa xem"
       if (s.state === 'working' && r?.lastTool) s.doing = r.lastTool; // thanh "agent đang làm gì"
     }
@@ -154,265 +149,6 @@ async function repos() {
   return repoCache.list;
 }
 
-// Hội thoại cũ của các agent: đọc phần đầu file .jsonl để lấy mã, thư mục và câu hỏi đầu tiên
-const isRealPrompt = t => typeof t === 'string' && t.trim() && !t.startsWith('<') && !t.startsWith('# AGENTS.md');
-const HISTORY = {
-  // ~/.claude/projects/<thư mục>/<uuid>.jsonl
-  claude: { dir: path.join(os.homedir(), '.claude', 'projects'),
-    accept: f => f.split(path.sep).length === 2 && validUuid(path.basename(f, '.jsonl')), // bỏ file phụ ở thư mục con
-    parse(o, h) {
-    h.cwd ??= o.cwd;
-    if (o.type === 'summary' && o.summary) h.title = o.summary;
-    if (o.type === 'custom-title' && o.customTitle) h.custom = o.customTitle; // tên bạn đặt cho hội thoại trong Claude
-    const c = o.type === 'user' && !o.isMeta && o.message?.content;
-    const text = typeof c === 'string' ? c : Array.isArray(c) ? c.find(x => x.type === 'text')?.text : null;
-    if (!h.title && isRealPrompt(text)) h.title = text;
-  } },
-  // ~/.codex/sessions/YYYY/MM/DD/rollout-...-<uuid>.jsonl, dòng đầu là session_meta
-  codex: { dir: path.join(os.homedir(), '.codex', 'sessions'), accept: f => path.basename(f).startsWith('rollout-'),
-    parse(o, h) {
-    const p = o.payload || {};
-    if (o.type === 'session_meta') { h.id = p.id; h.cwd = p.cwd; }
-    const text = o.type === 'response_item' && p.role === 'user' ? p.content?.find(x => x.type === 'input_text')?.text
-      : o.type === 'event_msg' && p.type === 'user_message' ? p.message : null;
-    if (!h.title && isRealPrompt(text)) h.title = text;
-  } },
-};
-async function readHead(file, bytes = 512 * 1024) {
-  const fh = await fs.open(file);
-  const buf = Buffer.alloc(bytes);
-  const { bytesRead } = await fh.read(buf, 0, buf.length, 0).finally(() => fh.close());
-  return buf.subarray(0, bytesRead).toString().split('\n');
-}
-// dir: chỉ lấy hội thoại của thư mục đó (đọc nhiều file hơn vì cwd chỉ biết sau khi đọc)
-// Bộ nhớ đệm theo file + thời điểm sửa: thư mục và tiêu đề của một hội thoại không đổi
-const historyCache = new Map();
-async function history(dir, limit = 40) {
-  const files = [];
-  for (const [agent, { dir, accept }] of Object.entries(HISTORY))
-    for (const f of await fs.readdir(dir, { recursive: true }).catch(() => []))
-      if (f.endsWith('.jsonl') && accept(f)) files.push({ agent, f: path.join(dir, f) });
-  const stats = await Promise.all(files.map(x => fs.stat(x.f).then(s => ({ ...x, t: s.mtimeMs }), () => null)));
-  const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, dir ? 300 : limit);
-  return (await Promise.all(recent.map(async ({ agent, f, t }) => {
-    const c = historyCache.get(f);
-    if (c && c.t === t) return c.entry;
-    const h = { id: agent === 'claude' ? path.basename(f, '.jsonl') : null };
-    for (const line of await readHead(f)) {
-      let o; try { o = JSON.parse(line); } catch { continue; }
-      HISTORY[agent].parse(o, h);
-      if (h.id && h.cwd && h.title && (agent !== 'claude' || h.custom)) break;
-    }
-    const entry = validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.custom || h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
-    historyCache.set(f, { t, entry });
-    return entry;
-  }))).filter(h => h && (!dir || h.cwd === dir)).slice(0, dir ? 40 : limit);
-}
-
-// Agent nào có cài trên máy này (tìm trong PATH)
-async function installedAgents() {
-  const dirs = (process.env.PATH || '').split(':').filter(Boolean);
-  const ok = await Promise.all(Object.entries(AGENTS).map(async ([id, a]) => {
-    for (const d of dirs) if (await fs.access(path.join(d, a.cmd), fs.constants.X_OK).then(() => true, () => false)) return { id, name: a.name };
-  }));
-  return ok.filter(Boolean);
-}
-
-// ---------- Usage: hạn mức gói agent, token của phiên, tài nguyên máy ----------
-async function readTail(file, bytes = 512 * 1024) {
-  const fh = await fs.open(file);
-  try {
-    const { size } = await fh.stat();
-    const len = Math.min(bytes, size), buf = Buffer.alloc(len);
-    await fh.read(buf, 0, len, size - len);
-    return buf.toString().split('\n').reverse(); // dòng mới nhất trước
-  } finally { await fh.close(); }
-}
-const lastJson = (lines, pick) => {
-  for (const l of lines) { let o; try { o = JSON.parse(l); } catch { continue; } const v = pick(o); if (v) return v; }
-  return null;
-};
-async function newestFiles(dir, accept, limit) {
-  const files = (await fs.readdir(dir, { recursive: true }).catch(() => [])).filter(accept).map(f => path.join(dir, f));
-  const st = await Promise.all(files.map(f => fs.stat(f).then(s => ({ f, t: s.mtimeMs }), () => null)));
-  return st.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, limit).map(x => x.f);
-}
-const CODEX_DIR = path.join(os.homedir(), '.codex', 'sessions');
-const codexFiles = () => newestFiles(CODEX_DIR, f => path.basename(f).startsWith('rollout-') && f.endsWith('.jsonl'), 30);
-const pctWindow = w => w && { pct: Math.round(w.used_percent), minutes: w.window_minutes, resetsAt: w.resets_at * 1000 };
-
-// Codex ghi hạn mức (rate_limits) vào sự kiện token_count của file phiên mới nhất
-async function codexLimits() {
-  for (const f of await codexFiles()) {
-    const r = lastJson(await readTail(f), o => o.payload?.type === 'token_count' && o.payload.rate_limits);
-    if (r) return { plan: r.plan_type, primary: pctWindow(r.primary), secondary: pctWindow(r.secondary) };
-  }
-  return null;
-}
-
-// Claude: hạn mức chỉ có qua statusline (scripts/claude-statusline.mjs ghi ra file này).
-// Tài liệu: chỉ gói Pro/Max/Ultra mới có rate_limits; mỗi khung có thể vắng.
-const claudeUsageFile = () => fs.readFile(path.join(config.dataDir, 'claude-usage.json'), 'utf8')
-  .then(JSON.parse, () => null);
-async function claudeLimits() {
-  const r = (await claudeUsageFile())?.rate_limits;
-  if (!r) return null;
-  const w = x => x && x.resets_at * 1000 > Date.now() && { pct: Math.round(x.used_percentage), resetsAt: x.resets_at * 1000 };
-  return { fiveHour: w(r.five_hour), sevenDay: w(r.seven_day), at: r.at };
-}
-
-// File hội thoại mới nhất của agent ở đúng thư mục
-// Claude Code ghi ~/.claude/sessions/<pid>.json (có sessionId) cho mỗi tiến trình: biết chính xác hội thoại
-// của từng phiên, kể cả khi nhiều phiên cùng thư mục.
-// shortcut: file nội bộ, không có trong tài liệu; Claude Code đổi cách lưu thì quay về đoán theo thư mục
-const claudeSessionInfo = pid => pid ? fs.readFile(path.join(os.homedir(), '.claude', 'sessions', `${pid}.json`), 'utf8').then(JSON.parse, () => null) : null;
-async function claudeSessionId(pid) {
-  const j = await claudeSessionInfo(pid);
-  return validUuid(j?.sessionId) ? j.sessionId : null;
-}
-const claudeProjectDir = cwd => path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
-async function transcriptFile(agent, cwd, pid) {
-  if (agent === 'claude') {
-    const sid = await claudeSessionId(pid);
-    if (sid) {
-      const f = path.join(claudeProjectDir(cwd), `${sid}.jsonl`);
-      if (await fs.access(f).then(() => true, () => false)) return f;
-    }
-    // Không biết pid: lấy hội thoại mới nhất của thư mục (tên thư mục: ký tự không phải chữ/số thành '-')
-    return (await newestFiles(claudeProjectDir(cwd), x => x.endsWith('.jsonl') && !x.includes(path.sep), 1))[0] || null;
-  }
-  if (agent === 'codex') {
-    for (const f of await codexFiles()) {
-      const meta = lastJson((await readHead(f, 64 * 1024)).reverse(), o => o.type === 'session_meta' && o.payload);
-      if (meta?.cwd === cwd) return f;
-    }
-  }
-  return null;
-}
-
-// Câu trả lời gần nhất của agent, dạng chữ thường (bỏ ký hiệu markdown), có bộ nhớ đệm:
-// danh sách phiên được gọi 3 giây một lần
-const fileCache = new Map(), replyCache = new Map();
-async function lastReply(agent, cwd, pid) {
-  const key = `${agent}:${cwd}:${pid || ''}`;
-  let fc = fileCache.get(key);
-  if (!fc || Date.now() - fc.t > 15_000) fileCache.set(key, fc = { t: Date.now(), file: await transcriptFile(agent, cwd, pid) });
-  if (!fc.file) return null;
-  const mtime = (await fs.stat(fc.file).catch(() => null))?.mtimeMs;
-  const rc = replyCache.get(fc.file);
-  if (rc && rc.mtime === mtime) return rc;
-  const lines = await readTail(fc.file, 1024 * 1024);
-  const msg = transcriptMessages(agent, lines, 12).filter(m => m.who === 'assistant').pop();
-  const model = lastJson(lines, o => agent === 'claude' ? o.type === 'assistant' && o.message?.model : o.type === 'turn_context' && o.payload?.model);
-  const items = chatItems(agent, lines, 6), last = items.at(-1);
-  const lastTool = last?.kind === 'tools' ? last.steps.at(-1) : null; // bước mới nhất (nếu chưa có câu trả lời sau nó)
-  const replyAt = items.filter(x => x.kind === 'msg' && x.who === 'assistant').at(-1)?.t || null;
-  const out = { mtime, text: msg && plainText(msg.text).slice(0, 300), model, lastTool, replyAt };
-  replyCache.set(fc.file, out);
-  return out;
-}
-// Token của phiên
-async function sessionTokens(agent, cwd, pid) {
-  if (agent === 'claude') {
-    const all = (await claudeUsageFile())?.sessions || {}, sid = await claudeSessionId(pid);
-    const live = (sid && all[sid]) || all[cwd]; // statusline lưu theo mã hội thoại (và theo thư mục cho bản cũ)
-    if (live && Date.now() - live.at < 30 * 60_000) return { model: live.model, context: live.tokens, window: live.size, pct: live.pct };
-  }
-  const f = await transcriptFile(agent, cwd, pid);
-  if (!f) return null;
-  return lastJson(await readTail(f), agent === 'claude'
-    ? o => {
-      const u = o.type === 'assistant' && o.message?.usage;
-      return u && { model: o.message.model, context: (u.input_tokens || 0) + (u.cache_read_input_tokens || 0) + (u.cache_creation_input_tokens || 0) };
-    }
-    : o => {
-      const i = o.payload?.type === 'token_count' && o.payload.info;
-      return i && { context: i.last_token_usage?.total_tokens, window: i.model_context_window, total: i.total_token_usage?.total_tokens };
-    });
-}
-
-// Tin nhắn gần nhất (người dùng + agent) dạng văn bản: agent chạy màn hình phụ nên tmux không giữ lịch sử
-// Tóm tắt một lần gọi công cụ của agent thành [việc, chi tiết] ngắn để hiện trong Chat
-export function toolSummary(name, input) {
-  let i = input || {};
-  if (typeof i === 'string') { try { i = JSON.parse(i); } catch { i = { raw: i }; } }
-  const base = p => (p ? String(p).split('/').pop() : '');
-  const out = (() => {
-    switch (name) {
-      case 'Read': return ['Đọc', base(i.file_path)];
-      case 'Edit': case 'MultiEdit': case 'NotebookEdit': return ['Sửa', base(i.file_path || i.notebook_path)];
-      case 'Write': return ['Tạo', base(i.file_path)];
-      case 'Bash': return ['Chạy', i.description || i.command];
-      case 'Grep': return ['Tìm', i.pattern];
-      case 'Glob': return ['Tìm file', i.pattern];
-      case 'WebFetch': return ['Đọc web', i.url];
-      case 'WebSearch': return ['Tìm web', i.query];
-      case 'Agent': case 'Task': return ['Giao việc', i.description];
-      case 'TodoWrite': return ['Cập nhật danh sách việc', ''];
-      case 'AskUserQuestion': return ['Hỏi bạn', i.questions?.[0]?.question];
-      default: { // Codex: exec / shell với lệnh bên trong
-        const cmd = /cmd:\s*"((?:[^"\\]|\\.){1,200})/.exec(i.raw || '')?.[1] || (Array.isArray(i.command) ? i.command.join(' ') : i.command || i.cmd);
-        return [name === 'exec' || name === 'shell' ? 'Chạy' : name, cmd || ''];
-      }
-    }
-  })();
-  return { verb: out[0], detail: String(out[1] || '').replace(/\s+/g, ' ').trim().slice(0, 140) };
-}
-
-// Chat: tin nhắn + các bước agent làm (gọi công cụ), các bước liền nhau gộp thành một thẻ. lines: mới nhất trước
-export function chatItems(agent, lines, limit = 80) {
-  const raw = [];
-  for (const l of lines) {
-    let o; try { o = JSON.parse(l); } catch { continue; }
-    const t = Date.parse(o.timestamp) || null, ev = [];
-    if (agent === 'claude' && (o.type === 'user' || o.type === 'assistant') && !o.isMeta && !o.isSidechain) {
-      const c = o.message?.content;
-      const items = typeof c === 'string' ? [{ type: 'text', text: c }] : Array.isArray(c) ? c : [];
-      for (const x of items) {
-        if (x.type === 'text' && x.text?.trim() && !x.text.startsWith('<')) ev.push({ who: o.type, text: x.text.trim(), t });
-        else if (x.type === 'tool_use' && o.type === 'assistant') ev.push({ tool: toolSummary(x.name, x.input), t });
-      }
-    } else if (agent === 'codex' && o.type === 'response_item') {
-      const p = o.payload || {};
-      if (p.type === 'message' && (p.role === 'user' || p.role === 'assistant')) {
-        const text = (p.content || []).filter(x => x.type === 'input_text' || x.type === 'output_text').map(x => x.text).join('\n').trim();
-        if (text && !text.startsWith('<') && !text.startsWith('# AGENTS.md')) ev.push({ who: p.role, text, t });
-      } else if (p.type === 'function_call' || p.type === 'custom_tool_call') ev.push({ tool: toolSummary(p.name, p.arguments ?? p.input), t });
-    }
-    raw.push(...ev.reverse()); // trong một dòng: giữ đúng thứ tự khi đảo ngược cả danh sách
-    if (raw.filter(e => e.who).length >= limit) break;
-  }
-  const items = [];
-  for (const e of raw.reverse()) {
-    const prev = items.at(-1);
-    if (e.tool && prev?.kind === 'tools') { prev.steps.push(e.tool); prev.t = e.t; }
-    else if (e.tool) items.push({ kind: 'tools', steps: [e.tool], t: e.t });
-    else items.push({ kind: 'msg', who: e.who, text: e.text, t: e.t });
-  }
-  return items;
-}
-
-export function transcriptMessages(agent, lines, limit = 40) {
-  const out = [];
-  for (const l of lines) { // lines: mới nhất trước
-    let o; try { o = JSON.parse(l); } catch { continue; }
-    let who, text;
-    if (agent === 'claude' && (o.type === 'user' || o.type === 'assistant') && !o.isMeta && !o.isSidechain) {
-      const c = o.message?.content;
-      text = typeof c === 'string' ? c : Array.isArray(c) ? c.filter(x => x.type === 'text').map(x => x.text).join('\n') : '';
-      who = o.type;
-    } else if (agent === 'codex' && o.type === 'response_item' && o.payload?.type === 'message') {
-      const p = o.payload;
-      text = (p.content || []).filter(x => x.type === 'input_text' || x.type === 'output_text').map(x => x.text).join('\n');
-      who = p.role;
-    }
-    if (!text?.trim() || text.startsWith('<') || text.startsWith('# AGENTS.md') || (who !== 'user' && who !== 'assistant')) continue;
-    out.push({ who, text: text.trim(), t: Date.parse(o.timestamp) || null });
-    if (out.length >= limit) break;
-  }
-  return out.reverse();
-}
-
 async function machineUsage() {
   const cpu = Math.min(100, Math.round(os.loadavg()[0] / os.cpus().length * 100)); // tải trung bình 1 phút / số nhân
   let mem = null;
@@ -431,9 +167,12 @@ async function machineUsage() {
 
 async function usage(sessionName) {
   const s = validName(sessionName) ? (await sessions()).find(x => x.name === sessionName) : null;
-  const [machine, codex, claude, tokens] = await Promise.all([
-    machineUsage(), codexLimits(), claudeLimits(), s?.agent ? sessionTokens(s.agent, s.dir, s.agentPid) : null]);
-  return { machine, limits: { claude, codex }, session: s && { name: s.name, agent: s.agent, ...tokens } };
+  const [machine, limits, tokens] = await Promise.all([
+    machineUsage(),
+    agents.limits(),
+    s?.agent ? agents.get(s.agent).sessionTokens(s.dir, s.agentPid) : null,
+  ]);
+  return { machine, limits, session: s && { name: s.name, agent: s.agent, ...tokens } };
 }
 
 async function gitMarks(dir) {
@@ -532,7 +271,7 @@ async function watch() {
     const key = `${s.m}/${s.name}`, prev = prevState.get(key);
     prevState.set(key, s.state);
     if (prev === undefined) continue;
-    const who = AGENTS[s.agent]?.name || 'Agent', label = s.m ? `[${s.m}] ${s.name}` : s.name;
+    const who = agents.nameOf(s.agent), label = s.m ? `[${s.m}] ${s.name}` : s.name;
     const kind = s.state === 'waiting' && prev !== 'waiting' ? 'waiting' : s.state === 'idle' && prev === 'working' ? 'done' : null;
     if (!kind) continue;
     const title = `${label}: ${who} ${kind === 'waiting' ? 'cần bạn xác nhận' : 'đã xong'}`;
@@ -576,25 +315,17 @@ export function matchPeer(url) {
 async function createSession(b) {
   if (!validName(b.name)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
   if (b.resume != null && !validUuid(b.resume)) throw fail(400, 'Mã hội thoại không hợp lệ');
-  if (b.agent != null && !Object.hasOwn(AGENTS, b.agent)) throw fail(400, 'Agent không hỗ trợ');
-  if (b.resume != null && !AGENTS[b.agent]?.resume) throw fail(400, 'Agent này không mở lại được hội thoại cũ');
+  if (b.agent != null && !agents.has(b.agent)) throw fail(400, 'Agent không hỗ trợ');
+  if (b.resume != null && !agents.get(b.agent)?.resumeCommand) throw fail(400, 'Agent này không mở lại được hội thoại cũ');
   const dir = await need(b.dir);
   await tmux('new-session', '-d', '-s', b.name, '-c', dir).catch(() => { throw fail(409, 'Phiên đã tồn tại'); });
-  // Gõ lệnh vào shell để khi agent thoát vẫn còn shell, phiên không mất
-  const a = AGENTS[b.agent];
-  if (a) await tmux('send-keys', '-t', target(b.name), b.resume ? a.resume(b.resume) : a.cmd, 'Enter');
+  const agent = b.agent == null ? null : agents.get(b.agent);
+  if (!agent) return;
+  const command = b.resume ? agent.resumeCommand(b.resume) : agent.command;
+  await tmux('send-keys', '-t', target(b.name), command, 'Enter');
 }
 
-// Mã hội thoại để mở lại đúng chỗ: Claude qua ~/.claude/sessions/<pid>.json, Codex qua session_meta
-async function resumeIdFor(s) {
-  if (s.agent === 'claude') return claudeSessionId(s.agentPid);
-  if (s.agent === 'codex') {
-    const f = await transcriptFile('codex', s.dir);
-    const meta = f && lastJson((await readHead(f, 64 * 1024)).reverse(), o => o.type === 'session_meta' && o.payload);
-    return validUuid(meta?.id) ? meta.id : null;
-  }
-  return null;
-}
+const resumeIdFor = session => (session.agent ? agents.get(session.agent).resumeId(session) : null);
 export const normalizeSnapshot = saved => ({
   at: saved?.at || 0,
   sessions: Array.isArray(saved?.sessions) ? saved.sessions : [],
@@ -671,7 +402,7 @@ const routes = {
     const ok = await Promise.all([...map.values()].map(async p => (await inRoots(p.dir)) && p));
     return ok.filter(Boolean).sort((a, b) => b.sessions.length - a.sessions.length || b.last - a.last);
   },
-  'GET /api/agents': () => installedAgents(),
+  'GET /api/agents': () => agents.installed(),
   'GET /api/usage': q => usage(q.get('session')),
   'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
 
@@ -687,10 +418,11 @@ const routes = {
     const lines = Math.min(5000, Math.max(50, Number(q.get('lines')) || 1000));
     const s = (await sessions()).find(x => x.name === name);
     if (!s) throw fail(404, 'Không tìm thấy phiên');
-    const f = s.agent && await transcriptFile(s.agent, s.dir, s.agentPid);
+    const adapter = s.agent && agents.get(s.agent);
+    const f = adapter && await adapter.transcriptFile(s.dir, s.agentPid);
     if (f) {
-      const msgs = transcriptMessages(s.agent, await readTail(f, 4 * 1024 * 1024));
-      const who = m => m.who === 'user' ? '▶ Bạn' : '◆ ' + AGENTS[s.agent].name;
+      const msgs = transcriptMessages(adapter, await readTail(f, 4 * 1024 * 1024));
+      const who = m => m.who === 'user' ? '▶ Bạn' : '◆ ' + adapter.name;
       if (msgs.length) return { text: msgs.map(m => `${who(m)}\n${m.text}`).join('\n\n────────\n\n') };
     }
     const out = await tmux('capture-pane', '-p', '-J', '-S', `-${lines}`, '-t', target(name));
@@ -868,9 +600,11 @@ const routes = {
     if (!validName(name)) throw fail(400, 'Phiên không hợp lệ');
     const s = (await sessions()).find(x => x.name === name);
     if (!s) throw fail(404, 'Không tìm thấy phiên');
-    const f = s.agent && await transcriptFile(s.agent, s.dir, s.agentPid);
+    const adapter = s.agent && agents.get(s.agent);
+    const f = adapter && await adapter.transcriptFile(s.dir, s.agentPid);
     const limit = Math.min(200, Math.max(10, Number(q.get('limit')) || 80));
-    return { agent: s.agent, state: s.state, items: f ? chatItems(s.agent, await readTail(f, 4 * 1024 * 1024), limit) : [] };
+    const items = f ? chatItems(adapter, await readTail(f, 4 * 1024 * 1024), limit) : [];
+    return { agent: s.agent, state: s.state, items };
   },
   // Trang Cài đặt
   async 'GET /api/info'() {
@@ -884,7 +618,7 @@ const routes = {
       host: os.hostname(),
       platform: process.platform,
       claudeUsage,
-      agents: await installedAgents(),
+      agents: await agents.installed(),
     };
   },
   async 'POST /api/push/sub'(_, b) {
@@ -1082,6 +816,9 @@ export async function init(cfg) {
   await fs.mkdir(path.join(cfg.dataDir, 'uploads'), { recursive: true, mode: 0o700 });
   await fs.chmod(cfg.dataDir, 0o700);
   store = createStore(cfg.dataDir);
+  agents = createAgents({ home: cfg.home, dataDir: cfg.dataDir });
+  history = createHistory(agents);
+  lastReply = createReplyReader();
   vapid = await loadVapidKeys();
   const savedSubs = await store.read('subs.json');
   subs = Array.isArray(savedSubs) ? savedSubs : [];
