@@ -355,6 +355,26 @@ dialog.palette { width:min(94vw, 620px); padding:0; margin-top:10vh; }
 .cmdi b { font-weight:500; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cmdi small { font-size:12px; color:var(--faint); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .cmdi.on { background:var(--acc-soft); } .cmdi.on svg.i { color:var(--acc); }
+/* Menu chọn nhiều */
+.confirm .ck { gap:10px; } .confirm .ck .box { flex:none; width:20px; height:20px; border-radius:5px; border:2px solid var(--line2); display:grid; place-items:center; font-size:13px; font-weight:700; color:#fff; }
+.confirm .ck.on .box { background:var(--acc); border-color:var(--acc); }
+.confirm .cacts { display:flex; gap:8px; justify-content:flex-end; }
+.confirm .cacts .btn { justify-content:center; min-width:90px; }
+/* Sửa thao tác nhanh */
+.qedit { display:flex; flex-direction:column; gap:10px; max-height:60dvh; overflow:auto; }
+.qrow { display:flex; flex-direction:column; gap:6px; padding:10px; border:1px solid var(--line2); border-radius:10px; background:var(--card); }
+.qtop { display:flex; gap:6px; align-items:center; }
+.qrow input, .qrow textarea { padding:6px 8px; border-radius:8px; border:1px solid var(--line2); background:var(--panel); color:var(--fg); font:inherit; font-size:14px; min-width:0; }
+.qrow .qe { width:52px; text-align:center; } .qrow .qn { flex:1; } .qrow textarea { resize:vertical; }
+.qrow .qa { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); }
+/* Thông báo trong Cài đặt */
+.nform { display:flex; flex-direction:column; gap:8px; font-size:14px; }
+.chk2 { display:inline-flex; align-items:center; gap:8px; }
+.qh { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
+.qh .tm { padding:4px 6px; border-radius:8px; border:1px solid var(--line2); background:var(--card); color:var(--fg); }
+.muted { display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .muted small { width:100%; color:var(--faint); }
+/* Mọi máy */
+.pj.om .pjt { cursor:default; } .pj.om .pjt svg.i { color:var(--ok); }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }
 #v-body iframe.md { display:block; width:100%; height:100%; border:0; }
 .diff .a { color:var(--add); background:#4fbf7f12; display:block; } .diff .d { color:var(--del); background:#ef6b7312; display:block; }
@@ -623,7 +643,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
 
 <dialog id="d-quick">
   <form method="dialog">
-    <h3>Thao tác nhanh</h3>
+    <div class="row" style="padding:0"><h3 style="flex:1">Thao tác nhanh</h3><button class="btn sm" type="button" id="quick-edit">Sửa</button></div>
     <div class="quick" id="quick-list"></div>
     <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
   </form>
@@ -633,6 +653,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   <form method="dialog" class="menu">
     <h3 id="m-title"></h3>
     <button class="btn" value="rename"><span data-i="edit"></span>Đổi tên phiên</button>
+    <button class="btn" value="mute" id="m-mute"><span data-i="bell"></span><span>Tắt thông báo phiên này</span></button>
     <button class="btn danger" value="kill"><span data-i="trash"></span>Đóng phiên (dừng agent)</button>
     <button class="btn" value="cancel">Huỷ</button>
   </form>
@@ -732,7 +753,7 @@ const splitWide = () => matchMedia('(min-width: 1200px)').matches;
 
 // Máy đang chọn (m trong URL): mọi API/terminal đi qua /m/<máy>; danh sách máy và thông báo luôn ở máy này
 const base = () => st().m ? '/m/' + encodeURIComponent(st().m) : '';
-const HUB_ONLY = /^\/api\/(machines|events|push\/)/; // máy trung tâm theo dõi mọi máy
+const HUB_ONLY = /^\/api\/(machines|events|notify|quick|push\/)/; // máy trung tâm theo dõi mọi máy
 async function api(path, body) {
   let r;
   try {
@@ -780,6 +801,7 @@ function render() {
     S.machine = s.m || '';
     Object.assign(S, { list: [], loaded: false, dirs: null, termName: null, seen: {}, git: null, restore: [], projects: null });
     loadProjects();
+    S.others = []; loadOtherMachines();
     loadRestore();
     $('machine').value = S.machine;
     poll();
@@ -886,6 +908,7 @@ function renderSessions() {
   if (!nodes.length) nodes.push(el('div', 'empty', 'Không có gì khớp'));
   box.replaceChildren(...nodes);
   renderRestore(box);
+  renderOthers(box);
   // Phiên đang chạy: một dòng gọn (logo nhỏ, tên, trạng thái) + một dòng xem trước
   function sessionRow(x) {
     const unread = x.replyAt && x.name !== sel && x.replyAt > (seenMap()[seenKeyOf(x.name)] || 0);
@@ -1149,7 +1172,10 @@ const showHistory = safely(async all => {
   if (dir) { const b = el('button', 'btn', 'Xem mọi thư mục'); b.type = 'button'; b.onclick = () => showHistory(true); box.append(b); }
 });
 
-function openSessionMenu(name) { S.menuFor = name; $('m-title').textContent = name; $('d-menu').showModal(); }
+function openSessionMenu(name) {
+  S.menuFor = name; $('m-title').textContent = name; $('d-menu').showModal();
+  api('/api/notify').then(p => { $('m-mute').lastChild.textContent = p.muted.includes(`${st().m || ''}/${name}`) ? 'Bật lại thông báo phiên này' : 'Tắt thông báo phiên này'; }).catch(() => {});
+}
 $('b-menu').onclick = () => openSessionMenu(st().s);
 $('d-menu').onclose = safely(async () => {
   const name = S.menuFor || st().s, v = $('d-menu').returnValue, isOpen = name === st().s;
@@ -1159,6 +1185,11 @@ $('d-menu').onclose = safely(async () => {
     await api('/api/sessions/rename', { name, to });
     await poll();
     if (isOpen) { S.termName = null; go({ s: to }); }
+  } else if (v === 'mute') {
+    const p = await api('/api/notify'), key = `${st().m || ''}/${name}`, muted = new Set(p.muted);
+    muted.has(key) ? muted.delete(key) : muted.add(key);
+    await api('/api/notify', { ...p, muted: [...muted] });
+    toast(muted.has(key) ? `Đã tắt thông báo của ${name}` : `Đã bật lại thông báo của ${name}`);
   } else if (v === 'kill') {
     if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
     await api('/api/sessions/kill', { name });
@@ -1414,12 +1445,33 @@ const loadChat = safely(async first => {
 
 // ==================== Nút xác nhận nhanh ====================
 // Agent hỏi xác nhận (Do you want to proceed? / Would you like to run…): hiện các lựa chọn thành nút to
+// Menu chọn nhiều: ô tích (chạm = gửi phím số để tích/bỏ tích) + Gửi (đưa con trỏ tới Submit rồi Enter)
+function renderMulti(x, box, sig) {
+  box.dataset.sig = sig;
+  const head = el('div', 'cq'); head.innerHTML = icon('bell'); head.append(x.question || 'Chọn một hoặc nhiều mục');
+  const rows = x.options.map(o => {
+    const b = el('button', 'btn ck' + (o.checked ? ' on' : '')); b.type = 'button';
+    b.append(el('span', 'box', o.checked ? '✓' : ''), `${o.n}. ${o.label}`);
+    b.onclick = safely(async () => {
+      b.classList.toggle('on'); b.firstChild.textContent = b.classList.contains('on') ? '✓' : ''; // hiện ngay, lần làm mới sau đọc lại từ màn hình
+      await api('/api/send', { session: x.name, key: String(o.n) });
+    });
+    return b;
+  });
+  const acts = el('div', 'cacts'), go2 = el('button', 'btn pri', 'Gửi'), esc = el('button', 'btn', 'Huỷ (Esc)');
+  go2.type = esc.type = 'button';
+  go2.onclick = safely(async () => { go2.disabled = true; await api('/api/menu-submit', { session: x.name }); box.hidden = true; box.dataset.sig = ''; setTimeout(poll, 600); });
+  esc.onclick = safely(async () => { await api('/api/send', { session: x.name, key: 'Escape' }); box.hidden = true; box.dataset.sig = ''; setTimeout(poll, 600); });
+  acts.append(go2, esc);
+  box.replaceChildren(head, ...rows, acts);
+}
 function renderConfirm() {
   const x = cur(), box = $('confirm');
-  const show = x?.state === 'waiting' && x.choices?.length && !$('composer').hidden;
+  const show = x?.state === 'waiting' && (x.choices?.length || x.multi) && !$('composer').hidden;
   box.hidden = !show;
   if (!show) return;
-  const sig = x.name + JSON.stringify(x.choices);
+  const sig = x.name + JSON.stringify(x.choices || x.options);
+  if (x.multi) return box.dataset.sig === sig ? null : renderMulti(x, box, sig);
   if (box.dataset.sig === sig) return;
   box.dataset.sig = sig;
   const head = el('div', 'cq'); head.innerHTML = icon('bell'); head.append(x.question || `${agentName(x.agent)} cần bạn xác nhận`);
@@ -1497,6 +1549,57 @@ function openPalette() {
 const paletteKey = e => { if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') { e.preventDefault(); e.stopPropagation(); openPalette(); } };
 document.addEventListener('keydown', paletteKey, true);
 
+// ==================== Tuỳ chỉnh thông báo (trong Cài đặt) ====================
+async function notifyForm() {
+  const p = await api('/api/notify'), box = el('div', 'nform');
+  const save = safely(async () => { Object.assign(p, await api('/api/notify', p)); toast('Đã lưu cài đặt thông báo'); });
+  const check = (label, get, set) => {
+    const l = el('label', 'chk2'), c = Object.assign(el('input'), { type: 'checkbox', checked: get() });
+    c.onchange = () => { set(c.checked); save(); }; l.append(c, ' ' + label); return l;
+  };
+  const time = (get, set) => { const i = Object.assign(el('input', 'tm'), { type: 'time', value: get() }); i.onchange = () => { set(i.value); save(); }; return i; };
+  const quiet = el('div', 'qh');
+  quiet.append(check('Giờ yên lặng từ', () => p.quiet.on, v => { p.quiet.on = v; }), time(() => p.quiet.from, v => { p.quiet.from = v; }), ' đến ', time(() => p.quiet.to, v => { p.quiet.to = v; }));
+  box.append(check('Agent cần bạn xác nhận', () => p.waiting, v => { p.waiting = v; }), check('Agent đã xong việc', () => p.done, v => { p.done = v; }), quiet);
+  if (p.muted.length) {
+    const m = el('div', 'muted'); m.append(el('small', null, 'Phiên đã tắt thông báo:'));
+    for (const k of p.muted) {
+      const b = el('button', 'btn sm', `${k.replace(/^\//, '')} ✕`); b.type = 'button';
+      b.onclick = () => { p.muted = p.muted.filter(x => x !== k); b.remove(); save(); };
+      m.append(b);
+    }
+    box.append(m);
+  }
+  return box;
+}
+
+// ==================== Mọi máy một danh sách ====================
+// Phiên của các máy khác (có chạy termi) hiện cuối danh sách, có nhãn máy; chạm để chuyển sang máy đó
+async function loadOtherMachines() {
+  const others = (S.machines || []).filter(m => m.termi && (m.id || '') !== (st().m || ''));
+  S.others = (await Promise.all(others.map(async m => {
+    const r = await fetch(m.id ? `/m/${encodeURIComponent(m.id)}/api/sessions` : '/api/sessions').then(x => x.ok ? x.json() : [], () => []);
+    return { m, list: Array.isArray(r) ? r : [] };
+  }))).filter(x => x.list.length);
+  renderSessions();
+}
+function renderOthers(box) {
+  box.querySelectorAll('.om').forEach(n => n.remove());
+  for (const { m, list } of S.others || []) {
+    const h = el('div', 'pj om'), t = el('div', 'pjt');
+    t.innerHTML = icon('monitor'); t.append(el('span', 'pjn', m.self ? `${m.name} (máy này)` : m.name), el('span', 'pjc', String(list.length)));
+    h.append(t); box.append(h);
+    for (const x of list) {
+      const b = el('button', 'si om'); b.type = 'button';
+      const top = el('div', 'sit'); top.append(el('span', 'nm', x.title || x.name), stateEl(x.state, null, x.since));
+      const body = el('div', 'sib'); body.append(top, el('div', 'sip', `${x.dir.split('/').pop()}${x.model ? ' · ' + x.model : ''}`));
+      b.append(agentAvatar(x.agent, true), body);
+      b.onclick = () => go({ m: m.id || null, s: x.name, t: 'term', d: null, g: null, v: null });
+      box.append(b);
+    }
+  }
+}
+
 // ==================== Nhập bằng giọng nói ====================
 const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
@@ -1551,6 +1654,7 @@ $('b-settings').onclick = safely(async () => {
     settingRow('Giao diện', seg),
     settingRow('Cỡ chữ terminal', fs),
     settingRow('Thông báo đẩy', nb),
+    settingRow('Báo khi', await notifyForm()),
     settingRow('Hạn mức Claude trong Usage', cu),
     settingRow('Agent trên máy này', ag),
     settingRow('Thư mục được phép truy cập', el('div', 'sv mono', info.roots.map(short).join('\n'))),
@@ -1572,8 +1676,10 @@ const QUICK = [
   ['🧪', 'Chạy test', 'Báo kết quả, giải thích lỗi', 'Chạy test của dự án và báo kết quả; nếu có lỗi thì giải thích nguyên nhân.'],
   ['🗜️', 'Thu gọn', 'Giảm ngữ cảnh hội thoại', { claude: '/compact', codex: '/compact' }],
 ];
+// Danh sách đang dùng: bản bạn tự sửa (lưu trên máy chủ) hoặc mặc định
+const quickList = () => S.quickCustom ? S.quickCustom.map(q => [q.emoji, q.name, q.desc, q.text, q.ask]) : QUICK;
 function renderQuick(agent) {
-  $('quick-list').replaceChildren(...QUICK.map(([emoji, name, desc, cmd, ask]) => {
+  $('quick-list').replaceChildren(...quickList().map(([emoji, name, desc, cmd, ask]) => {
     const text = typeof cmd === 'string' ? cmd : cmd[agent] ?? cmd['*'];
     if (!text) return null;
     const b = el('button'); b.type = 'button';
@@ -1592,7 +1698,35 @@ $('b-quick').onclick = () => {
   if (!cur()?.agent) return toast('Phiên này chưa chạy agent nào', true);
   renderQuick(cur().agent);
   $('d-quick').showModal();
+  api('/api/quick').then(q => { S.quickCustom = q; if ($('d-quick').open && !S.quickEditing) renderQuick(cur().agent); }).catch(() => {});
 };
+// Sửa danh sách: mỗi dòng gồm biểu tượng, tên, mô tả, câu lệnh, hỏi xác nhận trước khi gửi
+$('quick-edit').onclick = () => {
+  S.quickEditing = true;
+  const agent = cur()?.agent;
+  const items = quickList().map(([emoji, name, desc, cmd, ask]) => ({ emoji, name, desc, text: typeof cmd === 'string' ? cmd : cmd[agent] ?? cmd['*'] ?? '', ask: !!ask }));
+  const row = q => {
+    const r = el('div', 'qrow');
+    const inp = (v, ph, cls) => Object.assign(el('input', cls), { value: v, placeholder: ph });
+    const e = inp(q.emoji, '⚡', 'qe'), n = inp(q.name, 'Tên', 'qn'), d = inp(q.desc, 'Mô tả ngắn', 'qd');
+    const t = Object.assign(el('textarea', 'qt'), { value: q.text, placeholder: 'Câu lệnh gửi cho agent', rows: 2 });
+    const a = el('label', 'qa'); const c = Object.assign(el('input'), { type: 'checkbox', checked: q.ask }); a.append(c, ' Hỏi trước khi gửi');
+    const del = el('button', 'ibtn'); del.type = 'button'; del.innerHTML = icon('trash'); del.onclick = () => r.remove(); del.setAttribute('aria-label', 'Xoá');
+    const top = el('div', 'qtop'); top.append(e, n, del);
+    r.append(top, d, t, a);
+    r.read = () => ({ emoji: e.value.trim(), name: n.value.trim(), desc: d.value.trim(), text: t.value.trim(), ask: c.checked });
+    return r;
+  };
+  const list = el('div', 'qedit'); list.append(...items.map(row));
+  const add = el('button', 'btn sm', '＋ Thêm'), save = el('button', 'btn pri sm', 'Lưu'), reset = el('button', 'btn sm', 'Khôi phục mặc định');
+  add.type = save.type = reset.type = 'button';
+  add.onclick = () => list.append(row({ emoji: '⚡', name: '', desc: '', text: '', ask: false }));
+  save.onclick = safely(async () => { S.quickCustom = await api('/api/quick', { items: [...list.children].map(r => r.read()) }); S.quickEditing = false; renderQuick(agent); toast('Đã lưu thao tác nhanh'); });
+  reset.onclick = safely(async () => { if (!confirm('Dùng lại danh sách mặc định?')) return; await api('/api/quick', { items: null }); S.quickCustom = null; S.quickEditing = false; renderQuick(agent); });
+  const acts = el('div', 'acts'); acts.append(reset, add, save);
+  $('quick-list').replaceChildren(list, acts);
+};
+$('d-quick').addEventListener('close', () => { S.quickEditing = false; });
 
 const send = safely(async () => {
   const t = $('text');
@@ -2123,6 +2257,8 @@ $('inbox-push').onclick = () => enablePush();
 // ---- Chọn máy (các máy cùng tài khoản Tailscale có chạy termi) ----
 async function loadMachines() {
   const list = await api('/api/machines').catch(() => []);
+  S.machines = list;
+  loadOtherMachines();
   $('machines').hidden = list.length < 2;
   $('machine').replaceChildren(...list.map(m => Object.assign(el('option', null,
     m.self ? `💻 ${m.name} (máy này)` : `🖥 ${m.name}${m.termi ? '' : m.online ? ' · chưa cài termi' : ' · offline'}`),

@@ -140,7 +140,10 @@ async function sessions() {
   await Promise.all(list.map(async s => {
     const screen = (await tmux('capture-pane', '-p', '-J', '-t', target(s.name)).catch(() => ({ stdout: '' }))).stdout;
     s.state = s.agent ? agentState(screen) : 'shell';
-    if (s.state === 'waiting') Object.assign(s, parseChoices(screen)); // câu hỏi + các lựa chọn để hiện nút bấm
+    if (s.state === 'waiting') { // câu hỏi + các lựa chọn để hiện nút bấm (chọn một) hoặc ô tích (chọn nhiều)
+      const one = parseChoices(screen);
+      Object.assign(s, one.choices ? one : parseMulti(screen));
+    }
     // Bỏ các dòng khung/trang trí của agent để xem trước có nội dung thật
     s.preview = screen.split('\n').map(l => l.trimEnd())
       .filter(l => l.replace(/[─━│╭╮╰╯\s]/g, '').length > 1 && !/[▐▛▜▝▘█▀]/.test(l) && !/^\s*(⏵|\? for shortcuts)/.test(l))
@@ -432,6 +435,32 @@ export function chatItems(agent, lines, limit = 80) {
 }
 
 // Màn hình chờ xác nhận: câu hỏi và các lựa chọn đánh số ("❯ 1. Yes", "  2. No, and tell Claude…")
+// Menu chọn nhiều (ô tích, dòng Submit): các ô + đã tích chưa + vị trí con trỏ so với Submit
+export function parseMulti(screen) {
+  const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim()).slice(-24);
+  const rows = [], options = [];
+  let firstOpt = -1;
+  lines.forEach((l, i) => {
+    const sub = /^\s*([❯›>])?\s*Submit\s*$/.exec(l);
+    const opt = /^\s*([❯›>])?\s*(\d+)[.)]\s+(?:\[([ xX✓✔]?)\]\s*)?(.+)$/.exec(l);
+    if (sub) rows.push({ submit: true, cursor: !!sub[1] });
+    else if (opt) {
+      if (firstOpt < 0) firstOpt = i;
+      rows.push({ cursor: !!opt[1] });
+      if (opt[3] !== undefined && !/^Type something/i.test(opt[4])) options.push({ n: Number(opt[2]), label: opt[4].trim(), checked: /[xX✓✔]/.test(opt[3]) });
+    }
+  });
+  if (!options.length || !rows.some(r => r.submit) && !lines.some(l => /more lines?/.test(l))) return {};
+  const question = lines.slice(0, Math.max(0, firstOpt)).reverse().find(l => /\?\s*$/.test(l.trim()))?.trim() || null;
+  return { multi: true, question, options };
+}
+// Số lần bấm ↓ (dương) / ↑ (âm) để đưa con trỏ tới Submit; null nếu chưa thấy Submit (danh sách đang cuộn)
+export function stepsToSubmit(screen) {
+  const rows = screen.split('\n').map(l => l.replace(/[│┃]/g, '')).filter(l => /^\s*([❯›>])?\s*(Submit|\d+[.)]\s)/.test(l));
+  const cur = rows.findIndex(l => /^\s*[❯›>]/.test(l)), sub = rows.findIndex(l => /^\s*([❯›>])?\s*Submit\s*$/.test(l));
+  return cur < 0 || sub < 0 ? null : sub - cur;
+}
+
 export function parseChoices(screen) {
   const lines = screen.split('\n').map(l => l.replace(/[│┃]/g, '').trimEnd()).filter(l => l.trim());
   const tail = lines.slice(-20), choices = [];
@@ -630,6 +659,20 @@ async function push(title, body, session, machine = '') {
 // Theo dõi chuyển trạng thái của agent (máy này và các máy khác có termi) để báo:
 // xong việc, hoặc đang chờ bạn xác nhận. Nhờ vậy chỉ cần bật thông báo ở một máy.
 const prevState = new Map();
+// Tuỳ chỉnh thông báo đẩy: loại cần báo, giờ yên lặng, phiên bị tắt (hộp thông báo trong app vẫn ghi đủ)
+const NOTIFY_DEFAULT = { waiting: true, done: true, quiet: { on: false, from: '23:00', to: '07:00' }, muted: [] };
+let notifyPrefs = { ...NOTIFY_DEFAULT, ...(await loadJson('notify.json', () => NOTIFY_DEFAULT)) };
+const hm = t => { const [h, m] = String(t).split(':').map(Number); return h * 60 + (m || 0); };
+export function shouldPush(prefs, kind, key, now = new Date()) {
+  if (!prefs[kind] || prefs.muted?.includes(key)) return false;
+  if (prefs.quiet?.on) {
+    const cur = now.getHours() * 60 + now.getMinutes(), from = hm(prefs.quiet.from), to = hm(prefs.quiet.to);
+    if (from <= to ? cur >= from && cur < to : cur >= from || cur < to) return false; // khoảng qua nửa đêm
+  }
+  return true;
+}
+const validTime = t => typeof t === 'string' && /^([01]\d|2[0-3]):[0-5]\d$/.test(t);
+
 // Hộp thông báo trong app: 30 sự kiện gần nhất (agent xong việc / cần xác nhận), ghi cả khi chưa bật đẩy
 const events = [];
 async function watch() {
@@ -648,7 +691,7 @@ async function watch() {
     const title = `${label}: ${who} ${kind === 'waiting' ? 'cần bạn xác nhận' : 'đã xong'}`;
     events.unshift({ t: Date.now(), kind, title, body: s.preview, session: s.name, machine: s.m, agent: s.agent });
     events.splice(30);
-    if (subs.length) await push(title, s.preview, s.name, s.m);
+    if (subs.length && shouldPush(notifyPrefs, kind, `${s.m}/${s.name}`)) await push(title, s.preview, s.name, s.m);
   }
 }
 
@@ -930,6 +973,39 @@ const routes = {
   'GET /api/push/key': () => ({ key: vapid.pub }),
   'GET /api/push/alert': () => lastAlert,
   'GET /api/events': () => events,
+  'GET /api/notify': () => notifyPrefs,
+  async 'POST /api/notify'(_, b) {
+    const q = b.quiet || {};
+    if (!validTime(q.from ?? '23:00') || !validTime(q.to ?? '07:00')) throw fail(400, 'Giờ không hợp lệ (HH:MM)');
+    const muted = Array.isArray(b.muted) ? b.muted.filter(x => typeof x === 'string' && x.length < 120).slice(0, 200) : [];
+    notifyPrefs = { waiting: !!b.waiting, done: !!b.done, quiet: { on: !!q.on, from: q.from || '23:00', to: q.to || '07:00' }, muted };
+    await saveJson('notify.json', notifyPrefs);
+    return notifyPrefs;
+  },
+  // Thao tác nhanh tự sửa: lưu trên máy chủ để mọi thiết bị dùng chung; null = dùng mặc định
+  'GET /api/quick': () => fs.readFile(path.join(DATA, 'quick.json'), 'utf8').then(JSON.parse, () => null),
+  async 'POST /api/quick'(_, b) {
+    if (b.items === null) { await fs.rm(path.join(DATA, 'quick.json'), { force: true }); return null; }
+    const str = (v, n) => typeof v === 'string' ? v.slice(0, n) : '';
+    if (!Array.isArray(b.items) || b.items.length > 30) throw fail(400, 'Danh sách không hợp lệ');
+    const items = b.items.map(x => ({ emoji: str(x.emoji, 8), name: str(x.name, 40), desc: str(x.desc, 80), text: str(x.text, 2000), ask: !!x.ask }))
+      .filter(x => x.name && x.text);
+    await saveJson('quick.json', items);
+    return items;
+  },
+  // Menu chọn nhiều: đưa con trỏ tới Submit rồi Enter (bấm ↓ dần nếu Submit đang khuất do cuộn)
+  async 'POST /api/menu-submit'(_, b) {
+    if (!validName(b.session)) throw fail(400, 'Phiên không hợp lệ');
+    const t = target(b.session);
+    for (let i = 0; i < 25; i++) {
+      const screen = (await tmux('capture-pane', '-p', '-J', '-t', t)).stdout;
+      const d = stepsToSubmit(screen);
+      if (d === 0) { await tmux('send-keys', '-t', t, 'Enter'); return { ok: true }; }
+      await tmux('send-keys', '-t', t, ...(d === null ? ['Down'] : Array(Math.abs(d)).fill(d > 0 ? 'Down' : 'Up')));
+      await new Promise(r => setTimeout(r, 150));
+    }
+    throw fail(409, 'Không tìm thấy nút Submit trong menu');
+  },
   // Chế độ Chat: các tin nhắn gần nhất của hội thoại trong phiên
   async 'GET /api/chat'(q) {
     const name = q.get('session');

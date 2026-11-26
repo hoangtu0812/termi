@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel, chatItems, toolSummary } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel, chatItems, toolSummary, parseMulti, stepsToSubmit, shouldPush } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -196,4 +196,26 @@ test('Chat: tin nhắn + các bước agent làm', () => {
 test('menu chọn nhiều không hiện nút xác nhận nhanh', () => {
   const multi = 'Làm những cải tiến nào?\n❯ 1. [✔] Chat đầy đủ hơn\n     Thẻ các bước\n  2. [ ] Thao tác nhanh\n  3. [✔] Bảng lệnh\n     Submit\n  6. Chat about this\n↑ 2 more lines\nEnter to select · ↑/↓ to navigate · Esc to cancel';
   assert.deepEqual(parseChoices(multi), {});
+});
+
+test('menu chọn nhiều: ô tích và đường tới Submit', () => {
+  const scr = 'Làm những cải tiến nào?\n❯ 1. [✔] Chat đầy đủ hơn\n     mô tả\n  2. [ ] Thao tác nhanh\n  3. [✔] Bảng lệnh\n  4. [ ] Type something\n     Submit\n  5. Chat about this\nEnter to select';
+  const m = parseMulti(scr);
+  assert.equal(m.question, 'Làm những cải tiến nào?');
+  assert.deepEqual(m.options.map(o => `${o.n}${o.checked ? '+' : '-'}`), ['1+', '2-', '3+']); // bỏ "Type something"
+  assert.equal(stepsToSubmit(scr), 4); // 1 → 2 → 3 → 4 → Submit
+  assert.equal(stepsToSubmit(scr.replace('❯ 1.', '  1.').replace('     Submit', '   ❯ Submit')), 0);
+  assert.equal(stepsToSubmit('❯ 1. [ ] a\n  2. [ ] b\n↓ 3 more lines'), null);
+  assert.deepEqual(parseMulti('Do you want?\n❯ 1. Yes\n  2. No'), {});
+});
+
+test('tuỳ chỉnh thông báo', () => {
+  const p = { waiting: true, done: false, quiet: { on: true, from: '23:00', to: '07:00' }, muted: ['/x'] };
+  const at = h => new Date(2026, 0, 1, h, 0);
+  assert.ok(shouldPush(p, 'waiting', '/a', at(12)));
+  assert.ok(!shouldPush(p, 'done', '/a', at(12)));   // loại không bật
+  assert.ok(!shouldPush(p, 'waiting', '/x', at(12))); // phiên bị tắt
+  assert.ok(!shouldPush(p, 'waiting', '/a', at(23))); // giờ yên lặng qua nửa đêm
+  assert.ok(!shouldPush(p, 'waiting', '/a', at(3)));
+  assert.ok(shouldPush(p, 'waiting', '/a', at(7)));
 });
