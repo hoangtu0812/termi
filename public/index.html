@@ -88,11 +88,17 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .sgrp .ibtn { width:30px; height:30px; flex:none; }
 .sgrp.idle span { font-weight:500; opacity:.75; }
 .sgrp span { font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
-.welcome { display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 16px; margin:auto; width:100%; max-width:460px; text-align:center; }
-.welcome img { width:56px; height:56px; border-radius:14px; }
-.welcome h2 { margin:0; font-size:19px; }
-.welcome p { margin:0; color:var(--dim); font-size:14px; }
-.wl { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:6px; text-align:left; }
+.welcome { display:flex; flex-direction:column; align-items:center; gap:10px; padding:40px 16px 28px; margin:auto; width:100%; max-width:720px; text-align:center; }
+.welcome img { width:52px; height:52px; border-radius:14px; box-shadow:0 10px 30px -10px color-mix(in srgb, var(--acc) 60%, transparent); }
+.welcome h2 { margin:6px 0 0; font-size:24px; font-weight:600; letter-spacing:-.02em; }
+.welcome p { margin:0 0 8px; color:var(--dim); font-size:14px; max-width:440px; }
+.wl { display:grid; grid-template-columns:repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap:10px; width:100%; margin-top:8px; text-align:left; }
+.wh { width:100%; margin-top:8px; text-align:left; font-size:12px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.06em; }
+.wcard { transition:border-color .15s, background-color .15s; } @media (hover: hover) { .wcard:hover { border-color:var(--line2); } }
+.wcard .wr { display:flex; align-items:center; gap:6px; width:100%; min-height:30px; padding:4px 8px; border:0; border-radius:8px; background:var(--hover); color:var(--dim); font-size:12.5px; text-align:left; }
+.wcard .wr span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; color:var(--fg); }
+.wcard .wr svg.i { width:14px; height:14px; color:var(--acc); }
+.wcard .wt { margin-left:auto; flex:none; color:var(--faint); font-size:11.5px; font-weight:400; }
 .restore { margin-bottom:8px; border-color:var(--acc); }
 .wcard { display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:var(--r); border:1px solid var(--line); background:var(--card); }
 .wcard .wd { display:flex; align-items:center; gap:8px; min-width:0; }
@@ -210,8 +216,9 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .keys button.fs { font-family:inherit; font-weight:600; }
 .keys { display:flex; gap:6px; padding:8px 8px 0; overflow-x:auto; scrollbar-width:none; }
 .keys::-webkit-scrollbar { display:none; }
-.keys button { flex:none; height:34px; min-width:44px; padding:0 10px; border-radius:8px; border:1px solid var(--line2); background:var(--card); font:13px var(--mono); }
-.keys button:active { background:var(--hover); }
+.keys button { flex:none; height:32px; min-width:40px; padding:0 10px; border-radius:8px; border:1px solid var(--line); background:var(--panel); color:var(--dim); font:12.5px var(--mono); }
+.keys button:active { background:var(--hover); color:var(--fg); }
+@media (hover: hover) { .keys button:hover { background:var(--hover); color:var(--fg); } }
 .atts { display:flex; gap:8px; padding:8px 8px 0; overflow-x:auto; }
 .att { position:relative; flex:none; height:60px; border-radius:10px; overflow:hidden; border:1px solid var(--line2); background:var(--card); }
 .att img { width:60px; height:60px; object-fit:cover; display:block; }
@@ -307,25 +314,37 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 /* Ô nhắn dùng chung */
 #composer { flex:none; border-top:1px solid var(--line); background:var(--bg); }
 /* Chat */
-.chat { padding:14px 12px 20px; display:flex; flex-direction:column; gap:10px; }
-.msg { display:flex; flex-direction:column; max-width:min(88%, 760px); gap:3px; }
-.msg.me { align-self:flex-end; align-items:flex-end; }
-.msg.ai { align-self:flex-start; }
-.msg .mb { padding:9px 13px; border-radius:16px; font-size:14.5px; line-height:1.55; overflow-wrap:anywhere; min-width:0; max-width:100%; }
-.msg.me .mb { background:var(--acc); color:#fff; border-bottom-right-radius:5px; white-space:pre-wrap; }
-.msg.ai .mb { background:var(--card); border:1px solid var(--line); border-bottom-left-radius:5px; }
-.msg time { font-size:11px; color:var(--faint); padding:0 6px; }
+.chat { padding:18px 16px 28px; display:flex; flex-direction:column; gap:14px; width:100%; max-width:820px; margin:0 auto; }
+.msg { display:flex; flex-direction:column; max-width:100%; gap:4px; }
+.msg.me { align-self:flex-end; align-items:flex-end; max-width:min(85%, 620px); }
+.msg.ai { align-self:stretch; }
+.msg .mb { font-size:15px; line-height:1.65; overflow-wrap:anywhere; min-width:0; max-width:100%; }
+.msg.me .mb { padding:9px 14px; border-radius:18px 18px 6px 18px; background:var(--hover); color:var(--fg); white-space:pre-wrap; border:1px solid var(--line); }
+.msg.ai .mb { padding:0 2px; }
+.msg time { font-size:11px; color:var(--faint); padding:0 4px; }
+.msg.ai time { padding:0 2px; }
 .msg.ai .mb > :first-child { margin-top:0; } .msg.ai .mb > :last-child { margin-bottom:0; }
-.msg.ai .mb p { margin:.5em 0; } .msg.ai .mb ul, .msg.ai .mb ol { margin:.4em 0; padding-left:1.3em; }
-.msg.ai .mb h1, .msg.ai .mb h2, .msg.ai .mb h3, .msg.ai .mb h4 { font-size:1.05em; margin:.8em 0 .3em; }
-.msg.ai .mb code { font:.88em var(--mono); background:var(--hover); padding:.1em .35em; border-radius:5px; }
-.msg.ai .mb pre { background:var(--bg); border:1px solid var(--line); border-radius:10px; padding:10px 12px; overflow:auto; margin:.5em 0; }
-.msg.ai .mb pre code { background:none; padding:0; font-size:12.5px; line-height:1.5; }
+.msg.ai .mb p { margin:.65em 0; } .msg.ai .mb ul, .msg.ai .mb ol { margin:.5em 0; padding-left:1.4em; } .msg.ai .mb li { margin:.2em 0; } .msg.ai .mb li::marker { color:var(--faint); }
+.msg.ai .mb h1, .msg.ai .mb h2, .msg.ai .mb h3, .msg.ai .mb h4 { margin:1.1em 0 .4em; line-height:1.3; letter-spacing:-.01em; font-weight:600; }
+.msg.ai .mb h1 { font-size:1.3em; } .msg.ai .mb h2 { font-size:1.15em; } .msg.ai .mb h3, .msg.ai .mb h4 { font-size:1.02em; }
+.msg.ai .mb strong { font-weight:600; color:var(--fg); }
+.msg.ai .mb hr { border:0; border-top:1px solid var(--line); margin:1.2em 0; }
+.msg.ai .mb code { font:.86em var(--mono); background:var(--hover); border:1px solid var(--line); padding:.08em .35em; border-radius:5px; }
+.code { margin:.75em 0; border:1px solid var(--line); border-radius:10px; overflow:hidden; background:var(--panel); }
+.code .ch { display:flex; align-items:center; justify-content:space-between; height:32px; padding:0 6px 0 12px; border-bottom:1px solid var(--line); color:var(--faint); font:12px var(--mono); }
+.code .ch button { display:inline-flex; align-items:center; gap:5px; height:24px; padding:0 8px; border:0; border-radius:6px; background:transparent; color:var(--dim); font:12px var(--sans); }
+.code .ch button svg.i { width:13px; height:13px; }
+@media (hover: hover) { .code .ch button:hover { background:var(--hover); color:var(--fg); } }
+.msg.ai .mb .code pre { margin:0; padding:12px 14px; overflow:auto; background:none; border:0; border-radius:0; }
+.msg.ai .mb pre code { background:none; border:0; padding:0; font-size:12.5px; line-height:1.6; }
 .msg.ai .mb table { border-collapse:collapse; display:block; overflow:auto; font-size:13px; } .msg.ai .mb th, .msg.ai .mb td { border:1px solid var(--line); padding:4px 8px; }
 .msg.ai .mb blockquote { margin:.4em 0; padding-left:10px; border-left:3px solid var(--line2); color:var(--dim); }
 .msg.ai .mb a { color:var(--acc); }
-.msg.typing .mb { color:var(--dim); font-style:italic; }
-.msg.typing i { width:30px; height:6px; margin-left:12px; border-radius:6px; background:linear-gradient(90deg, var(--acc) 0 30%, transparent 0) 0 0/10px 100% repeat-x; animation:pulse 1s infinite; }
+.msg.typing { flex-direction:row; align-items:center; gap:10px; }
+.msg.typing .mb { color:var(--dim); font-size:13.5px; }
+.msg.typing i { display:inline-flex; gap:4px; } .msg.typing i b { width:6px; height:6px; border-radius:50%; background:var(--acc); animation:dots 1.2s infinite ease-in-out; }
+.msg.typing i b:nth-child(2) { animation-delay:.15s; } .msg.typing i b:nth-child(3) { animation-delay:.3s; }
+@keyframes dots { 0%, 80%, 100% { opacity:.25; transform:scale(.8); } 40% { opacity:1; transform:scale(1); } }
 /* Xác nhận nhanh */
 .confirm { display:flex; flex-direction:column; gap:6px; margin:8px 8px 0; padding:10px; border-radius:12px; border:1px solid var(--warn); background:var(--warn-soft); }
 .confirm .cq { display:flex; align-items:center; gap:8px; font-weight:600; font-size:14px; }
@@ -346,15 +365,17 @@ select.sel { height:38px; padding:0 10px; border-radius:10px; border:1px solid v
 .seg2 .fsv { min-width:36px; text-align:center; font:600 14px var(--mono); }
 .agi { display:inline-flex; align-items:center; margin-right:12px; }
 /* Chat: thẻ các bước, copy code, ảnh thu nhỏ */
-details.tools { align-self:flex-start; max-width:min(88%, 760px); border:1px dashed var(--line2); border-radius:12px; font-size:13px; color:var(--dim); }
-details.tools summary { display:flex; align-items:center; gap:8px; padding:7px 12px; cursor:pointer; list-style:none; }
+details.tools { align-self:flex-start; max-width:100%; border:1px solid var(--line); border-radius:10px; background:var(--panel); font-size:13px; color:var(--dim); }
+details.tools summary { display:flex; align-items:center; gap:8px; height:34px; padding:0 12px; cursor:pointer; list-style:none; }
+details.tools summary b { color:var(--fg); font-weight:500; flex:none; }
+details.tools summary::after { content:''; flex:none; margin-left:auto; width:6px; height:6px; border-right:1.5px solid var(--faint); border-bottom:1.5px solid var(--faint); transform:rotate(-45deg); transition:transform .15s; }
+details.tools[open] summary::after { transform:rotate(45deg); }
+details.tools[open] summary { border-bottom:1px solid var(--line); }
 details.tools summary::-webkit-details-marker { display:none; }
 details.tools summary svg.i { width:14px; height:14px; color:var(--acc); flex:none; }
 details.tools summary span { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; min-width:0; }
-details.tools ul { margin:0; padding:2px 12px 10px 34px; display:flex; flex-direction:column; gap:3px; }
+details.tools ul { margin:0; padding:8px 12px 10px 34px; display:flex; flex-direction:column; gap:4px; }
 details.tools li { overflow-wrap:anywhere; } details.tools li code { font:12px var(--mono); color:var(--fg); }
-.msg.ai .mb pre { position:relative; }
-.cpy { position:absolute; top:6px; right:6px; padding:2px 8px; border-radius:6px; border:1px solid var(--line2); background:var(--card); color:var(--dim); font-size:11.5px; opacity:.85; }
 .msg .mb img.thumb { display:block; max-width:220px; max-height:220px; margin-top:8px; border-radius:10px; cursor:pointer; }
 /* Thanh "agent đang làm gì" */
 .doing { flex:0 1 auto; min-width:0; max-width:38%; display:flex; align-items:center; gap:8px; height:30px; padding:0 3px 0 10px; border-radius:99px; background:var(--acc-soft); border:1px solid color-mix(in srgb, var(--acc) 30%, transparent); }
@@ -415,9 +436,14 @@ dialog label { display:flex; flex-direction:column; gap:6px; font-size:13px; col
 dialog input:not([type=checkbox]), dialog select { height:42px; padding:0 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--fg); font-size:15px; width:100%; }
 dialog .chk { flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:14px; }
 dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+dialog .flabel { font-size:13px; color:var(--dim); margin-bottom:-6px; } dialog .hint { color:var(--faint); font-size:12px; }
+.agchips { display:flex; flex-wrap:wrap; gap:6px; }
+.agc { display:inline-flex; align-items:center; height:38px; padding:0 14px 0 8px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--dim); font-size:14px; font-weight:500; }
+.agc .av.sm { margin-right:8px; vertical-align:0; }
+.agc.on { border-color:var(--acc); background:var(--acc-soft); color:var(--fg); box-shadow:0 0 0 1px var(--acc) inset; }
 .picker { border:1px solid var(--line2); border-radius:10px; overflow:hidden; background:var(--card); }
 .pk-bar { display:flex; align-items:center; gap:4px; padding:2px 8px 2px 2px; border-bottom:1px solid var(--line); }
-#pk-list { max-height:min(36dvh,300px); overflow:auto; }
+#pk-list { max-height:min(30dvh,260px); overflow:auto; }
 #pk-list .row { min-height:42px; padding:8px 12px; font-size:14px; }
 #hist-list { display:flex; flex-direction:column; overflow:auto; max-height:60dvh; margin:0 -18px; border-top:1px solid var(--line); }
 #hist-list button { text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; padding:12px 18px; display:flex; flex-direction:column; gap:3px; }
@@ -612,7 +638,9 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
 <dialog id="d-new">
   <form method="dialog">
     <h3>Phiên mới</h3>
-    <label>Tên phiên<input name="name" placeholder="vd: termi" pattern="[A-Za-z0-9_\-]{1,40}" required autocapitalize="off" autocomplete="off"></label>
+    <div class="flabel">Agent</div>
+    <div class="agchips" id="ag-chips" role="radiogroup" aria-label="Agent"></div>
+    <select name="agent" hidden></select>
     <label>Gần đây<select id="pk-recent"></select></label>
     <label>Thư mục<input name="dir" required autocapitalize="off" autocomplete="off" spellcheck="false"></label>
     <div class="picker">
@@ -622,7 +650,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
       </div>
       <div id="pk-list"></div>
     </div>
-    <label>Chạy agent<select name="agent"></select></label>
+    <label><span>Tên phiên <small class="hint">· tự đặt theo thư mục</small></span><input name="name" placeholder="vd: termi" pattern="[A-Za-z0-9_\-]{1,40}" required autocapitalize="off" autocomplete="off"></label>
     <div class="acts"><button class="btn" type="button" onclick="this.closest('dialog').close('cancel')">Huỷ</button><button class="btn pri" value="ok">Tạo phiên</button></div>
   </form>
 </dialog>
@@ -716,6 +744,7 @@ const P = {
   cpu:'<rect x="5" y="5" width="14" height="14" rx="2"/><rect x="9" y="9" width="6" height="6"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/>',
   ram:'<rect x="2" y="7" width="20" height="10" rx="2"/><path d="M6 11v2M10 11v2M14 11v2M18 11v2M6 17v3M18 17v3"/>',
   disk:'<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5M3 12c0 1.7 4 3 9 3s9-1.3 9-3"/>',
+  copy:'<rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   monitor:'<rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/>', zap:'<path d="M13 2 3 14h9l-1 8 10-12h-9z"/>',
 };
 const icon = n => `<svg class="i" viewBox="0 0 24 24" aria-hidden="true">${P[n]}</svg>`;
@@ -729,7 +758,23 @@ function themePref() { try { return THEMES[localStorage.getItem('termi-theme')] 
 function applyTheme() {
   const pref = themePref(), theme = pref === 'auto' ? (lightQuery.matches ? 'light' : 'dark') : pref;
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#111318';
+  document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#0d0e11';
+  try { termTheme(); } catch {} // terminal chưa mở
+}
+// Bảng màu terminal khớp giao diện app (sáng/tối)
+const TERM_THEMES = {
+  dark: { background:'#0d0e11', foreground:'#d9dbe1', cursor:'#e07a55', cursorAccent:'#0d0e11', selectionBackground:'#e07a5544',
+    black:'#1b1d23', red:'#ef6b73', green:'#5fc48a', yellow:'#e8b339', blue:'#6aa7ff', magenta:'#c58af9', cyan:'#4fc3d6', white:'#c9ccd3',
+    brightBlack:'#5d6370', brightRed:'#ff8a91', brightGreen:'#7ad9a2', brightYellow:'#f3c968', brightBlue:'#8dbcff', brightMagenta:'#d6a6ff', brightCyan:'#77d6e5', brightWhite:'#f2f3f5' },
+  light: { background:'#f7f7f8', foreground:'#1f2329', cursor:'#c95f3a', cursorAccent:'#f7f7f8', selectionBackground:'#c95f3a33',
+    black:'#1f2329', red:'#d33f49', green:'#1f9d5c', yellow:'#a86f00', blue:'#2f6fdf', magenta:'#9b4dca', cyan:'#0f8a9d', white:'#8a909c',
+    brightBlack:'#5f6675', brightRed:'#e5535c', brightGreen:'#24b36a', brightYellow:'#c28400', brightBlue:'#4a85f0', brightMagenta:'#b065e0', brightCyan:'#1aa3b8', brightWhite:'#b8bcc6' },
+};
+function termTheme() {
+  const w = termWin(), t = w?.term;
+  if (!t) return;
+  t.options.theme = TERM_THEMES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
+  w.document.body.style.background = t.options.theme.background;
 }
 function setTheme(pref) {
   try { localStorage.setItem('termi-theme', pref); } catch {}
@@ -1009,25 +1054,37 @@ async function welcome(box) {
   if (box.querySelector('.welcome')) return; // đã vẽ: không vẽ lại mỗi lần poll (tránh nháy)
   const w = el('div', 'welcome'), list = el('div', 'wl');
   w.innerHTML = '<img src="/icon.svg" alt="">';
-  w.append(el('h2', null, S.list.length ? 'Chọn một phiên hoặc bắt đầu phiên mới' : 'Bắt đầu phiên đầu tiên'),
-    el('p', null, 'Chọn thư mục và agent. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.'), list);
+  const h = new Date().getHours(), hi = h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
+  w.append(el('h2', null, hi), el('p', null, S.list.length ? 'Chọn một phiên bên trái, hoặc bắt đầu làm việc ở một project gần đây.'
+    : 'Chọn project và agent để bắt đầu. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.'), el('div', 'wh', 'Project gần đây'), list);
   const more = el('button', 'btn'); more.type = 'button'; more.innerHTML = icon('folder') + 'Thư mục khác…'; more.onclick = newSession;
   w.append(more);
   box.replaceChildren(w);
   const [dirs, agents] = await Promise.all([api('/api/dirs').catch(() => ({ recent: [] })), api('/api/agents').catch(() => [])]);
-  list.replaceChildren(...dirs.recent.slice(0, 4).map(dir => {
-    const c = el('div', 'wcard'), d = el('div', 'wd'), a = el('div', 'wa');
+  const proj = new Map((S.projects || []).map(p => [p.dir, p]));
+  list.replaceChildren(...dirs.recent.slice(0, 6).map(dir => {
+    const c = el('div', 'wcard'), d = el('div', 'wd'), a = el('div', 'wa'), p = proj.get(dir), last = p?.conversations?.[0];
     d.innerHTML = icon('folder');
     d.append(el('b', null, dir.split('/').pop() || dir), el('small', null, ltr(short(dir))));
+    if (p?.last) d.append(el('span', 'wt', ago(p.last)));
+    c.append(d);
+    // Tiếp tục hội thoại gần nhất của project (nếu không đang chạy ở phiên nào)
+    if (last && !S.list.some(x => x.convId === last.id)) {
+      const r = el('button', 'wr'); r.type = 'button'; r.title = 'Mở lại hội thoại này';
+      r.innerHTML = icon('refresh'); r.append(el('span', null, last.title), el('span', 'wt', ago(last.mtime)));
+      r.onclick = safely(() => quickStart(dir, last.agent, last.id));
+      c.append(r);
+    }
     for (const ag of agents) {
       const b = el('button', 'wbtn'); b.type = 'button';
       b.append(agentAvatar(ag.id, true), ag.name);
       b.onclick = safely(() => quickStart(dir, ag.id));
       a.append(b);
     }
-    c.append(d, a);
+    c.append(a);
     return c;
   }));
+  if (!dirs.recent.length) list.replaceChildren(el('div', 'empty', 'Chưa có project nào, bấm "Thư mục khác…" để chọn'));
 }
 // Tạo phiên đặt tên theo thư mục; trùng tên thì thêm -2, -3…
 async function quickStart(dir, agent, resume) {
@@ -1161,6 +1218,15 @@ async function newSession() {
   NF().agent.replaceChildren(...agents.map(a => Object.assign(el('option', null, a.name), { value: a.id })),
     Object.assign(el('option', null, 'Không, chỉ mở shell'), { value: '' }));
   NF().agent.value = cur()?.agent && agents.some(a => a.id === cur().agent) ? cur().agent : agents[0]?.id ?? '';
+  // Chọn agent bằng thẻ có logo thay cho ô chọn
+  const chips = [...agents.map(a => [a.id, a.name]), ['', 'Shell']].map(([id, name]) => {
+    const b = el('button', 'agc'); b.type = 'button'; b.setAttribute('role', 'radio');
+    b.append(agentAvatar(id || null, true), name);
+    b.onclick = () => { NF().agent.value = id; chips.forEach(([x, c]) => { c.classList.toggle('on', x === id); c.setAttribute('aria-checked', x === id); }); };
+    return [id, b];
+  });
+  $('ag-chips').replaceChildren(...chips.map(([, b]) => b));
+  chips.find(([id]) => id === NF().agent.value)?.[1].click();
   await loadRepos($('pk-recent'), null, true);
   $('pk-recent').prepend(Object.assign(el('option', null, '— chọn nhanh —'), { value: '', selected: true, disabled: true }));
   await pickDir(cur()?.dir || S.dirs.recent[0] || S.dirs.roots[0]);
@@ -1276,7 +1342,12 @@ $('frame').addEventListener('load', () => {
     if (!t?.element) return markDown(true);
     // Giữ được kết nối 10 giây thì coi là ổn: lần mất sau thử lại nhanh như ban đầu
     setTimeout(() => { if ($('t-down').hidden) retryDelay = 1000; }, 10_000);
-    t.options.fontSize = fontSize; t.fit();
+    t.options.fontSize = fontSize;
+    // Lề trong cho chữ không dính mép, con trỏ dạng thanh, màu theo giao diện app
+    const pad = w.document.createElement('style'); pad.textContent = `.xterm { padding:${wide() ? '10px 6px 0 14px' : '6px 2px 0 8px'}; } html, body { background:transparent; } .xterm-viewport { scrollbar-width:none; } .xterm-viewport::-webkit-scrollbar { display:none; }`;
+    w.document.head.append(pad);
+    Object.assign(t.options, { cursorStyle: 'bar', cursorWidth: 2, cursorBlink: true });
+    termTheme(); t.fit();
     // Font JetBrains Mono cho terminal: nạp vào trang ttyd, đổi font khi đã tải xong (xterm vẽ bằng canvas, không tự đổi)
     const fl = w.document.createElement('link'); fl.rel = 'stylesheet'; fl.href = '/fonts/fonts.css';
     fl.onload = () => Promise.all([400, 700].map(n => w.document.fonts.load(`${n} 14px "JetBrains Mono"`)))
@@ -1474,11 +1545,14 @@ async function bubble(m) {
     }
   } else {
     body.append(await mdSafe(m.text).catch(() => document.createTextNode(m.text)));
-    // Nút copy trên mỗi khối code
+    // Khối code: thanh trên ghi ngôn ngữ + nút chép
     for (const pre of body.querySelectorAll('pre')) {
-      const c = el('button', 'cpy', 'Copy'); c.type = 'button';
-      c.onclick = async () => { await navigator.clipboard?.writeText(pre.querySelector('code')?.textContent ?? pre.textContent).then(() => { c.textContent = 'Đã copy'; }, () => { c.textContent = 'Không copy được'; }); setTimeout(() => { c.textContent = 'Copy'; }, 1500); };
-      pre.append(c);
+      const wrap = el('div', 'code'), head = el('div', 'ch'), c = el('button'); c.type = 'button';
+      const label = t => { c.innerHTML = icon('copy'); c.append(t); };
+      label('Chép');
+      c.onclick = async () => { await navigator.clipboard?.writeText(pre.querySelector('code')?.textContent ?? pre.textContent).then(() => label('Đã chép'), () => label('Không chép được')); setTimeout(() => label('Chép'), 1500); };
+      head.append(el('span', null, /language-([\w+-]+)/.exec(pre.querySelector('code')?.className || '')?.[1] || 'code'), c);
+      pre.replaceWith(wrap); wrap.append(head, pre);
     }
   }
   b.append(body);
@@ -1501,7 +1575,7 @@ const loadChat = safely(async first => {
   const nodes = await Promise.all(r.items.map(x => x.kind === 'tools' ? toolsCard(x) : bubble(x)));
   if (!r.agent) nodes.push(el('div', 'empty', 'Phiên này chưa chạy agent nào'));
   else if (!r.items.length) nodes.push(el('div', 'empty', 'Chưa có tin nhắn nào'));
-  if (r.state === 'working') { const d = cur()?.doing, t = el('div', 'msg ai typing'); t.append(el('div', 'mb', d ? `${d.verb} ${d.detail}` : `${agentName(r.agent)} đang làm`), el('i')); nodes.push(t); }
+  if (r.state === 'working') { const d = cur()?.doing, t = el('div', 'msg ai typing'); const dots = el('i'); dots.append(el('b'), el('b'), el('b')); t.append(dots, el('div', 'mb', d ? `${d.verb} ${d.detail}` : `${agentName(r.agent)} đang làm…`)); nodes.push(t); }
   box.replaceChildren(...nodes);
   if (first || atBottom) box.scrollTop = box.scrollHeight;
 });
