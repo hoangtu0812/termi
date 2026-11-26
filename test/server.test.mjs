@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -109,4 +109,20 @@ test('tin nhắn từ file hội thoại', () => {
     { type: 'response_item', payload: { type: 'message', role: 'assistant', content: [{ type: 'output_text', text: '12 test qua' }] } },
   ].map(o => JSON.stringify(o)).reverse();
   assert.deepEqual(transcriptMessages('codex', codex), [{ who: 'user', text: 'chạy test' }, { who: 'assistant', text: '12 test qua' }]);
+});
+
+test('chỉ chủ máy được vào', () => {
+  const owner = ['chu@may.com'];
+  assert.ok(isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'Chu@May.com' }, owner));
+  assert.ok(!isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'khac@x.com' }, owner));
+  assert.ok(!isAllowed({ host: 'may.tail1.ts.net' }, owner)); // thiết bị gắn tag / Funnel: không có danh tính
+  assert.ok(!isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'chu@may.com' }, [])); // không biết chủ máy: chặn
+  assert.ok(isAllowed({ host: '127.0.0.1:7680' }, owner)); // gọi thẳng trên máy này
+});
+
+test('WebSocket chỉ nhận Origin của chính app', () => {
+  assert.ok(sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://may.tail1.ts.net' }));
+  assert.ok(sameOrigin({ host: 'may.tail1.ts.net' }));
+  assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://evil.com' }));
+  assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://may.tail1.ts.net.evil.com' }));
 });

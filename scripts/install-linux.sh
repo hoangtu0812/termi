@@ -59,6 +59,9 @@ fi
 NODE="$(command -v node)"
 ROOTS="${TERMI_ROOTS:-$HOME}"
 ENV_PATH="$HOME/.local/bin:/usr/local/bin:/usr/bin:/bin"
+# termi hỏi Tailscale xem chủ máy là ai (chỉ chủ máy được vào); trong WSL thì hỏi tailscale.exe của Windows
+TS_BIN="tailscale"
+if ! command -v tailscale >/dev/null 2>&1 && is_wsl && [ -x "$WIN_TS" ]; then TS_BIN="$WIN_TS"; fi
 chmod +x "$ROOT/scripts/attach.sh"
 mkdir -p "$UNIT_DIR"
 cat > "$UNIT_DIR/termi-server.service" <<EOF
@@ -67,7 +70,7 @@ Description=termi server
 
 [Service]
 ExecStart="$NODE" "$ROOT/src/server.mjs"
-Environment="PATH=$ENV_PATH" "TERMI_ROOTS=$ROOTS" "LANG=C.UTF-8" "SHELL=$SHELL"
+Environment="PATH=$ENV_PATH" "TERMI_ROOTS=$ROOTS" "LANG=C.UTF-8" "SHELL=$SHELL" "TERMI_TAILSCALE=$TS_BIN"
 WorkingDirectory=$HOME
 Restart=always
 RestartSec=3

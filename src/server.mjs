@@ -55,7 +55,8 @@ export function agentState(screen) {
 const ROOTS = await Promise.all(
   (process.env.TERMI_ROOTS || os.homedir()).split(':').filter(Boolean)
     .map(p => fs.realpath(p).catch(() => path.resolve(p))));
-await fs.mkdir(UPLOADS, { recursive: true });
+await fs.mkdir(UPLOADS, { recursive: true, mode: 0o700 });
+await fs.chmod(DATA, 0o700); // ảnh tải lên, khoá VAPID: chỉ chủ tài khoản đọc được
 
 // Trả về đường dẫn thật nếu nằm trong ROOTS và đúng loại (dir/file), ngược lại null
 export async function safePath(p, kind = 'dir', roots = ROOTS) {
@@ -678,8 +679,32 @@ function pipeUpgrade(req, socket, head, connect, path, host) {
   socket.on('error', () => up.destroy());
 }
 
+// ---------- Ai được vào ----------
+// tailscale serve gắn danh tính người gửi vào Tailscale-User-Login và ghi đè header giả mạo (đã thử).
+// Chỉ chủ máy (hoặc TERMI_ALLOWED_USERS) được vào; thiết bị gắn tag, máy được chia sẻ và Funnel
+// không có danh tính đó nên bị chặn. Gọi thẳng localhost trên chính máy này thì không qua serve.
+let allowedCache = null;
+async function allowedUsers() {
+  if (process.env.TERMI_ALLOWED_USERS) return process.env.TERMI_ALLOWED_USERS.toLowerCase().split(',').map(x => x.trim()).filter(Boolean);
+  if (!allowedCache) {
+    try {
+      const st = JSON.parse((await run(TAILSCALE, ['status', '--json'], { maxBuffer: 8e6, timeout: 5000 })).stdout);
+      const login = st.User?.[String(st.Self?.UserID)]?.LoginName;
+      if (login) allowedCache = [login.toLowerCase()];
+    } catch {}
+  }
+  return allowedCache || []; // không xác định được chủ máy: chặn hết request qua tailnet (fail closed)
+}
+export function isAllowed(headers, allowed) {
+  const login = headers['tailscale-user-login'];
+  if (!login) return /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(headers.host || ''); // chỉ gọi thẳng trên máy này
+  return allowed.includes(String(login).toLowerCase());
+}
+// WebSocket không bị CORS chặn: trang lạ mở được WebSocket tới terminal. Chỉ nhận Origin của chính app.
+export const sameOrigin = h => !h.origin || h.origin === `https://${h.host}` || h.origin === `http://${h.host}`;
+
 async function proxyUpgrade(req, socket, head) {
-  if (!validHost(req.headers.host)) return socket.destroy();
+  if (!validHost(req.headers.host) || !sameOrigin(req.headers) || !isAllowed(req.headers, await allowedUsers())) return socket.destroy();
   const peer = matchPeer(req.url);
   if (peer) {
     const dns = await peerDns(peer.id);
@@ -693,7 +718,7 @@ async function proxyUpgrade(req, socket, head) {
 // HTTP sang termi máy khác. Bỏ x-termi-build: phiên bản giao diện máy kia không liên quan tới trang đang mở
 function proxyPeer(req, res, dns, rest) {
   const headers = { ...req.headers, host: dns };
-  if (headers.origin) headers.origin = `https://${dns}`;
+  if (headers.origin) headers.origin = `https://${dns}`; // an toàn: handle() đã chặn Origin lạ trước khi tới đây
   const up = https.request({ host: dns, port: 443, servername: dns, path: rest, method: req.method, headers }, r => {
     const h = { ...r.headers };
     delete h['x-termi-build'];
@@ -709,6 +734,8 @@ function proxyPeer(req, res, dns, rest) {
 
 async function handle(req, res) {
   if (!validHost(req.headers.host)) throw fail(421, 'Host không hợp lệ');
+  if (!isAllowed(req.headers, await allowedUsers())) throw fail(403, 'Tài khoản Tailscale này không được phép dùng termi trên máy này');
+  if (!sameOrigin(req.headers)) throw fail(403, 'Origin không hợp lệ');
   const peer = matchPeer(req.url);
   if (peer) {
     const dns = await peerDns(peer.id);
@@ -720,7 +747,8 @@ async function handle(req, res) {
   const st = req.method === 'GET' && STATIC[url.pathname];
   if (st) {
     const file = await fs.readFile(path.join(PUBLIC, st[0]));
-    res.writeHead(200, { 'content-type': st[1], 'cache-control': 'no-cache' });
+    // Không cho trang khác nhúng termi (clickjacking)
+    res.writeHead(200, { 'content-type': st[1], 'cache-control': 'no-cache', 'x-frame-options': 'SAMEORIGIN', 'content-security-policy': "frame-ancestors 'self'", 'referrer-policy': 'no-referrer' });
     return res.end(file);
   }
   if (req.method === 'GET' && url.pathname === '/api/raw') {

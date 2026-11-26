@@ -218,6 +218,9 @@ Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết 
 
 termi cho quyền điều khiển shell trên máy của bạn, nên được thiết kế để **chỉ chạy trong tailnet riêng**:
 
+- **Chỉ chủ máy được vào:** `tailscale serve` gắn danh tính người gửi (`Tailscale-User-Login`, không giả mạo được). termi chỉ nhận đúng tài khoản Tailscale sở hữu máy, hoặc danh sách trong `TERMI_ALLOWED_USERS` (cách nhau bằng dấu phẩy). Thiết bị gắn tag, máy được chia sẻ cho người khác và Funnel đều bị chặn. Không xác định được chủ máy thì chặn hết.
+- **WebSocket terminal** chỉ nhận Origin của chính app (WebSocket không bị CORS bảo vệ). Khi chuyển tiếp sang máy khác, Origin chỉ được đổi sau khi đã kiểm tra.
+- Trang không cho trang khác nhúng (`frame-ancestors 'self'`); `~/.termi` chỉ chủ tài khoản đọc được (700).
 - Server và ttyd chỉ nghe trên `127.0.0.1`; đường vào duy nhất là `tailscale serve`. **Không bật Tailscale Funnel.**
 - Chuyển tiếp sang máy khác (`/m/<máy>/…`) chỉ tới máy có trong tailnet của bạn và đang chạy termi, qua HTTPS của Tailscale.
 - Chặn DNS rebinding (chỉ nhận Host là localhost hoặc `*.ts.net`) và CSRF (mọi POST phải có header `X-Termi`); ttyd bật kiểm tra origin.
@@ -233,6 +236,8 @@ termi cho quyền điều khiển shell trên máy của bạn, nên được th
 - Trên iOS, thông báo chỉ hoạt động khi mở termi từ biểu tượng ở màn hình chính.
 - Windows: WSL phải đang chạy thì máy đó mới hiện trong ô chọn máy (WSL có thể tự tắt khi không dùng).
 - Antigravity (`agy`): chưa hỗ trợ mở lại hội thoại cũ; nhận diện dựa trên tên lệnh `agy`.
+- Các máy trong termi tin nhau: một máy đã bị chiếm có thể trả nội dung độc hại qua đường chuyển tiếp `/m/<máy>/`, chạy trên địa chỉ của máy trung tâm. Chỉ thêm máy của chính bạn.
+- termi chạy `git` trong repo bạn mở; repo không tin cậy có thể chứa cấu hình git chạy lệnh (ví dụ `core.fsmonitor`). Chỉ mở repo của bạn.
 
 ---
 
