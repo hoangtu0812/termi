@@ -127,7 +127,11 @@ async function sessions() {
     const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
     if (active === '11') s.dir = dir;
     if (!s.agent && agentOf.has(pid)) { s.agent = agentOf.get(pid); s.agentPid = agentPidOf.get(pid); }
-    if (s.agent === 'claude' && s.agentPid && !s.convId) s.convId = await claudeSessionId(s.agentPid); // hội thoại đang chạy trong phiên
+    if (s.agent === 'claude' && s.agentPid && !s.convId) {
+      const j = await claudeSessionInfo(s.agentPid); // hội thoại đang chạy trong phiên + tên của nó trong Claude
+      if (validUuid(j?.sessionId)) s.convId = j.sessionId;
+      if (j?.name && j.nameSource !== 'derived') s.title = String(j.name).slice(0, 120); // tên tự sinh (vd. termi-fb) thì bỏ
+    }
     by.set(name, s);
   }
   const list = [...by.values()].sort((a, b) => b.activity - a.activity);
@@ -144,9 +148,12 @@ async function sessions() {
     s.previewKind = 'screen';
     // Phiên có agent: câu trả lời gần nhất dễ đọc hơn chữ chụp từ terminal. Riêng lúc chờ xác nhận
     // thì giữ màn hình, vì câu hỏi xác nhận không có trong file hội thoại.
-    if (s.agent && s.state !== 'waiting') {
-      const reply = await lastReply(s.agent, s.dir, s.agentPid).catch(() => null);
-      if (reply) { s.preview = reply; s.previewKind = 'reply'; }
+    if (s.agent) {
+      const r = await lastReply(s.agent, s.dir, s.agentPid).catch(() => null);
+      if (r?.text && s.state !== 'waiting') { s.preview = r.text; s.previewKind = 'reply'; }
+      // Model: tên hiển thị từ statusline nếu có (vd. "Opus 5.5"), không thì từ câu trả lời gần nhất
+      const live = s.convId && (await claudeUsageFile())?.sessions?.[s.convId];
+      s.model = live?.model || prettyModel(r?.model);
     }
     // Trạng thái bắt đầu từ lúc nào (vd. "đang chạy 3 phút"); cùng một mốc cho mọi thiết bị
     const prev = stateSince.get(s.name);
@@ -182,6 +189,7 @@ const HISTORY = {
     parse(o, h) {
     h.cwd ??= o.cwd;
     if (o.type === 'summary' && o.summary) h.title = o.summary;
+    if (o.type === 'custom-title' && o.customTitle) h.custom = o.customTitle; // tên bạn đặt cho hội thoại trong Claude
     const c = o.type === 'user' && !o.isMeta && o.message?.content;
     const text = typeof c === 'string' ? c : Array.isArray(c) ? c.find(x => x.type === 'text')?.text : null;
     if (!h.title && isRealPrompt(text)) h.title = text;
@@ -219,9 +227,9 @@ async function history(dir, limit = 40) {
     for (const line of await readHead(f)) {
       let o; try { o = JSON.parse(line); } catch { continue; }
       HISTORY[agent].parse(o, h);
-      if (h.id && h.cwd && h.title) break;
+      if (h.id && h.cwd && h.title && (agent !== 'claude' || h.custom)) break;
     }
-    const entry = validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
+    const entry = validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.custom || h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
     historyCache.set(f, { t, entry });
     return entry;
   }))).filter(h => h && (!dir || h.cwd === dir)).slice(0, dir ? 40 : limit);
@@ -282,11 +290,16 @@ async function claudeLimits() {
 // Claude Code ghi ~/.claude/sessions/<pid>.json (có sessionId) cho mỗi tiến trình: biết chính xác hội thoại
 // của từng phiên, kể cả khi nhiều phiên cùng thư mục.
 // shortcut: file nội bộ, không có trong tài liệu; Claude Code đổi cách lưu thì quay về đoán theo thư mục
+const claudeSessionInfo = pid => pid ? fs.readFile(path.join(os.homedir(), '.claude', 'sessions', `${pid}.json`), 'utf8').then(JSON.parse, () => null) : null;
 async function claudeSessionId(pid) {
-  if (!pid) return null;
-  const j = await fs.readFile(path.join(os.homedir(), '.claude', 'sessions', `${pid}.json`), 'utf8').then(JSON.parse, () => null);
+  const j = await claudeSessionInfo(pid);
   return validUuid(j?.sessionId) ? j.sessionId : null;
 }
+// "claude-opus-5-5" → "Opus 5.5"; model khác giữ nguyên
+export const prettyModel = id => {
+  const m = /^claude-([a-z]+)-(\d+)(?:-(\d{1,2}))?(?:-|$|\[)/.exec(id || '');
+  return m ? `${m[1][0].toUpperCase()}${m[1].slice(1)} ${m[2]}${m[3] ? '.' + m[3] : ''}` : id || null;
+};
 const claudeProjectDir = cwd => path.join(os.homedir(), '.claude', 'projects', cwd.replace(/[^A-Za-z0-9]/g, '-'));
 async function transcriptFile(agent, cwd, pid) {
   if (agent === 'claude') {
@@ -317,11 +330,13 @@ async function lastReply(agent, cwd, pid) {
   if (!fc.file) return null;
   const mtime = (await fs.stat(fc.file).catch(() => null))?.mtimeMs;
   const rc = replyCache.get(fc.file);
-  if (rc && rc.mtime === mtime) return rc.text;
-  const msg = transcriptMessages(agent, await readTail(fc.file, 1024 * 1024), 12).filter(m => m.who === 'assistant').pop();
-  const text = msg && plainText(msg.text).slice(0, 300);
-  replyCache.set(fc.file, { mtime, text });
-  return text;
+  if (rc && rc.mtime === mtime) return rc;
+  const lines = await readTail(fc.file, 1024 * 1024);
+  const msg = transcriptMessages(agent, lines, 12).filter(m => m.who === 'assistant').pop();
+  const model = lastJson(lines, o => agent === 'claude' ? o.type === 'assistant' && o.message?.model : o.type === 'turn_context' && o.payload?.model);
+  const out = { mtime, text: msg && plainText(msg.text).slice(0, 300), model };
+  replyCache.set(fc.file, out);
+  return out;
 }
 export const plainText = md => md
   .replace(/```[\s\S]*?```/g, ' ')            // bỏ khối code

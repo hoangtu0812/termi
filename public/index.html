@@ -93,6 +93,7 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .sib { flex:1; min-width:0; display:flex; flex-direction:column; gap:1px; }
 .sit { display:flex; align-items:center; gap:8px; } .sit .nm { flex:1; min-width:0; font-weight:600; font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .sit .state { font-size:11.5px; } .sit .chgs { margin:0; font-size:11.5px; }
+.sip .mdl { font-weight:600; color:var(--dim); margin-right:6px; } .sip .tmx { font:11.5px var(--mono); color:var(--faint); margin-right:6px; }
 .sip { font-size:12.5px; color:var(--dim); overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .ci .cit { font-size:13.5px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; color:var(--fg); }
 .ci .cim { font-size:11.5px; color:var(--faint); }
@@ -387,7 +388,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   #top .seg { display:none; }
   #tabbar { display:flex; grid-row:2; background:var(--panel); border-top:1px solid var(--line); padding-bottom:env(safe-area-inset-bottom); }
   /* Đang gõ (bàn phím mở): ẩn thanh tab để nhường chỗ cho terminal và ô nhắn */
-  body:has(#text:focus, #g-msg:focus) #tabbar { display:none; }
+  body.kb #tabbar { display:none; } /* bàn phím đang mở (đo theo chiều cao màn hình), không chỉ dựa vào focus */
   #tabbar button { flex:1; display:flex; flex-direction:column; align-items:center; gap:2px; padding:8px 0 6px; border:0; background:transparent; color:var(--faint); font-size:11px; font-weight:500; }
   #tabbar button.on { color:var(--acc); }
   #tabbar svg.i { width:22px; height:22px; }
@@ -774,10 +775,10 @@ function render() {
 // ---------- Phiên ----------
 // Thời gian đã ở trạng thái hiện tại: "3 phút"
 const dur = t => { const x = (Date.now() - t) / 1000; return x < 60 ? `${Math.max(1, x | 0)} giây` : x < 3600 ? `${x / 60 | 0} phút` : `${x / 3600 | 0} giờ ${(x % 3600) / 60 | 0} phút`; };
-function stateEl(state, agent, since) {
+function stateEl(state, agent, since, model) {
   const e = el('span', 'state st-' + state);
   const live = since && (state === 'working' || state === 'waiting');
-  e.append(el('span', 'dot'), (agent ? agentName(agent) + ' · ' : '') + (STATE[state] || '') + (live ? ' · ' + dur(since) : ''));
+  e.append(el('span', 'dot'), (agent ? agentName(agent) + (model ? ' ' + model : '') + ' · ' : '') + (STATE[state] || '') + (live ? ' · ' + dur(since) : ''));
   return e;
 }
 // Danh sách phiên dạng cây project (giống Claude Code desktop): mỗi project thu/mở được, bên trong là
@@ -839,10 +840,15 @@ function renderSessions() {
   // Phiên đang chạy: một dòng gọn (logo nhỏ, tên, trạng thái) + một dòng xem trước
   function sessionRow(x) {
     const b = el('button', 'si' + (x.name === sel ? ' cur' : '')); b.type = 'button';
-    const top = el('div', 'sit'); top.append(el('span', 'nm', x.name), stateEl(x.state, null, x.since));
+    const top = el('div', 'sit'); top.append(el('span', 'nm', x.title || x.name), stateEl(x.state, null, x.since));
     if (x.changes) { const c = el('span', 'chgs'); c.innerHTML = icon('git'); c.append(x.changes); c.title = `${x.changes} file chưa commit`; top.append(c); }
     const body = el('div', 'sib'); body.append(top);
-    if (x.preview) body.append(el('div', 'sip', x.preview.replace(/\s+/g, ' ')));
+    // Dòng phụ: model · tên phiên tmux (khi khác tên hội thoại) · xem trước
+    const sub = el('div', 'sip');
+    if (x.model) sub.append(el('b', 'mdl', x.model));
+    if (x.title && x.title !== x.name) sub.append(el('span', 'tmx', x.name));
+    if (x.preview) sub.append(x.preview.replace(/\s+/g, ' '));
+    if (sub.childNodes.length) body.append(sub);
     b.append(agentAvatar(x.agent, true), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
     b.oncontextmenu = e => { e.preventDefault(); openSessionMenu(x.name); }; // giữ lâu: đổi tên / đóng
@@ -931,8 +937,9 @@ async function quickStart(dir, agent, resume) {
 }
 function renderTop() {
   const x = cur(), s = st();
-  $('t-name').textContent = s.s || 'termi';
-  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent, x.since) : el('span', 'state'), { id: 't-state' }));
+  $('t-name').textContent = x?.title || s.s || 'termi'; // tên hội thoại trong Claude nếu có
+  $('t-name').title = x?.title ? `Phiên tmux: ${x.name}` : '';
+  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent, x.since, x.model) : el('span', 'state'), { id: 't-state' }));
   $('text').placeholder = `Nhắn cho ${x?.agent ? agentName(x.agent) : 'agent'}…`;
   // Dòng phụ chỉ ghi máy (nếu là máy khác) và tên thư mục cuối; đường dẫn đầy đủ trong tooltip
   const m = st().m && [...$('machine').options].find(o => o.value === st().m);
@@ -959,7 +966,7 @@ function renderTabs() {
   if (!show) return;
   $('stabs').replaceChildren(...ordered().map(x => {
     const b = el('button', 'stab' + (x.name === st().s ? ' on' : '')); b.type = 'button';
-    b.append(agentAvatar(x.agent, true), el('span', 'n', x.name), el('span', 'state st-' + x.state, ''));
+    b.append(agentAvatar(x.agent, true), el('span', 'n', x.title || x.name), el('span', 'state st-' + x.state, ''));
     b.lastChild.append(el('span', 'dot'));
     b.title = `${x.name} · ${STATE[x.state] || ''} · ${x.dir}`;
     b.onclick = () => go({ s: x.name, d: null, g: null, v: null });
@@ -1435,7 +1442,7 @@ const send = safely(async () => {
   if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
   await api('/api/send', { session: st().s, text, enter: true });
   if (t.value.trim()) rememberSent(t.value.trim());
-  t.value = ''; autosize(t); saveDraft(); updateSuggest();
+  t.value = ''; autosize(t); saveDraft(); S.showRecent = false; updateSuggest();
   navigator.vibrate?.(10);
   S.atts.forEach(a => a.url && URL.revokeObjectURL(a.url)); S.atts = []; renderAtts();
 });
@@ -1445,7 +1452,23 @@ $('b-send').onclick = send;
 $('b-send').onpointerdown = e => e.preventDefault();
 $('text').oninput = e => { autosize(e.target); saveDraft(); updateSuggest(); };
 $('text').onfocus = () => { updateSuggest(); fitTmux(); };
-$('text').onblur = () => setTimeout(() => { $('suggest').hidden = true; }, 150);
+$('text').onblur = () => setTimeout(() => { S.showRecent = false; $('suggest').hidden = true; }, 150);
+// Câu đã gửi gần đây chỉ hiện khi bạn chạm vào ô nhắn đang trống (không hiện lại ngay sau khi gửi)
+$('text').addEventListener('pointerdown', () => { S.showRecent = true; setTimeout(updateSuggest, 0); });
+// Bàn phím mở = chiều cao trang bị thu lại nhiều (đo theo từng chiều rộng màn hình: xoay máy khác nhau)
+{
+  const tallest = new Map();
+  const checkKb = () => {
+    const h = tallest.get(innerWidth) || 0;
+    if (innerHeight > h) tallest.set(innerWidth, innerHeight);
+    const typing = /TEXTAREA|INPUT/.test(document.activeElement?.tagName || '');
+    document.body.classList.toggle('kb', typing && innerHeight < (tallest.get(innerWidth) || innerHeight) * 0.78);
+  };
+  addEventListener('resize', checkKb);
+  document.addEventListener('focusin', () => setTimeout(checkKb, 300));
+  document.addEventListener('focusout', () => setTimeout(checkKb, 100));
+  checkKb();
+}
 
 // ---- Ô nhắn thông minh: gợi ý lệnh khi gõ "/", câu đã gửi gần đây, bản nháp theo phiên ----
 const SLASH = {
@@ -1464,7 +1487,7 @@ function updateSuggest() {
   const t = $('text'), v = t.value, box = $('suggest');
   let items = [];
   if (/^\/\S*$/.test(v)) items = (SLASH[cur()?.agent] || []).filter(([c]) => c.startsWith(v)).map(([c, d]) => [c, d, c + ' ']);
-  else if (!v && document.activeElement === t) items = sentList().slice(0, 6).map(x => [x.length > 48 ? x.slice(0, 48) + '…' : x, '', x]);
+  else if (!v && document.activeElement === t && S.showRecent) items = sentList().slice(0, 6).map(x => [x.length > 48 ? x.slice(0, 48) + '…' : x, '', x]);
   box.hidden = !items.length;
   box.replaceChildren(...items.map(([label, desc, fill]) => {
     const b = el('button', 'sg'); b.type = 'button';

@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount, parseChoices, prettyModel } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -168,4 +168,13 @@ test('đọc lựa chọn khi agent chờ xác nhận', () => {
   assert.equal(parseChoices(codex).choices.length, 2);
   assert.equal(parseChoices(codex).question, 'Would you like to run the following command?');
   assert.deepEqual(parseChoices('không có lựa chọn nào\n1. dòng lẻ không bắt đầu từ menu\n3. ba'), { question: null, choices: [{ n: 1, label: 'dòng lẻ không bắt đầu từ menu' }] });
+});
+
+test('tên model dễ đọc', () => {
+  assert.equal(prettyModel('claude-opus-5-5'), 'Opus 5.5');
+  assert.equal(prettyModel('claude-sonnet-4-5-20250929'), 'Sonnet 4.5');
+  assert.equal(prettyModel('claude-haiku-5-5[1m]'), 'Haiku 5.5');
+  assert.equal(prettyModel('claude-fable-5-2'), 'Fable 5.2');
+  assert.equal(prettyModel('gpt-5-codex'), 'gpt-5-codex');
+  assert.equal(prettyModel(undefined), null);
 });
