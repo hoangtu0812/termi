@@ -1320,19 +1320,35 @@ function reconnectNow() {
 }
 $('t-down').onclick = reconnectNow;
 // Kết nối "nửa vời": điện thoại ngủ / đổi mạng làm WebSocket chết mà không báo, màn hình đứng im.
-// (1) Quay lại app sau khi ẩn hơn 10 giây thì luôn nối lại (mất ~1 giây).
+// (1) Quay lại app sau khi ẩn hơn 10 giây thì kiểm tra kết nối.
 let hiddenAt = 0;
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') { hiddenAt = Date.now(); return; }
-  if (!$('t-down').hidden || (hiddenAt && Date.now() - hiddenAt > 10_000)) reconnectNow();
+  if (!$('t-down').hidden) reconnectNow();
+  else if (hiddenAt && Date.now() - hiddenAt > 10_000) probeTerm();
 });
+// Nghi kết nối đứng: không nạp lại ngay (nạp lại = màn hình chớp) mà nhờ tmux vẽ lại; 4 giây không nhận được
+// chữ nào mới thật sự là đứng thì mới nối lại
+let probing = false, probeOk = 0;
+function probeTerm() {
+  if (probing || !S.termName) return;
+  probing = true;
+  const name = S.termName, at = Date.now();
+  api('/api/refresh', { session: name }).catch(() => {});
+  setTimeout(() => {
+    probing = false;
+    if (S.termName !== name) return;
+    if (S.lastData < at) reconnectNow();
+    else probeOk = Date.now(); // vẫn sống: agent vẽ lại y hệt nên tmux không gửi gì, không phải đứng
+  }, 4000);
+}
 // (2) Máy chủ báo phiên vừa có thay đổi mà terminal hơn 5 giây không nhận được gì: màn hình đang đứng
 function checkStale() {
   const x = cur();
   if (!x || st().t === 'sessions' && !wide() || S.termName !== x.name || !S.lastData || retryTimer) return;
   // tmux có chữ mới mà terminal ở đây không nhận được → kết nối đã đứng. Dùng thời điểm có chữ (window_activity),
   // không dùng session_activity: cái đó tăng cả khi bấm chuột / gõ phím không ra chữ → nạp lại vô cớ, màn hình chớp
-  if (x.output * 1000 > S.lastData + 5000 && Date.now() - S.lastData > 5000) { S.lastData = Date.now(); reconnectNow(); }
+  if (x.output * 1000 > S.lastData + 5000 && Date.now() - S.lastData > 5000 && Date.now() - probeOk > 60_000) probeTerm();
 }
 addEventListener('online', () => { if (!$('t-down').hidden) reconnectNow(); });
 

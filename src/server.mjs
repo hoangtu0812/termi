@@ -851,6 +851,13 @@ const routes = {
     await tmux('resize-window', '-t', target(b.session), '-x', String(cols), '-y', String(rows)).catch(() => {});
     return { ok: true };
   },
+  // Bắt tmux vẽ lại màn hình cho mọi thiết bị đang xem phiên: kết nối còn sống thì sẽ nhận được chữ ngay
+  async 'POST /api/refresh'(_, b) {
+    if (!validName(b.session)) throw fail(400, 'Phiên không hợp lệ');
+    const out = await tmux('list-clients', '-t', target(b.session), '-F', '#{client_name}').catch(() => ({ stdout: '' }));
+    for (const c of out.stdout.split('\n').filter(Boolean)) await tmux('refresh-client', '-t', c).catch(() => {});
+    return { ok: true };
+  },
   async 'POST /api/sessions/rename'(_, b) {
     if (!validName(b.name) || !validName(b.to)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
     await tmux('rename-session', '-t', target(b.name), b.to).catch(() => { throw fail(409, 'Không đổi tên được (trùng tên?)'); });
