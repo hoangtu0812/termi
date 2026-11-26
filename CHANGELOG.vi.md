@@ -1,0 +1,212 @@
+# Nhật ký thay đổi
+
+[English](CHANGELOG.md) | Tiếng Việt
+
+> Bản dịch của `CHANGELOG.md`. Khi hai bản khác nhau, bản tiếng Anh là bản chuẩn.
+
+Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định dạng theo [Keep a Changelog](https://keepachangelog.com/vi/1.1.0/), đánh số phiên bản theo [Semantic Versioning](https://semver.org/lang/vi/).
+
+## [Unreleased]
+
+### Thêm
+- Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
+- Kế hoạch refactor kiến trúc `plan/PLAN-v1.0-architecture-refactor.md`.
+- Nhật ký thay đổi bằng tiếng Anh và tiếng Việt.
+
+### Thay đổi
+- README chuyển sang tiếng Anh, bản tiếng Việt ở `README.vi.md`.
+- Ảnh chụp chuyển vào `docs/assets/screenshots/`.
+- Tài liệu trong `docs/` và `plan/` đặt tên theo quy tắc `<TIỀN_TỐ>-v<MAJOR>.<MINOR>-<slug>.md`.
+- Commit, release và changelog viết bằng tiếng Anh.
+
+## [0.12.0] - 2026-11-26
+
+### Thay đổi
+- Chat kiểu Claude: câu trả lời không khung, khối code có thanh ngôn ngữ và nút chép, thẻ các bước gọn.
+- Terminal dùng cùng bảng màu với app, có lề trong và con trỏ dạng thanh.
+- Màn hình chào có lời chào và gợi ý tiếp tục hội thoại gần nhất.
+- Chọn agent bằng thẻ có logo.
+
+## [0.11.0] - 2026-11-26
+
+### Thay đổi
+- Giao diện mới: font Be Vietnam Pro và JetBrains Mono (cả terminal), bảng màu tối giản, thanh "đang làm" thành viên nhỏ trên header.
+
+### Sửa lỗi
+- Danh sách đánh số trong câu trả lời của agent bị nhận nhầm thành bảng chọn.
+
+## [0.10.5] - 2026-11-26
+
+### Sửa lỗi
+- WSL: dùng cổng 7690/7691 vì Windows đã giữ 7680, ttyd gắn đúng 127.0.0.1 ở chế độ mạng mirrored.
+
+## [0.10.4] - 2026-11-26
+
+### Thêm
+- Bôi đen chữ trong terminal là chép ra clipboard (nhận mã OSC 52 từ tmux).
+
+### Bỏ
+- Hàng câu đã gửi gần đây phía trên ô nhắn (vẫn gọi lại câu vừa gửi bằng phím ↑).
+
+## [0.10.3] - 2026-11-26
+
+### Sửa lỗi
+- Chớp màn hình: khi nghi kết nối đứng thì nhờ tmux vẽ lại để kiểm tra, chỉ nạp lại khi thật sự đứng.
+
+## [0.10.2] - 2026-11-26
+
+### Sửa lỗi
+- Chớp màn hình: terminal tự nạp lại vô cớ mỗi khi bấm chuột hoặc gõ phím không ra chữ.
+
+## [0.10.1] - 2026-11-26
+
+### Thêm
+- Dán ảnh hoặc kéo thả file vào ô chat.
+
+### Sửa lỗi
+- Nháy do thanh xác nhận ẩn hiện làm terminal đổi cỡ liên tục.
+
+## [0.10.0] - 2026-11-26
+
+### Thêm
+- Trả lời menu chọn nhiều ngay trong app.
+- Tự sửa danh sách thao tác nhanh.
+- Một danh sách phiên cho mọi máy.
+- Tuỳ chỉnh thông báo.
+
+### Sửa lỗi
+- Terminal tự lấy lại đủ cỡ khi quay lại cửa sổ sau khi điện thoại ép khung nhỏ.
+
+## [0.9.0] - 2026-11-26
+
+### Thêm
+- Chat hiện các bước agent làm.
+- Bảng lệnh (Ctrl/Cmd+K).
+- Thanh "agent đang làm gì".
+- Danh sách thao tác nhanh.
+
+### Sửa lỗi
+- Thanh xác nhận bị nháy.
+
+## [0.8.1] - 2026-11-26
+
+### Thêm
+- Tên hội thoại như trong Claude, hiện model đang dùng.
+
+### Sửa lỗi
+- Mất thanh tab sau khi gửi tin nhắn.
+
+## [0.8.0] - 2026-11-26
+
+### Thêm
+- Cây project giống Claude Code desktop.
+- Chế độ Chat.
+- Nút xác nhận nhanh.
+- Nhập bằng giọng nói.
+- Trang Cài đặt.
+
+## [0.7.0] - 2026-11-26
+
+### Thay đổi
+- Khung tmux theo cỡ của thiết bị đang được chạm hoặc gõ, không chỉ lúc mở terminal.
+- Giao diện giống app thật hơn, chuyển phiên nhanh, xem code đẹp hơn.
+
+## [0.6.0] - 2026-11-26
+
+### Thêm
+- Cài không cần clone: `scripts/get.sh` tải file cài từ bản phát hành mới nhất.
+- Chia đôi màn hình trên máy tính, ô nhắn thông minh, thẻ phiên sống động, hộp thông báo.
+
+## [0.5.0] - 2026-11-26
+
+### Thêm
+- Thẻ phiên xem trước câu trả lời gần nhất của agent.
+- Xem commit có danh sách file; tab Git gọn đẹp hơn.
+- Nhóm phiên theo thư mục project, nút + tạo phiên trong project, lịch sử lọc theo thư mục của phiên.
+- Khôi phục phiên sau khi khởi động lại máy.
+
+### Sửa lỗi
+- Terminal không còn đứng im sau khi điện thoại ngủ hoặc đổi mạng.
+- Dọn ttyd rò pty, nối lại bền hơn.
+- Phiên đã đóng bị tạo lại khi mở đường dẫn cũ hoặc tự kết nối lại.
+
+## [0.4.0] - 2026-11-26
+
+### Thay đổi
+- Terminal vừa khung; tab File có icon và trạng thái git; danh sách phiên và màn hình chào mới.
+
+## [0.3.0] - 2026-11-26
+
+### Thêm
+- Icon agent trên thẻ phiên và lịch sử (Claude, OpenAI Codex, Antigravity, shell).
+- Nút 📋 Chép mở chữ của phiên để chọn và copy.
+- Lệnh ngắn `npm run claude-usage`.
+
+### Thay đổi
+- Bảng Usage có icon, nút đóng cố định ở đầu; nút gửi một chạm là gửi.
+
+### Bảo mật
+- Chỉ chủ máy được vào termi.
+- Chặn WebSocket từ trang lạ.
+- Trang khác không nhúng được termi.
+
+## [0.2.1] - 2026-11-26
+
+### Thêm
+- Gửi thử thông báo hiện kết quả; đăng ký cũ đã chết thì tự đăng ký lại.
+
+## [0.2.0] - 2026-11-26
+
+### Thêm
+- Usage trên header: hạn mức gói agent, ngữ cảnh phiên, tài nguyên máy.
+
+### Thay đổi
+- Header gọn hơn, dòng phụ chỉ ghi agent · trạng thái · tên thư mục.
+
+## [0.1.0] - 2026-11-26
+
+### Thêm
+- Web app quản lý phiên Claude Code trong tmux từ điện thoại.
+- Tạo phiên ở thư mục bất kỳ, gợi ý thư mục gần đây.
+- Cây git dạng đồ thị: làn màu, đường merge, nhãn branch.
+- Xem trước Markdown trong trình xem file, hiện được ảnh SVG và sơ đồ Mermaid.
+- Giao diện Tự động / Sáng / Tối.
+- Terminal vuốt để cuộn, chỉnh cỡ chữ, chạm hoặc tự kết nối lại.
+- Giữ màn hình sáng khi đang mở app (Screen Wake Lock).
+- Nút ⚡ thao tác nhanh gửi yêu cầu soạn sẵn cho Claude.
+- Nhiều agent: Claude Code, Codex và Antigravity.
+- Điều khiển nhiều máy trong tailnet, kèm script cài cho Linux và WSL.
+- Nút gửi ảnh mở bộ sưu tập; file đính kèm hiện dạng ô thu nhỏ.
+- Trang tự tải lại khi có bản mới.
+- README có logo, tech stack, ảnh chụp, kiến trúc và hướng dẫn cài đặt.
+
+### Thay đổi
+- Chuẩn hoá cấu trúc thư mục: `src/`, `scripts/`, `test/`, `package.json`.
+
+### Sửa lỗi
+- Bấm phím trên thanh công cụ không còn bật bàn phím điện thoại.
+- Cỡ chữ terminal không còn về mặc định khi tải lại.
+- Ô nhắn bị bàn phím đè khi mở.
+- Font terminal trên Android (bỏ Courier khỏi danh sách font).
+- Bỏ qua file rác `._*` của macOS trên ổ NTFS.
+
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v0.12.0...HEAD
+[0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0
+[0.11.0]: https://github.com/hoangtu0812/termi/compare/v0.10.5...v0.11.0
+[0.10.5]: https://github.com/hoangtu0812/termi/compare/v0.10.4...v0.10.5
+[0.10.4]: https://github.com/hoangtu0812/termi/compare/v0.10.3...v0.10.4
+[0.10.3]: https://github.com/hoangtu0812/termi/compare/v0.10.2...v0.10.3
+[0.10.2]: https://github.com/hoangtu0812/termi/compare/v0.10.1...v0.10.2
+[0.10.1]: https://github.com/hoangtu0812/termi/compare/v0.10.0...v0.10.1
+[0.10.0]: https://github.com/hoangtu0812/termi/compare/v0.9.0...v0.10.0
+[0.9.0]: https://github.com/hoangtu0812/termi/compare/v0.8.1...v0.9.0
+[0.8.1]: https://github.com/hoangtu0812/termi/compare/v0.8.0...v0.8.1
+[0.8.0]: https://github.com/hoangtu0812/termi/compare/v0.7.0...v0.8.0
+[0.7.0]: https://github.com/hoangtu0812/termi/compare/v0.6.0...v0.7.0
+[0.6.0]: https://github.com/hoangtu0812/termi/compare/v0.5.0...v0.6.0
+[0.5.0]: https://github.com/hoangtu0812/termi/compare/v0.4.0...v0.5.0
+[0.4.0]: https://github.com/hoangtu0812/termi/compare/v0.3.0...v0.4.0
+[0.3.0]: https://github.com/hoangtu0812/termi/compare/v0.2.1...v0.3.0
+[0.2.1]: https://github.com/hoangtu0812/termi/compare/v0.2.0...v0.2.1
+[0.2.0]: https://github.com/hoangtu0812/termi/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/hoangtu0812/termi/releases/tag/v0.1.0

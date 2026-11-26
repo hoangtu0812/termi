@@ -4,7 +4,7 @@
 
 # termi
 
-**Điều khiển Claude Code trên Mac từ điện thoại: phiên không bao giờ mất, gõ tiếng Việt thoải mái, xem git ngay trên tay.**
+**Control Claude Code on your Mac from your phone: sessions that never die, comfortable Vietnamese typing, git at your fingertips.**
 
 <p>
   <img alt="Node.js" src="https://img.shields.io/badge/Node.js-24+-5FA04E?style=for-the-badge&logo=nodedotjs&logoColor=white">
@@ -22,62 +22,64 @@
   <img alt="macOS" src="https://img.shields.io/badge/macOS-000000?style=for-the-badge&logo=apple&logoColor=white">
 </p>
 
-<sub>Không framework · không cần <code>npm install</code> · khoảng 1.500 dòng code</sub>
+<sub>No framework · no <code>npm install</code> · no build step</sub>
+
+English | [Tiếng Việt](README.vi.md)
 
 </div>
 
 ---
 
-## Vì sao có termi?
+## Why termi?
 
-Dùng Claude Code CLI qua app SSH trên điện thoại rất khổ: mất mạng là mất phiên, bàn phím ảo không gõ được tiếng Việt, và không có cách nào xem nhanh git hay các phiên đang chạy.
+Using the Claude Code CLI through an SSH app on a phone is painful: lose the network and you lose the session, the on-screen keyboard cannot type Vietnamese, and there is no quick way to check git or see which sessions are running.
 
-termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ điện thoại (Android và iOS) qua Tailscale:
+termi is a small web app that runs on your own Mac and is opened from your phone (Android and iOS) over Tailscale:
 
-- **Phiên không mất:** mọi phiên Claude chạy trong `tmux`, app chỉ là lớp hiển thị. Tắt app, mất sóng, khoá máy thì phiên vẫn còn nguyên.
-- **Gõ tiếng Việt:** ô nhắn dùng bàn phím gốc của điện thoại (Gboard, Laban Key…), gửi cả đoạn vào Claude bằng bracketed paste.
-- **Biết Claude đang làm gì:** trạng thái *Đang chạy / Chờ bạn xác nhận / Rảnh* cho từng phiên, kèm thông báo đẩy khi Claude xong việc hoặc cần bạn duyệt lệnh.
+- **Sessions never die:** every Claude session runs inside `tmux`; the app is only a view. Close the app, lose signal or lock the phone, and the session is still there.
+- **Vietnamese typing:** the message box uses the phone's native keyboard (Gboard, Laban Key…) and sends the whole text to Claude with bracketed paste.
+- **Know what Claude is doing:** a *Working / Waiting for you / Idle* state for each session, plus push notifications when Claude finishes or needs you to approve a command.
 
-## Ảnh chụp
+## Screenshots
 
 <table>
   <tr>
-    <td width="68%"><img src="docs/screenshots/desktop-git.png" alt="Cây git trên máy tính"></td>
-    <td><img src="docs/screenshots/mobile-git.png" alt="Git trên điện thoại"></td>
+    <td width="68%"><img src="docs/assets/screenshots/desktop-git.png" alt="Git graph on desktop"></td>
+    <td><img src="docs/assets/screenshots/mobile-git.png" alt="Git on a phone"></td>
   </tr>
   <tr>
-    <td><img src="docs/screenshots/desktop-files.png" alt="Duyệt file trên máy tính"></td>
-    <td><img src="docs/screenshots/mobile-sessions.png" alt="Danh sách phiên trên điện thoại"></td>
+    <td><img src="docs/assets/screenshots/desktop-files.png" alt="File browser on desktop"></td>
+    <td><img src="docs/assets/screenshots/mobile-sessions.png" alt="Session list on a phone"></td>
   </tr>
 </table>
 
-## Tính năng
+## Features
 
-| | Tính năng | Chi tiết |
+| | Feature | Details |
 |---|---|---|
-| 🖥️ | **Nhiều máy** | Điều khiển mọi máy cùng tài khoản Tailscale có chạy termi (Mac, Linux, Windows qua WSL) từ một app: chọn máy ở đầu sidebar; thông báo từ mọi máy về một chỗ. |
-| 🤖 | **Nhiều agent** | Claude Code, Codex, Antigravity (`agy`): chọn agent khi tạo phiên (chỉ hiện agent có cài), tự nhận ra phiên đang chạy agent nào, trạng thái và thông báo cho từng agent. |
-| 🗂️ | **Quản lý phiên** | Màn hình chào tạo nhanh phiên Claude/Codex ở thư mục gần đây; danh sách xếp phiên cần chú ý lên đầu, tìm kiếm, nhóm theo thư mục, giữ lâu thẻ để đổi tên/đóng; tạo phiên ở bất kỳ thư mục nào, đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
-| 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, nút 📋 Chép mở chữ của phiên dạng văn bản để chọn và copy, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
-| ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
-| ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |
-| 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
-| 📊 | **Usage** | Chip trên header: hạn mức gói của agent (Claude 5 giờ / 7 ngày, Codex), ngữ cảnh của phiên, CPU / RAM / ổ đĩa; chạm để xem chi tiết và lúc reset. |
-| 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận. |
-| 📁 | **Duyệt file** | Icon và màu theo loại file, đánh dấu file/thư mục đang thay đổi theo git; xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
-| 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
-| 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Giao diện Tự động / Sáng / Tối (nút ☀ ở đầu sidebar); giữ màn hình sáng khi đang mở app (Screen Wake Lock); cài được như app (PWA). |
+| 🖥️ | **Multiple machines** | Control every machine on the same Tailscale account that runs termi (Mac, Linux, Windows via WSL) from one app: pick the machine at the top of the sidebar; notifications from all machines land in one place. |
+| 🤖 | **Multiple agents** | Claude Code, Codex, Antigravity (`agy`): choose the agent when creating a session (only installed agents are shown), automatic detection of which agent a session is running, per-agent state and notifications. |
+| 🗂️ | **Session management** | The welcome screen quickly starts a Claude/Codex session in a recent folder; the list puts sessions that need attention first, supports search, groups by folder, and long-press to rename/close; create a session in any folder, rename, close, and resume old Claude (`claude --resume`) and Codex (`codex resume`) conversations. |
+| 💻 | **Terminal** | A full terminal (ttyd + xterm.js) attached to the tmux session; swipe to scroll history, the 📋 Copy button opens the session text as plain text for selecting and copying, A−/A+ font size, an Esc, ⇧Tab, ^C, arrow… key row for phones; reconnects automatically or with a tap after a disconnect. |
+| ⚡ | **Quick actions** | One tap sends a prepared request to Claude: git status, commit, push, create PR, merge PR (checks CI first), review, run tests, `/compact`; risky actions ask for confirmation. |
+| ✍️ | **Message box** | Vietnamese typing, multi-line messages; on desktop Enter sends and Shift+Enter inserts a new line. |
+| 🖼️ | **Send images and files** | Pick from the gallery or any file, shown as thumbnails; paths are appended to the message on send so Claude can read them. |
+| 📊 | **Usage** | Header chip: agent plan limits (Claude 5-hour / 7-day, Codex), session context, CPU / RAM / disk; tap for details and reset times. |
+| 🔔 | **Push notifications** | Web Push (VAPID, no third-party service) when Claude finishes or is waiting for confirmation. |
+| 📁 | **File browser** | Icons and colors by file type, git change markers on files and folders; browse folders, read files and images, GitHub-style Markdown preview (including Mermaid diagrams), insert paths into the prompt. |
+| 🌳 | **Git** | Commit graph (colored lanes, merge lines, branch/tag labels); stage, unstage, commit, fetch, pull, push, switch branch; diffs per file or per commit. |
+| 📱 | **Responsive** | Desktop: sidebar and tabs. Phone: bottom tab bar. Auto / Light / Dark theme (☀ button at the top of the sidebar); keeps the screen awake while the app is open (Screen Wake Lock); installable as an app (PWA). |
 
-## Kiến trúc
+## Architecture
 
 ```mermaid
 flowchart LR
-    phone["📱 Điện thoại / 💻 Máy tính<br/>(PWA trong trình duyệt)"]
+    phone["📱 Phone / 💻 Computer<br/>(PWA in the browser)"]
     subgraph mac["Mac mini"]
         ts["tailscale serve<br/>HTTPS :443"]
         server["src/server.mjs<br/>Node · 127.0.0.1:7680"]
         ttyd["ttyd<br/>127.0.0.1:7681"]
-        tmux[("tmux<br/>phiên Claude Code")]
+        tmux[("tmux<br/>Claude Code sessions")]
         git[("git repo")]
     end
     phone -- "Tailnet (WireGuard)" --> ts
@@ -88,167 +90,176 @@ flowchart LR
     server -- "status / log / diff / commit" --> git
 ```
 
-- **tmux** giữ toàn bộ trạng thái, nên server hay trình duyệt chết thì phiên vẫn còn.
-- **Server** chỉ dùng thư viện chuẩn của Node (`http`, `child_process`, `crypto`…) và gọi `tmux`/`git` qua `execFile`, không qua shell.
-- **Terminal** (ttyd) nằm sau server ở đường dẫn `/term`, cùng origin với app, nhờ vậy app chỉnh được cỡ chữ, cuộn bằng cảm ứng và tự kết nối lại.
-- **Ra ngoài** chỉ qua `tailscale serve`: chỉ thiết bị trong tailnet của bạn truy cập được, không mở port ra internet.
+- **tmux** holds all state, so if the server or browser dies the sessions survive.
+- **The server** uses only the Node standard library (`http`, `child_process`, `crypto`…) and calls `tmux`/`git` with `execFile`, never through a shell.
+- **The terminal** (ttyd) sits behind the server at `/term`, on the same origin as the app, so the app can change the font size, scroll by touch and reconnect automatically.
+- **External access** is only through `tailscale serve`: only devices in your tailnet can reach it, and no port is opened to the internet.
 
-## Yêu cầu
+## Requirements
 
-- macOS có [Homebrew](https://brew.sh)
+- macOS with [Homebrew](https://brew.sh)
 - Node.js ≥ 24
-- [Claude Code](https://claude.com/claude-code) đã đăng nhập
-- Tài khoản [Tailscale](https://tailscale.com), đã bật **Serve/HTTPS** cho tailnet
+- [Claude Code](https://claude.com/claude-code), signed in
+- A [Tailscale](https://tailscale.com) account with **Serve/HTTPS** enabled for the tailnet
 
-## Cài đặt
+## Installation
 
-Không cần clone code: script tải bản phát hành mới nhất, cài công cụ còn thiếu (tmux, ttyd, Node) và dịch vụ tự chạy.
+No clone needed: the script downloads the latest release, installs missing tools (tmux, ttyd, Node) and sets up the background services.
 
 ```bash
-# Repo riêng tư: cần GitHub CLI đã đăng nhập (brew install gh && gh auth login)
+# Private repo: requires a signed-in GitHub CLI (brew install gh && gh auth login)
 gh api repos/hoangtu0812/termi/contents/scripts/get.sh -H 'Accept: application/vnd.github.raw' | bash
 
-# Repo công khai: một dòng, không cần đăng nhập
+# Public repo: one line, no sign-in needed
 curl -fsSL https://raw.githubusercontent.com/hoangtu0812/termi/main/scripts/get.sh | bash
 ```
 
-- Chạy lại đúng lệnh đó để **nâng cấp**. Mã chạy nằm ở `~/.termi/app/<phiên bản>` (ổ trong máy), `~/.termi/app/current` trỏ tới bản đang dùng; 2 bản gần nhất được giữ lại.
-- Chọn thư mục termi được phép truy cập (mặc định `~`): đặt `TERMI_ROOTS="$HOME:/Volumes/Data"` trước lệnh. Khi nâng cấp, giá trị cũ được giữ.
-- Cài một bản cụ thể: `TERMI_VERSION=v0.6.0`.
-- Cùng lệnh này chạy được trên **Linux** và **Windows (WSL2)**, xem mục bên dưới.
+- Run the same command again to **upgrade**. The code lives in `~/.termi/app/<version>` (internal disk), `~/.termi/app/current` points to the active version, and the 2 most recent versions are kept.
+- Choose which folders termi may access (default `~`): set `TERMI_ROOTS="$HOME:/Volumes/Data"` before the command. The previous value is kept on upgrade.
+- Install a specific version: `TERMI_VERSION=v0.6.0`.
+- Download and extract only, without installing services: `TERMI_NO_SERVICE=1`.
+- The same command works on **Linux** and **Windows (WSL2)**; see below.
 
-Script in ra địa chỉ dạng `https://<máy>.<tailnet>.ts.net`. Mở địa chỉ đó trên điện thoại (đã bật Tailscale), rồi:
+The script prints an address like `https://<machine>.<tailnet>.ts.net`. Open it on your phone (with Tailscale on), then:
 
-- **Android (Chrome):** ⋮ → *Thêm vào màn hình chính*
-- **iOS (Safari):** Chia sẻ → *Thêm vào MH chính* (bắt buộc nếu muốn nhận thông báo)
+- **Android (Chrome):** ⋮ → *Add to Home screen*
+- **iOS (Safari):** Share → *Add to Home Screen* (required for notifications)
 
-Gỡ cài đặt: `~/.termi/app/current/scripts/install.sh uninstall` (các phiên tmux vẫn được giữ).
+Uninstall: `~/.termi/app/current/scripts/install.sh uninstall` (tmux sessions are kept).
 
-## Thêm máy Windows hoặc Linux
+## Adding a Windows or Linux machine
 
-Mỗi máy chạy termi riêng; termi trên máy bạn hay mở (ví dụ Mac mini) chuyển tiếp sang các máy khác qua Tailscale, nên trên điện thoại vẫn chỉ dùng **một app**.
+Each machine runs its own termi; the termi on the machine you usually open (for example the Mac mini) forwards to the others over Tailscale, so the phone still uses **one app**.
 
-**Windows** (termi chạy trong WSL2, vì cần `tmux`):
+**Windows** (termi runs inside WSL2 because it needs `tmux`):
 
 ```powershell
-# PowerShell (Admin): cài WSL + Ubuntu, khởi động lại máy nếu được yêu cầu
+# PowerShell (Admin): install WSL + Ubuntu, reboot if asked
 wsl --install -d Ubuntu
 ```
 
 ```bash
-# Trong Ubuntu (WSL): bật systemd
+# Inside Ubuntu (WSL): enable systemd
 printf '[boot]\nsystemd=true\n' | sudo tee /etc/wsl.conf
-# PowerShell: wsl --shutdown   rồi mở lại Ubuntu
+# PowerShell: wsl --shutdown   then reopen Ubuntu
 
-# Cài agent bạn dùng (claude, codex…) trong WSL, rồi:
+# Install the agents you use (claude, codex…) inside WSL, then:
 gh api repos/hoangtu0812/termi/contents/scripts/get.sh -H 'Accept: application/vnd.github.raw' | bash
 ```
 
-Tailscale cài trên Windows như bình thường; script tự gọi `tailscale.exe` để mở termi ra tailnet. Dự án nên để trong WSL (`~/…`) cho nhanh.
+Install Tailscale on Windows as usual; the script calls `tailscale.exe` to expose termi to the tailnet. Keep projects inside WSL (`~/…`) for speed.
 
-**Linux:** cài Tailscale, rồi chạy `scripts/install-linux.sh`.
+**Linux:** install Tailscale, then run `scripts/install-linux.sh`.
 
-Sau đó trên app, ô chọn máy ở đầu sidebar sẽ hiện máy mới (máy chưa cài termi hiện mờ).
+The machine picker at the top of the sidebar then shows the new machine (machines without termi are dimmed).
 
-## Hạn mức Claude trong mục Usage
+## Claude limits in Usage
 
-Claude Code chỉ cung cấp hạn mức gói (5 giờ / 7 ngày) cho script **statusline**, nên termi có một script nhỏ lưu số liệu đó lại. Script giữ nguyên statusline bạn đang dùng (chuyển tiếp dữ liệu cho nó). Bạn tự chạy vì lệnh này sửa `~/.claude/settings.json` (có sao lưu `settings.json.termi-backup`):
+Claude Code only exposes plan limits (5 hours / 7 days) to **statusline** scripts, so termi ships a small script that records them. It keeps your current statusline working by forwarding the data to it. You run it yourself because it edits `~/.claude/settings.json` (backed up as `settings.json.termi-backup`):
 
 ```bash
-npm run claude-usage        # gỡ: npm run claude-usage:off
-# Từ termi trên điện thoại: gõ  ! npm run claude-usage  vào ô nhắn của phiên Claude đang ở thư mục termi
+npm run claude-usage        # remove: npm run claude-usage:off
+# From termi on the phone: type  ! npm run claude-usage  in the message box of a Claude session in the termi folder
 ```
 
-Theo tài liệu Claude Code, hạn mức chỉ có với gói Pro, Max và Ultra; mức đầy ngữ cảnh thì gói nào cũng có. Codex không cần cài gì: termi đọc thẳng từ `~/.codex/sessions`.
+According to the Claude Code docs, plan limits are only available on Pro, Max and Ultra plans; context usage is available on every plan. Codex needs no setup: termi reads `~/.codex/sessions` directly.
 
-## Sử dụng nhanh
+## Quick start
 
-1. Bấm **+ Phiên mới**, chọn thư mục, tick *Chạy Claude ngay*.
-2. Nhắn cho Claude ở ô dưới cùng; dùng 🖼️ / 📎 để gửi ảnh hoặc file.
-3. Bấm 🔔 để bật thông báo; bấm 🕘 để mở lại hội thoại cũ.
-4. Chuyển sang tab **Git** hoặc **File** để xem Claude đã sửa gì.
+1. Tap **+ New session**, pick a folder, tick *Start Claude now*.
+2. Message Claude in the bottom box; use 🖼️ / 📎 to send images or files.
+3. Tap 🔔 to enable notifications; tap 🕘 to resume an old conversation.
+4. Switch to the **Git** or **File** tab to see what Claude changed.
 
-Trên Mac có thể vào cùng phiên bằng `tmux attach -t <tên>`. Thêm hàm sau vào `~/.zshrc` để tạo hoặc vào lại phiên nhanh:
+On the Mac you can join the same session with `tmux attach -t <name>`. Add this function to `~/.zshrc` to create or re-enter a session quickly:
 
 ```bash
 tm() { tmux new -A -s "${1:-main}"; }
 ```
 
-## Cấu trúc thư mục
+## Project structure
 
 ```
 termi/
 ├── src/
-│   └── server.mjs        # HTTP server + API: phiên, file, git, push, upload
-├── public/               # PWA (giao diện tĩnh, không build)
-│   ├── index.html        # Toàn bộ UI: HTML + CSS + JS
-│   ├── sw.js             # Service worker cho thông báo đẩy
+│   └── server.mjs        # HTTP server + API: sessions, files, git, push, upload
+├── public/               # PWA (static UI, no build)
+│   ├── index.html        # The whole UI: HTML + CSS + JS
+│   ├── sw.js             # Service worker for push notifications
 │   ├── manifest.json
 │   └── icon.svg
 ├── scripts/
-│   ├── install.sh        # macOS: dịch vụ launchd + tailscale serve
-│   ├── install-linux.sh  # Linux/WSL: dịch vụ systemd --user + tailscale serve
-│   ├── claude-statusline.mjs # lưu hạn mức + ngữ cảnh Claude cho mục Usage
-│   └── attach.sh         # ttyd gọi để gắn vào phiên tmux theo tên
+│   ├── install.sh        # macOS: launchd services + tailscale serve
+│   ├── install-linux.sh  # Linux/WSL: systemd --user services + tailscale serve
+│   ├── claude-statusline.mjs # records Claude limits + context for Usage
+│   └── attach.sh         # called by ttyd to attach to a tmux session by name
 ├── test/
-│   └── server.test.mjs   # node:test, không cần thư viện
-├── docs/screenshots/
+│   └── server.test.mjs   # node:test, no libraries
+├── docs/                 # Documents <PREFIX>-v<X.Y>-<slug>.md, images in docs/assets/
+├── plan/                 # Implementation plans PLAN-v<X.Y>-<slug>.md
+├── AGENTS.md             # Engineering rules (Vietnamese: AGENTS.vi.md)
+├── CHANGELOG.md          # Release history (Vietnamese: CHANGELOG.vi.md)
 └── package.json
 ```
 
-## Phát triển
+## Development
 
-Làm việc trên mã nguồn (clone repo) và cài dịch vụ chạy thẳng từ thư mục đó:
+Work from a clone and install the services to run straight from that folder:
 
 ```bash
 git clone https://github.com/hoangtu0812/termi.git && cd termi && npm run service:install
 ```
 
-Phát hành: tăng `version` trong `package.json`, tạo bản phát hành `v<version>` trên GitHub, rồi `npm run release:asset` để đính file cài `termi-<version>.tgz` (script cài tải đúng file này).
+Before changing code, read [AGENTS.md](AGENTS.md): architecture rules, no comments in code, document naming, commits and releases. The refactor roadmap is in [plan/](plan/).
+
+- Commits, releases and `CHANGELOG.md` are written in English ([Conventional Commits](https://www.conventionalcommits.org)); `CHANGELOG.vi.md` is the Vietnamese version.
+- Releasing: move the `Unreleased` entries of both changelogs into the new version, bump `version` in `package.json`, commit `chore(release): vX.Y.Z`, create the GitHub release `vX.Y.Z`, then run `npm run release:asset` to attach the installer `termi-<version>.tgz` (the install script downloads exactly this file).
 
 ```bash
-npm test     # chạy test (node --test)
-npm start    # chạy server ở 127.0.0.1:7680 (dừng dịch vụ launchd trước nếu trùng cổng)
+npm test     # run tests (node --test)
+npm start    # run the server on 127.0.0.1:7680 (stop the launchd service first if the port is taken)
 
-# Khởi động lại server đang chạy dưới launchd sau khi sửa src/
+# Restart the server running under launchd after editing src/
 launchctl kickstart -k gui/$UID/vn.termi.server
 ```
 
-Sửa `public/index.html` không cần khởi động lại: trang đang mở sẽ tự tải lại khi thấy bản mới (trừ lúc bạn đang gõ dở).
+Editing `public/index.html` needs no restart: open pages reload themselves when they see a new version (except while you are typing).
 
-| Biến môi trường | Mặc định | Ý nghĩa |
+| Environment variable | Default | Meaning |
 |---|---|---|
-| `TERMI_ROOTS` | `$HOME` | Các thư mục gốc được phép truy cập, cách nhau bằng `:` |
-| `TERMI_PORT` | `7680` | Cổng của server |
+| `TERMI_ROOTS` | `$HOME` | Root folders termi may access, separated by `:` |
+| `TERMI_PORT` | `7680` | Server port |
+| `TERMI_TTYD_PORT` | `7681` | ttyd port |
+| `TERMI_ALLOWED_USERS` | Machine owner | Tailscale logins allowed in, comma-separated |
 
-Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết bị nhận thông báo và file tải lên (`uploads/`, không tự xoá). Log ở `~/Library/Logs/termi.*.log`.
+Local data lives in `~/.termi/`: the VAPID key, the list of devices receiving notifications, and uploaded files (`uploads/`, never cleaned automatically). Logs are in `~/Library/Logs/termi.*.log`.
 
-## Bảo mật
+## Security
 
-termi cho quyền điều khiển shell trên máy của bạn, nên được thiết kế để **chỉ chạy trong tailnet riêng**:
+termi grants shell control over your machine, so it is designed to **run only inside your private tailnet**:
 
-- **Chỉ chủ máy được vào:** `tailscale serve` gắn danh tính người gửi (`Tailscale-User-Login`, không giả mạo được). termi chỉ nhận đúng tài khoản Tailscale sở hữu máy, hoặc danh sách trong `TERMI_ALLOWED_USERS` (cách nhau bằng dấu phẩy). Thiết bị gắn tag, máy được chia sẻ cho người khác và Funnel đều bị chặn. Không xác định được chủ máy thì chặn hết.
-- **WebSocket terminal** chỉ nhận Origin của chính app (WebSocket không bị CORS bảo vệ). Khi chuyển tiếp sang máy khác, Origin chỉ được đổi sau khi đã kiểm tra.
-- Trang không cho trang khác nhúng (`frame-ancestors 'self'`); `~/.termi` chỉ chủ tài khoản đọc được (700).
-- Server và ttyd chỉ nghe trên `127.0.0.1`; đường vào duy nhất là `tailscale serve`. **Không bật Tailscale Funnel.**
-- Chuyển tiếp sang máy khác (`/m/<máy>/…`) chỉ tới máy có trong tailnet của bạn và đang chạy termi, qua HTTPS của Tailscale.
-- Chặn DNS rebinding (chỉ nhận Host là localhost hoặc `*.ts.net`) và CSRF (mọi POST phải có header `X-Termi`); ttyd bật kiểm tra origin.
-- Mọi đường dẫn đều được `realpath` và phải nằm trong `TERMI_ROOTS`; tên phiên, branch và commit được kiểm tra bằng regex; lệnh gọi qua `execFile`.
-- Chỉ phục vụ trực tiếp file ảnh, kèm header `Content-Security-Policy: sandbox`, để file trong repo (kể cả SVG) không chạy được script trên origin của app.
-- Xem trước Markdown hiển thị trong `iframe` sandbox (không script, không cùng origin); thư viện [marked](https://marked.js.org) chỉ tải từ CDN khi mở file `.md`, có kiểm tra SRI. File có sơ đồ [Mermaid](https://mermaid.js.org) mới được bật script, và CSP chỉ cho chạy đúng file Mermaid (SRI) cùng đoạn khởi tạo (hash).
+- **Only the machine owner gets in:** `tailscale serve` attaches the sender's identity (`Tailscale-User-Login`, which cannot be spoofed). termi accepts only the Tailscale account that owns the machine, or the list in `TERMI_ALLOWED_USERS` (comma-separated). Tagged devices, machines shared with other people and Funnel are all blocked. If the owner cannot be determined, everything is blocked.
+- **The terminal WebSocket** only accepts the app's own Origin (WebSockets are not protected by CORS). When forwarding to another machine, the Origin is rewritten only after it has been checked.
+- Other sites cannot embed the page (`frame-ancestors 'self'`); `~/.termi` is readable only by the account owner (700).
+- The server and ttyd listen only on `127.0.0.1`; the only way in is `tailscale serve`. **Do not enable Tailscale Funnel.**
+- Forwarding to another machine (`/m/<machine>/…`) only reaches machines in your tailnet that run termi, over Tailscale HTTPS.
+- DNS rebinding is blocked (Host must be localhost or `*.ts.net`) and so is CSRF (every POST needs the `X-Termi` header); ttyd has origin checking enabled.
+- Every path is resolved with `realpath` and must be inside `TERMI_ROOTS`; session names, branches and commits are checked with regexes; commands run through `execFile`.
+- Only image files are served directly, with `Content-Security-Policy: sandbox`, so files in a repo (including SVG) cannot run scripts on the app's origin.
+- Markdown previews render in a sandboxed `iframe` (no scripts, not same-origin); the [marked](https://marked.js.org) library is loaded from a CDN only when a `.md` file is opened, with SRI. Only files with [Mermaid](https://mermaid.js.org) diagrams get scripts enabled, and the CSP allows only the Mermaid file (SRI) and its init snippet (hash).
 
-## Giới hạn đã biết
+## Known limitations
 
-- Trạng thái Claude được đoán từ chữ trên màn hình terminal; Claude Code đổi giao diện thì có thể nhận sai.
-- Khởi động lại máy làm tmux mất các phiên; termi lưu danh sách phiên 30 giây một lần và hiện nút **Khôi phục** (mở lại đúng hội thoại Claude/Codex). Agent không tự chạy khi chưa bấm.
-- ttyd 1.7.7 không dọn client tmux của kết nối đứt đột ngột; termi tự khởi động lại ttyd khi có nhiều client kẹt (ưu tiên lúc không ai mở terminal), terminal tự nối lại.
-- Cây git hiện 200 commit gần nhất, tối đa 10 làn.
-- Trên iOS, thông báo chỉ hoạt động khi mở termi từ biểu tượng ở màn hình chính.
-- Windows: WSL phải đang chạy thì máy đó mới hiện trong ô chọn máy (WSL có thể tự tắt khi không dùng).
-- Antigravity (`agy`): chưa hỗ trợ mở lại hội thoại cũ; nhận diện dựa trên tên lệnh `agy`.
-- Các máy trong termi tin nhau: một máy đã bị chiếm có thể trả nội dung độc hại qua đường chuyển tiếp `/m/<máy>/`, chạy trên địa chỉ của máy trung tâm. Chỉ thêm máy của chính bạn.
-- termi chạy `git` trong repo bạn mở; repo không tin cậy có thể chứa cấu hình git chạy lệnh (ví dụ `core.fsmonitor`). Chỉ mở repo của bạn.
+- Claude's state is inferred from the text on the terminal screen; if Claude Code changes its UI, detection may be wrong.
+- Rebooting the machine loses tmux sessions; termi saves the session list every 30 seconds and shows a **Restore** button (resuming the exact Claude/Codex conversation). Agents do not start until you tap it.
+- ttyd 1.7.7 does not clean up tmux clients of abruptly dropped connections; termi restarts ttyd when many clients are stuck (preferably when nobody has a terminal open), and the terminal reconnects automatically.
+- The git graph shows the 200 most recent commits, up to 10 lanes.
+- On iOS, notifications only work when termi is opened from the home-screen icon.
+- Windows: WSL must be running for the machine to appear in the machine picker (WSL may shut down when idle).
+- Antigravity (`agy`): resuming old conversations is not supported yet; detection relies on the `agy` command name.
+- Machines in termi trust each other: a compromised machine could return malicious content through the `/m/<machine>/` forwarding path, running on the hub machine's origin. Only add your own machines.
+- termi runs `git` in the repos you open; an untrusted repo can contain git config that runs commands (for example `core.fsmonitor`). Only open your own repos.
 
 ---
 
-<div align="center"><sub>Làm bằng ☕ và <a href="https://claude.com/claude-code">Claude Code</a>.</sub></div>
+<div align="center"><sub>Made with ☕ and <a href="https://claude.com/claude-code">Claude Code</a>.</sub></div>
