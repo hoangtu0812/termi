@@ -55,7 +55,8 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 
 | | Tính năng | Chi tiết |
 |---|---|---|
-| 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại Claude cũ (`claude --resume`). |
+| 🤖 | **Nhiều agent** | Claude Code, Codex, Antigravity (`agy`): chọn agent khi tạo phiên (chỉ hiện agent có cài), tự nhận ra phiên đang chạy agent nào, trạng thái và thông báo cho từng agent. |
+| 🗂️ | **Quản lý phiên** | Tạo phiên ở bất kỳ thư mục nào (có gợi ý thư mục gần đây), đổi tên, đóng phiên, mở lại hội thoại cũ của Claude (`claude --resume`) và Codex (`codex resume`). |
 | 💻 | **Terminal** | Terminal đầy đủ (ttyd + xterm.js) gắn vào phiên tmux; vuốt để cuộn lịch sử, chỉnh cỡ chữ A−/A+, hàng phím Esc, ⇧Tab, ^C, mũi tên… cho điện thoại; mất kết nối thì tự nối lại hoặc chạm để nối lại. |
 | ⚡ | **Thao tác nhanh** | Một chạm gửi yêu cầu soạn sẵn cho Claude: tình trạng git, commit, push, tạo PR, merge PR (kiểm tra CI trước), review, chạy test, `/compact`; thao tác có rủi ro sẽ hỏi xác nhận. |
 | ✍️ | **Ô nhắn** | Gõ tiếng Việt, gửi nhiều dòng; máy tính dùng Enter để gửi, Shift+Enter để xuống dòng. |

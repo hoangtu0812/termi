@@ -3,12 +3,25 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, claudeState, parseStatus, graphLayout } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout } from '../src/server.mjs';
 
-test('trạng thái Claude', () => {
-  assert.equal(claudeState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
-  assert.equal(claudeState('Bash command\n rm x\nDo you want to proceed?\n❯ 1. Yes\n  2. No\nEsc to cancel'), 'waiting');
-  assert.equal(claudeState('───\n❯ Try "how do I log an error?"\n'), 'idle');
+test('trạng thái agent', () => {
+  assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
+  assert.equal(agentState('Bash command\n rm x\nDo you want to proceed?\n❯ 1. Yes\n  2. No\nEsc to cancel'), 'waiting');
+  assert.equal(agentState('───\n❯ Try "how do I log an error?"\n'), 'idle');
+  // Codex
+  assert.equal(agentState('• Working (4s • esc to interrupt)\n› '), 'working');
+  assert.equal(agentState('Trust this folder?\n› 1. Trust and continue\n  2. Back\n  enter continue · esc back'), 'waiting');
+  assert.equal(agentState('Would you like to run the following command?\n$ rm -rf build\n› 1. Yes, proceed\nPress enter to confirm or esc to cancel'), 'waiting');
+});
+
+test('nhận ra tiến trình agent', () => {
+  const who = c => Object.keys(AGENTS).find(id => AGENTS[id].proc(c));
+  assert.equal(who('/Users/a/.local/share/claude/versions/2.1.332'), 'claude');
+  assert.equal(who('/Users/a/.local/bin/codex'), 'codex');
+  assert.equal(who('/opt/homebrew/bin/agy'), 'agy');
+  assert.equal(who('/Applications/Claude.app/Contents/MacOS/Claude'), undefined);
+  assert.equal(who('/bin/zsh'), undefined);
 });
 
 test('git status -z', () => {

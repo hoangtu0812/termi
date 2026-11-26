@@ -31,10 +31,20 @@ export const KEYS = new Set(['Escape', 'C-c', 'C-d', 'Tab', 'BTab', 'Up', 'Down'
 // Chặn DNS rebinding: chỉ nhận Host là localhost hoặc tên Tailscale
 export const validHost = h => typeof h === 'string' && /^(localhost|127\.0\.0\.1|[a-z0-9-]+\.[a-z0-9-]+\.ts\.net)(:\d+)?$/i.test(h);
 
-// shortcut: đọc trạng thái Claude bằng cách nhìn chữ trên màn hình; Claude đổi giao diện thì phải sửa regex (hoặc chuyển sang hooks)
-export function claudeState(screen) {
+// Các coding agent hỗ trợ. proc nhận ra tiến trình qua đường dẫn file chạy (cột comm của ps).
+// shortcut: agent chạy bằng node (comm = node) sẽ không nhận ra; khi cần thì so thêm tham số dòng lệnh
+export const AGENTS = {
+  claude: { name: 'Claude', cmd: 'claude', resume: id => `claude --resume ${id}`,
+    proc: c => path.basename(c) === 'claude' || c.includes('/.local/share/claude/versions/') },
+  codex: { name: 'Codex', cmd: 'codex', resume: id => `codex resume ${id}`, proc: c => path.basename(c) === 'codex' },
+  agy: { name: 'Antigravity', cmd: 'agy', proc: c => path.basename(c) === 'agy' },
+};
+
+// shortcut: đọc trạng thái agent bằng cách nhìn chữ trên màn hình; agent đổi giao diện thì phải sửa regex (hoặc chuyển sang hooks)
+export function agentState(screen) {
   const tail = screen.split('\n').filter(l => l.trim()).slice(-15).join('\n');
-  if (/Do you want to|Would you like to|Esc to cancel|\(y\/n\)/i.test(tail)) return 'waiting';
+  // Hỏi xác nhận, hoặc menu lựa chọn đánh số (Claude: ❯ 1.  Codex: › 1.)
+  if (/Do you want to|Would you like to|Esc to cancel|Allow command|\(y\/n\)|\[y\/n\]|^\s*[›❯]\s*1\./im.test(tail)) return 'waiting';
   if (/esc to interrupt/i.test(tail)) return 'working';
   return 'idle';
 }
@@ -75,30 +85,31 @@ async function sessions() {
     panes = (await tmux('list-panes', '-a', '-F',
       '#{session_name}\t#{window_active}#{pane_active}\t#{pane_pid}\t#{pane_current_path}\t#{session_attached}\t#{session_activity}')).stdout;
   } catch { return []; } // chưa có tmux server = chưa có phiên
-  // Tìm tổ tiên của mọi tiến trình claude để biết pane nào đang chạy Claude
-  const parent = new Map(), claudeAncestors = new Set(), claude = [];
+  // Tìm tổ tiên của mọi tiến trình agent để biết pane nào đang chạy agent nào
+  const parent = new Map(), agentOf = new Map(), found = [];
   const procs = (await run('ps', ['-ax', '-o', 'pid=,ppid=,comm='], { maxBuffer: 8e6 })).stdout;
   for (const l of procs.split('\n')) {
     const m = l.trim().match(/^(\d+)\s+(\d+)\s+(.*)$/);
     if (!m) continue;
     parent.set(m[1], m[2]);
-    if (path.basename(m[3]) === 'claude' || m[3].includes('/.local/share/claude/versions/')) claude.push(m[1]);
+    const agent = Object.keys(AGENTS).find(id => AGENTS[id].proc(m[3]));
+    if (agent) found.push([m[1], agent]);
   }
-  for (let p of claude) for (let i = 0; p && p !== '1' && i < 64; i++) { claudeAncestors.add(p); p = parent.get(p); }
+  for (let [p, agent] of found) for (let i = 0; p && p !== '1' && i < 64; i++) { if (!agentOf.has(p)) agentOf.set(p, agent); p = parent.get(p); }
 
   const by = new Map();
   for (const l of panes.trim().split('\n')) {
     const [name, active, pid, dir, attached, activity] = l.split('\t');
-    const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), claude: false };
+    const s = by.get(name) ?? { name, dir, attached: attached !== '0', activity: Number(activity), agent: null };
     if (active === '11') s.dir = dir;
-    if (claudeAncestors.has(pid)) s.claude = true;
+    s.agent ??= agentOf.get(pid) ?? null;
     by.set(name, s);
   }
   const list = [...by.values()].sort((a, b) => b.activity - a.activity);
   await Promise.all(list.map(async s => {
     const screen = (await tmux('capture-pane', '-p', '-J', '-t', target(s.name)).catch(() => ({ stdout: '' }))).stdout;
-    s.state = s.claude ? claudeState(screen) : 'shell';
-    // Bỏ các dòng khung/trang trí của Claude để xem trước có nội dung thật
+    s.state = s.agent ? agentState(screen) : 'shell';
+    // Bỏ các dòng khung/trang trí của agent để xem trước có nội dung thật
     s.preview = screen.split('\n').map(l => l.trimEnd())
       .filter(l => l.replace(/[─━│╭╮╰╯\s]/g, '').length > 1 && !/[▐▛▜▝▘█▀]/.test(l) && !/^\s*(⏵|\? for shortcuts)/.test(l))
       .slice(-3).join('\n');
@@ -123,31 +134,60 @@ async function repos() {
   return repoCache.list;
 }
 
-// Hội thoại Claude cũ: đọc phần đầu file .jsonl để lấy thư mục và câu hỏi đầu tiên
+// Hội thoại cũ của các agent: đọc phần đầu file .jsonl để lấy mã, thư mục và câu hỏi đầu tiên
+const isRealPrompt = t => typeof t === 'string' && t.trim() && !t.startsWith('<') && !t.startsWith('# AGENTS.md');
+const HISTORY = {
+  // ~/.claude/projects/<thư mục>/<uuid>.jsonl
+  claude: { dir: path.join(os.homedir(), '.claude', 'projects'),
+    accept: f => f.split(path.sep).length === 2 && validUuid(path.basename(f, '.jsonl')), // bỏ file phụ ở thư mục con
+    parse(o, h) {
+    h.cwd ??= o.cwd;
+    if (o.type === 'summary' && o.summary) h.title = o.summary;
+    const c = o.type === 'user' && !o.isMeta && o.message?.content;
+    const text = typeof c === 'string' ? c : Array.isArray(c) ? c.find(x => x.type === 'text')?.text : null;
+    if (!h.title && isRealPrompt(text)) h.title = text;
+  } },
+  // ~/.codex/sessions/YYYY/MM/DD/rollout-...-<uuid>.jsonl, dòng đầu là session_meta
+  codex: { dir: path.join(os.homedir(), '.codex', 'sessions'), accept: f => path.basename(f).startsWith('rollout-'),
+    parse(o, h) {
+    const p = o.payload || {};
+    if (o.type === 'session_meta') { h.id = p.id; h.cwd = p.cwd; }
+    const text = o.type === 'response_item' && p.role === 'user' ? p.content?.find(x => x.type === 'input_text')?.text
+      : o.type === 'event_msg' && p.type === 'user_message' ? p.message : null;
+    if (!h.title && isRealPrompt(text)) h.title = text;
+  } },
+};
+async function readHead(file, bytes = 512 * 1024) {
+  const fh = await fs.open(file);
+  const buf = Buffer.alloc(bytes);
+  const { bytesRead } = await fh.read(buf, 0, buf.length, 0).finally(() => fh.close());
+  return buf.subarray(0, bytesRead).toString().split('\n');
+}
 async function history() {
-  const base = path.join(os.homedir(), '.claude', 'projects');
   const files = [];
-  for (const d of await fs.readdir(base).catch(() => []))
-    for (const f of await fs.readdir(path.join(base, d)).catch(() => []))
-      if (f.endsWith('.jsonl') && validUuid(f.slice(0, -6))) files.push(path.join(base, d, f));
-  const stats = await Promise.all(files.map(f => fs.stat(f).then(s => ({ f, t: s.mtimeMs }), () => null)));
+  for (const [agent, { dir, accept }] of Object.entries(HISTORY))
+    for (const f of await fs.readdir(dir, { recursive: true }).catch(() => []))
+      if (f.endsWith('.jsonl') && accept(f)) files.push({ agent, f: path.join(dir, f) });
+  const stats = await Promise.all(files.map(x => fs.stat(x.f).then(s => ({ ...x, t: s.mtimeMs }), () => null)));
   const recent = stats.filter(Boolean).sort((a, b) => b.t - a.t).slice(0, 40);
-  return (await Promise.all(recent.map(async ({ f, t }) => {
-    const fh = await fs.open(f);
-    const buf = Buffer.alloc(512 * 1024);
-    const { bytesRead } = await fh.read(buf, 0, buf.length, 0).finally(() => fh.close());
-    let cwd, title;
-    for (const line of buf.subarray(0, bytesRead).toString().split('\n')) {
+  return (await Promise.all(recent.map(async ({ agent, f, t }) => {
+    const h = { id: agent === 'claude' ? path.basename(f, '.jsonl') : null };
+    for (const line of await readHead(f)) {
       let o; try { o = JSON.parse(line); } catch { continue; }
-      cwd ??= o.cwd;
-      if (o.type === 'summary' && o.summary) title = o.summary;
-      const c = o.type === 'user' && !o.isMeta && o.message?.content;
-      const text = typeof c === 'string' ? c : Array.isArray(c) ? c.find(x => x.type === 'text')?.text : null;
-      if (!title && text && !text.startsWith('<')) title = text;
-      if (cwd && title) break;
+      HISTORY[agent].parse(o, h);
+      if (h.id && h.cwd && h.title) break;
     }
-    return cwd && { id: path.basename(f, '.jsonl'), cwd, title: (title || '(không tiêu đề)').slice(0, 160), mtime: t };
+    return validUuid(h.id) && h.cwd && { agent, id: h.id, cwd: h.cwd, title: (h.title || '(không tiêu đề)').trim().slice(0, 160), mtime: t };
   }))).filter(Boolean);
+}
+
+// Agent nào có cài trên máy này (tìm trong PATH)
+async function installedAgents() {
+  const dirs = (process.env.PATH || '').split(':').filter(Boolean);
+  const ok = await Promise.all(Object.entries(AGENTS).map(async ([id, a]) => {
+    for (const d of dirs) if (await fs.access(path.join(d, a.cmd), fs.constants.X_OK).then(() => true, () => false)) return { id, name: a.name };
+  }));
+  return ok.filter(Boolean);
 }
 
 // ---------- Git ----------
@@ -261,8 +301,9 @@ async function watch() {
     const prev = prevState.get(s.name);
     prevState.set(s.name, s.state);
     if (prev === undefined) continue;
-    if (s.state === 'waiting' && prev !== 'waiting') await push(`${s.name}: Claude cần bạn xác nhận`, s.preview, s.name);
-    else if (s.state === 'idle' && prev === 'working') await push(`${s.name}: Claude đã xong`, s.preview, s.name);
+    const who = AGENTS[s.agent]?.name || 'Agent';
+    if (s.state === 'waiting' && prev !== 'waiting') await push(`${s.name}: ${who} cần bạn xác nhận`, s.preview, s.name);
+    else if (s.state === 'idle' && prev === 'working') await push(`${s.name}: ${who} đã xong`, s.preview, s.name);
   }
 }
 
@@ -277,15 +318,18 @@ const routes = {
     return { roots: ROOTS, recent };
   },
   'GET /api/history': () => history(),
+  'GET /api/agents': () => installedAgents(),
 
   async 'POST /api/sessions'(_, b) {
     if (!validName(b.name)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
     if (b.resume !== undefined && !validUuid(b.resume)) throw fail(400, 'Mã hội thoại không hợp lệ');
+    if (b.agent !== undefined && !Object.hasOwn(AGENTS, b.agent)) throw fail(400, 'Agent không hỗ trợ');
+    if (b.resume !== undefined && !AGENTS[b.agent]?.resume) throw fail(400, 'Agent này không mở lại được hội thoại cũ');
     const dir = await need(b.dir);
     await tmux('new-session', '-d', '-s', b.name, '-c', dir).catch(() => { throw fail(409, 'Phiên đã tồn tại'); });
-    // Gõ lệnh vào shell để khi Claude thoát vẫn còn shell, phiên không mất
-    if (b.resume) await tmux('send-keys', '-t', target(b.name), `claude --resume ${b.resume}`, 'Enter');
-    else if (b.claude) await tmux('send-keys', '-t', target(b.name), 'claude', 'Enter');
+    // Gõ lệnh vào shell để khi agent thoát vẫn còn shell, phiên không mất
+    const a = AGENTS[b.agent];
+    if (a) await tmux('send-keys', '-t', target(b.name), b.resume ? a.resume(b.resume) : a.cmd, 'Enter');
     return { ok: true };
   },
   async 'POST /api/sessions/rename'(_, b) {

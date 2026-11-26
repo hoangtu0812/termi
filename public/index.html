@@ -220,7 +220,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   <aside id="side">
     <div class="bar">
       <div class="brand"><img src="/icon.svg" alt="">termi</div>
-      <button class="ibtn" id="b-hist" title="Hội thoại Claude cũ" aria-label="Hội thoại Claude cũ" data-i="history"></button>
+      <button class="ibtn" id="b-hist" title="Mở lại hội thoại cũ" aria-label="Mở lại hội thoại cũ" data-i="history"></button>
       <button class="ibtn" id="b-theme"></button>
       <button class="ibtn" id="b-bell" title="Thông báo" aria-label="Bật thông báo" data-i="bell"></button>
       <button class="ibtn only-mobile" id="b-new-m" title="Phiên mới" aria-label="Phiên mới" data-i="plus"></button>
@@ -258,13 +258,13 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
         <div class="keys" id="keys"></div>
         <div class="atts" id="atts" hidden></div>
         <div class="compose">
-          <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với Claude" data-i="zap"></button>
+          <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với agent" data-i="zap"></button>
           <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
           <button class="ibtn" id="b-attach" title="Gửi file" aria-label="Gửi file" data-i="clip"></button>
           <!-- accept="image/*" làm Android/iOS mở trình chọn ảnh thay vì menu Máy ảnh/Files -->
           <input type="file" id="f-photo" accept="image/*" multiple hidden>
           <input type="file" id="f-input" multiple hidden>
-          <textarea id="text" rows="1" placeholder="Nhắn cho Claude…" aria-label="Nội dung gửi"></textarea>
+          <textarea id="text" rows="1" placeholder="Nhắn cho agent…" aria-label="Nội dung gửi"></textarea>
           <button class="ibtn send" id="b-send" title="Gửi" aria-label="Gửi" data-i="send"></button>
         </div>
       </div>
@@ -335,14 +335,14 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
       </div>
       <div id="pk-list"></div>
     </div>
-    <label class="chk"><input type="checkbox" name="claude" checked> Chạy Claude ngay</label>
+    <label>Chạy agent<select name="agent"></select></label>
     <div class="acts"><button class="btn" type="button" onclick="this.closest('dialog').close('cancel')">Huỷ</button><button class="btn pri" value="ok">Tạo phiên</button></div>
   </form>
 </dialog>
 
 <dialog id="d-hist">
   <form method="dialog">
-    <h3>Mở lại hội thoại Claude</h3>
+    <h3>Mở lại hội thoại</h3>
     <div id="hist-list"></div>
     <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
   </form>
@@ -360,7 +360,7 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   <form method="dialog" class="menu">
     <h3 id="m-title"></h3>
     <button class="btn" value="rename"><span data-i="edit"></span>Đổi tên phiên</button>
-    <button class="btn danger" value="kill"><span data-i="trash"></span>Đóng phiên (dừng Claude)</button>
+    <button class="btn danger" value="kill"><span data-i="trash"></span>Đóng phiên (dừng agent)</button>
     <button class="btn" value="cancel">Huỷ</button>
   </form>
 </dialog>
@@ -432,6 +432,8 @@ const ltr = s => '‎' + s + '‎';
 const ago = t => { const s = (Date.now() - t) / 1000; return s < 60 ? 'vừa xong' : s < 3600 ? `${s / 60 | 0} phút trước` : s < 86400 ? `${s / 3600 | 0} giờ trước` : `${s / 86400 | 0} ngày trước`; };
 const size = n => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
 const STATE = { working:'Đang chạy', waiting:'Chờ bạn xác nhận', idle:'Rảnh', shell:'Shell' };
+const AGENT_NAMES = { claude:'Claude', codex:'Codex', agy:'Antigravity' };
+const agentName = a => AGENT_NAMES[a] || 'agent';
 const wide = () => matchMedia('(min-width: 900px)').matches;
 
 async function api(path, body) {
@@ -487,8 +489,10 @@ function render() {
 }
 
 // ---------- Phiên ----------
-function stateEl(state) {
-  const e = el('span', 'state st-' + state); e.append(el('span', 'dot'), STATE[state] || ''); return e;
+function stateEl(state, agent) {
+  const e = el('span', 'state st-' + state);
+  e.append(el('span', 'dot'), (agent ? agentName(agent) + ' · ' : '') + (STATE[state] || ''));
+  return e;
 }
 function renderSessions() {
   const box = $('sessions'), sel = st().s;
@@ -509,7 +513,8 @@ function renderSessions() {
 function renderTop() {
   const x = cur(), s = st();
   $('t-name').textContent = s.s || 'termi';
-  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state) : el('span', 'state'), { id: 't-state' }));
+  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent) : el('span', 'state'), { id: 't-state' }));
+  $('text').placeholder = `Nhắn cho ${x?.agent ? agentName(x.agent) : 'agent'}…`;
   if (x) $('t-state').append(' · ' + short(x.dir));
   $('b-menu').hidden = !x;
 }
@@ -518,7 +523,7 @@ async function poll() {
     const list = await api('/api/sessions');
     for (const x of list) {
       // Báo trong app khi đang mở (khi đóng app thì thông báo đẩy lo)
-      if (x.state === 'waiting' && S.seen[x.name] && S.seen[x.name] !== 'waiting') { toast(`${x.name}: Claude đang chờ bạn xác nhận`); navigator.vibrate?.(200); }
+      if (x.state === 'waiting' && S.seen[x.name] && S.seen[x.name] !== 'waiting') { toast(`${x.name}: ${agentName(x.agent)} đang chờ bạn xác nhận`); navigator.vibrate?.(200); }
       S.seen[x.name] = x.state;
     }
     S.list = list;
@@ -561,6 +566,10 @@ NF().dir.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); e.targe
 async function newSession() {
   NF().reset(); pkName = '';
   $('d-new').showModal();
+  const agents = await api('/api/agents').catch(() => []);
+  NF().agent.replaceChildren(...agents.map(a => Object.assign(el('option', null, a.name), { value: a.id })),
+    Object.assign(el('option', null, 'Không, chỉ mở shell'), { value: '' }));
+  NF().agent.value = cur()?.agent && agents.some(a => a.id === cur().agent) ? cur().agent : agents[0]?.id ?? '';
   await loadRepos($('pk-recent'), null, true);
   $('pk-recent').prepend(Object.assign(el('option', null, '— chọn nhanh —'), { value: '', selected: true, disabled: true }));
   await pickDir(cur()?.dir || S.dirs.recent[0] || S.dirs.roots[0]);
@@ -569,7 +578,7 @@ for (const b of [$('b-new'), $('b-new-m'), ...document.querySelectorAll('[data-n
 $('d-new').onclose = safely(async () => {
   if ($('d-new').returnValue !== 'ok') return;
   const f = $('d-new').querySelector('form');
-  await api('/api/sessions', { name: f.name.value, dir: f.dir.value, claude: f.claude.checked });
+  await api('/api/sessions', { name: f.name.value, dir: f.dir.value, agent: f.agent.value || undefined });
   const name = f.name.value; f.reset();
   await poll(); go({ s: name, t: 'term', d: null, g: null });
 });
@@ -581,12 +590,12 @@ $('b-hist').onclick = safely(async () => {
   const list = await api('/api/history');
   box.replaceChildren(...list.map(h => {
     const b = el('button'); b.type = 'button';
-    b.append(el('span', 't1', h.title), el('span', 't2', `${short(h.cwd)} · ${ago(h.mtime)}`));
+    b.append(el('span', 't1', h.title), el('span', 't2', `${agentName(h.agent)} · ${short(h.cwd)} · ${ago(h.mtime)}`));
     b.onclick = safely(async () => {
       const base = (h.cwd.split('/').pop() || 'claude').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30) || 'claude';
       const name = prompt('Tên phiên mới để mở lại hội thoại:', base);
       if (!name) return;
-      await api('/api/sessions', { name, dir: h.cwd, resume: h.id });
+      await api('/api/sessions', { name, dir: h.cwd, agent: h.agent, resume: h.id });
       $('d-hist').close(); await poll(); go({ s: name, t: 'term', d: null, g: null });
     });
     return b;
@@ -603,7 +612,7 @@ $('d-menu').onclose = safely(async () => {
     await api('/api/sessions/rename', { name, to });
     S.termName = null; await poll(); go({ s: to });
   } else if (v === 'kill') {
-    if (!confirm(`Đóng phiên "${name}"? Claude và mọi tiến trình trong phiên sẽ dừng.`)) return;
+    if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
     await api('/api/sessions/kill', { name });
     await poll(); go({ s: null, t: wide() ? null : 'sessions' });
   }
@@ -702,7 +711,7 @@ $('keys').append(...KEYS.map(([label, key]) => {
   b.onclick = () => setFont(fontSize + d);
   return b;
 }));
-// ---- Thao tác nhanh: gửi lời nhắn soạn sẵn cho Claude trong phiên hiện tại ----
+// ---- Thao tác nhanh: gửi lời nhắn soạn sẵn cho agent trong phiên hiện tại ----
 // [biểu tượng, tên, mô tả ngắn, nội dung gửi, cần xác nhận]
 const QUICK = [
   ['📋', 'Tình trạng', 'Nhánh, thay đổi, commit chưa push', 'Cho tôi biết ngắn gọn: đang ở nhánh nào, có thay đổi gì chưa commit, có commit nào chưa push.'],
@@ -710,24 +719,30 @@ const QUICK = [
   ['⬆️', 'Push', 'Đẩy nhánh lên remote', 'Push nhánh hiện tại lên remote.', true],
   ['🔀', 'Tạo PR', 'Pull request kèm mô tả', 'Tạo pull request cho nhánh hiện tại bằng gh, viết tiêu đề và mô tả tóm tắt các thay đổi.', true],
   ['✅', 'Merge PR', 'Kiểm tra CI rồi merge', 'Kiểm tra CI của pull request cho nhánh hiện tại; nếu tất cả đều qua thì merge, nếu không thì báo lại lỗi.', true],
-  ['🔍', 'Review', 'Rà lỗi trong thay đổi', '/code-review'],
+  // Lệnh riêng từng agent; agent không có lệnh đó thì dùng câu nhắn thường, không có cả hai thì ẩn nút
+  ['🔍', 'Review', 'Rà lỗi trong thay đổi', { claude: '/code-review', codex: '/review', '*': 'Review các thay đổi chưa commit: tìm lỗi logic, bảo mật, chỗ thiếu test.' }],
   ['🧪', 'Chạy test', 'Báo kết quả, giải thích lỗi', 'Chạy test của dự án và báo kết quả; nếu có lỗi thì giải thích nguyên nhân.'],
-  ['🗜️', 'Thu gọn', 'Giảm ngữ cảnh hội thoại', '/compact'],
+  ['🗜️', 'Thu gọn', 'Giảm ngữ cảnh hội thoại', { claude: '/compact', codex: '/compact' }],
 ];
-$('quick-list').append(...QUICK.map(([emoji, name, desc, text, ask]) => {
-  const b = el('button'); b.type = 'button';
-  b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
-  b.onclick = safely(async () => {
-    $('d-quick').close();
-    if (ask && !confirm(`${name}: gửi yêu cầu này cho Claude?\n\n${text}`)) return;
-    await api('/api/send', { session: st().s, text, enter: true });
-    toast(`Đã gửi: ${name}`);
-  });
-  return b;
-}));
+function renderQuick(agent) {
+  $('quick-list').replaceChildren(...QUICK.map(([emoji, name, desc, cmd, ask]) => {
+    const text = typeof cmd === 'string' ? cmd : cmd[agent] ?? cmd['*'];
+    if (!text) return null;
+    const b = el('button'); b.type = 'button';
+    b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
+    b.onclick = safely(async () => {
+      $('d-quick').close();
+      if (ask && !confirm(`${name}: gửi yêu cầu này cho ${agentName(agent)}?\n\n${text}`)) return;
+      await api('/api/send', { session: st().s, text, enter: true });
+      toast(`Đã gửi: ${name}`);
+    });
+    return b;
+  }).filter(Boolean));
+}
 $('b-quick').onclick = () => {
   // Phiên chỉ có shell thì gửi câu tiếng Việt vào sẽ thành lệnh shell lỗi
-  if (cur() && !cur().claude) return toast('Phiên này chưa chạy Claude', true);
+  if (!cur()?.agent) return toast('Phiên này chưa chạy agent nào', true);
+  renderQuick(cur().agent);
   $('d-quick').showModal();
 };
 
@@ -1026,7 +1041,7 @@ $('b-bell').onclick = safely(async () => {
   const sub = await reg.pushManager.getSubscription() || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
   await api('/api/push/sub', sub.toJSON());
   await api('/api/push/test', {});
-  toast('Đã bật thông báo: sẽ báo khi Claude xong việc hoặc cần bạn xác nhận');
+  toast('Đã bật thông báo: sẽ báo khi agent xong việc hoặc cần bạn xác nhận');
   pushState();
 });
 navigator.serviceWorker?.register('/sw.js').then(pushState).catch(() => {});
