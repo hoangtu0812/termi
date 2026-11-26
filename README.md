@@ -231,7 +231,8 @@ termi cho quyền điều khiển shell trên máy của bạn, nên được th
 ## Giới hạn đã biết
 
 - Trạng thái Claude được đoán từ chữ trên màn hình terminal; Claude Code đổi giao diện thì có thể nhận sai.
-- Khởi động lại Mac sẽ mất các phiên tmux (hội thoại vẫn mở lại được bằng 🕘 hoặc `claude --resume`).
+- Khởi động lại máy làm tmux mất các phiên; termi lưu danh sách phiên 30 giây một lần và hiện nút **Khôi phục** (mở lại đúng hội thoại Claude/Codex). Agent không tự chạy khi chưa bấm.
+- ttyd 1.7.7 không dọn client tmux của kết nối đứt đột ngột; termi tự khởi động lại ttyd khi có nhiều client kẹt (ưu tiên lúc không ai mở terminal), terminal tự nối lại.
 - Cây git hiện 200 commit gần nhất, tối đa 10 làn.
 - Trên iOS, thông báo chỉ hoạt động khi mở termi từ biểu tượng ở màn hình chính.
 - Windows: WSL phải đang chạy thì máy đó mới hiện trong ô chọn máy (WSL có thể tự tắt khi không dùng).

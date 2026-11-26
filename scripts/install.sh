@@ -38,6 +38,9 @@ plist() {
     echo '<key>RunAtLoad</key><true/><key>KeepAlive</key><true/>'
     # Khi dịch vụ khởi động lại, launchd không được giết tmux server mà dịch vụ đã sinh ra
     echo '<key>AbandonProcessGroup</key><true/>'
+    # Mặc định launchd chỉ cho mở 256 file; ttyd rò pty khi kết nối đứt đột ngột nên cần rộng hơn
+    echo '<key>SoftResourceLimits</key><dict><key>NumberOfFiles</key><integer>8192</integer></dict>'
+    echo '<key>HardResourceLimits</key><dict><key>NumberOfFiles</key><integer>8192</integer></dict>'
     echo '<key>ThrottleInterval</key><integer>10</integer>'
     echo "<key>StandardOutPath</key><string>$(xml "$HOME/Library/Logs/termi.$name.log")</string>"
     echo "<key>StandardErrorPath</key><string>$(xml "$HOME/Library/Logs/termi.$name.log")</string>"

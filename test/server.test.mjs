@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import os from 'node:os';
 import path from 'node:path';
-import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat } from '../src/server.mjs';
+import { validName, validRev, validHost, validBranch, safeDir, safePath, agentState, AGENTS, parseStatus, graphLayout, matchPeer, transcriptMessages, isAllowed, sameOrigin, marksFromStatus, plainText, parseNumstat, computePending, orphanCount } from '../src/server.mjs';
 
 test('trạng thái agent', () => {
   assert.equal(agentState('✻ Thinking… (12s · esc to interrupt)\n❯ \n'), 'working');
@@ -141,4 +141,21 @@ test('bỏ markdown cho xem trước', () => {
 test('git --numstat', () => {
   assert.deepEqual(parseNumstat('12\t3\tsrc/a.js\n-\t-\tlogo.png\n'), [
     { path: 'src/a.js', add: 12, del: 3 }, { path: 'logo.png', add: null, del: null }]);
+});
+
+test('khôi phục phiên sau khi khởi động lại', () => {
+  const snap = { at: 1000, sessions: [{ name: 'a' }, { name: 'b' }], pending: [] };
+  // tmux khởi động lại sau lần lưu cuối: mọi phiên đã lưu (trừ phiên đang có) chờ khôi phục
+  assert.deepEqual(computePending(snap, new Set(['b']), 2000).map(x => x.name), ['a']);
+  assert.deepEqual(computePending(snap, new Set(), Infinity).map(x => x.name), ['a', 'b']); // chưa có tmux server
+  // tmux vẫn chạy từ trước lần lưu: không có gì để khôi phục
+  assert.deepEqual(computePending(snap, new Set(), 500), []);
+  // phần chờ khôi phục được giữ qua các lần lưu, không trùng
+  assert.deepEqual(computePending({ at: 3000, sessions: [{ name: 'c' }], pending: [{ name: 'a' }, { name: 'a' }] }, new Set(['c']), 500).map(x => x.name), ['a']);
+});
+
+test('đếm client tmux mồ côi của ttyd', () => {
+  const ps = '  1 100\n100 201\n100 202\n100 203\n 55 204\n';
+  assert.equal(orphanCount(ps, '100', new Set(['202'])), 2); // 201, 203 mồ côi; 202 đang gắn; 204 con của tiến trình khác
+  assert.equal(orphanCount(ps, '100', new Set()), 3);
 });

@@ -76,6 +76,7 @@ Restart=always
 RestartSec=3
 # Khởi động lại dịch vụ không được giết tmux server (và các phiên) mà dịch vụ đã sinh ra
 KillMode=process
+LimitNOFILE=8192
 
 [Install]
 WantedBy=default.target
@@ -91,6 +92,7 @@ WorkingDirectory=$HOME
 Restart=always
 RestartSec=3
 KillMode=process
+LimitNOFILE=8192
 
 [Install]
 WantedBy=default.target

@@ -554,6 +554,75 @@ export function matchPeer(url) {
   return m && { id: m[1].toLowerCase(), rest: m[2] || '/' };
 }
 
+// ---------- Tạo phiên và khôi phục sau khi khởi động lại máy ----------
+async function createSession(b) {
+  if (!validName(b.name)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
+  if (b.resume != null && !validUuid(b.resume)) throw fail(400, 'Mã hội thoại không hợp lệ');
+  if (b.agent != null && !Object.hasOwn(AGENTS, b.agent)) throw fail(400, 'Agent không hỗ trợ');
+  if (b.resume != null && !AGENTS[b.agent]?.resume) throw fail(400, 'Agent này không mở lại được hội thoại cũ');
+  const dir = await need(b.dir);
+  await tmux('new-session', '-d', '-s', b.name, '-c', dir).catch(() => { throw fail(409, 'Phiên đã tồn tại'); });
+  // Gõ lệnh vào shell để khi agent thoát vẫn còn shell, phiên không mất
+  const a = AGENTS[b.agent];
+  if (a) await tmux('send-keys', '-t', target(b.name), b.resume ? a.resume(b.resume) : a.cmd, 'Enter');
+}
+
+// Mã hội thoại để mở lại đúng chỗ: Claude qua ~/.claude/sessions/<pid>.json, Codex qua session_meta
+async function resumeIdFor(s) {
+  if (s.agent === 'claude') return claudeSessionId(s.agentPid);
+  if (s.agent === 'codex') {
+    const f = await transcriptFile('codex', s.dir);
+    const meta = f && lastJson((await readHead(f, 64 * 1024)).reverse(), o => o.type === 'session_meta' && o.payload);
+    return validUuid(meta?.id) ? meta.id : null;
+  }
+  return null;
+}
+const readSnap = async () => {
+  const j = await fs.readFile(path.join(DATA, 'sessions.json'), 'utf8').then(JSON.parse, () => ({}));
+  return { at: j.at || 0, sessions: Array.isArray(j.sessions) ? j.sessions : [], pending: Array.isArray(j.pending) ? j.pending : [] };
+};
+// Thời điểm tmux server bắt đầu chạy; không có server (vừa khởi động máy) → Infinity
+const tmuxStart = () => tmux('display-message', '-p', '#{start_time}').then(r => Number(r.stdout) * 1000 || Infinity, () => Infinity);
+
+// Phiên trong bản lưu đã mất vì tmux khởi động lại sau lần lưu cuối (khởi động lại máy, tmux chết)
+export function computePending(snap, present, serverStart) {
+  const lost = serverStart > snap.at ? snap.sessions : [];
+  const seen = new Set();
+  return [...snap.pending, ...lost].filter(x => !present.has(x.name) && !seen.has(x.name) && seen.add(x.name));
+}
+async function pendingRestore() {
+  const [snap, list, start] = await Promise.all([readSnap(), sessions(), tmuxStart()]);
+  return computePending(snap, new Set(list.map(x => x.name)), start);
+}
+// Lưu danh sách phiên 30 giây một lần. tmux trống (vừa khởi động lại) thì không ghi đè bản đã lưu
+async function snapshot() {
+  const list = await sessions();
+  if (!list.length) return;
+  const [snap, start] = await Promise.all([readSnap(), tmuxStart()]);
+  const pending = computePending(snap, new Set(list.map(x => x.name)), start); // giữ phần chưa khôi phục
+  const now = await Promise.all(list.map(async s => ({ name: s.name, dir: s.dir, agent: s.agent, resume: await resumeIdFor(s).catch(() => null) })));
+  await saveJson('sessions.json', { at: Date.now(), sessions: now, pending });
+}
+
+// ---------- Giám sát ttyd ----------
+// ttyd 1.7.7 không dọn client tmux của kết nối đứt đột ngột (điện thoại ngủ, mất sóng): mỗi client kẹt
+// giữ một pty, tới giới hạn file thì ttyd không mở được terminal mới. Chỉ khởi động lại ttyd mới dọn được.
+// Đếm con "mồ côi" = con của ttyd không còn là client đang gắn vào phiên nào (chạy cả macOS lẫn Linux).
+export function orphanCount(psOut, ttydPid, attachedPids) {
+  return psOut.split('\n').map(l => l.trim().split(/\s+/)).filter(([ppid, pid]) => ppid === ttydPid && !attachedPids.has(pid)).length;
+}
+async function ttydWatchdog() {
+  const pid = (await run('pgrep', ['-f', `ttyd .*-p ${TTYD_PORT}`]).catch(() => ({ stdout: '' }))).stdout.trim().split('\n')[0];
+  if (!pid) return;
+  const attached = new Set((await tmux('list-clients', '-F', '#{client_pid}').catch(() => ({ stdout: '' }))).stdout.split('\n').filter(Boolean));
+  const orphans = orphanCount((await run('ps', ['-A', '-o', 'ppid=,pid='], { maxBuffer: 8e6 })).stdout, pid, attached);
+  // Lúc không ai mở terminal thì dọn sớm; đang có người dùng thì chỉ dọn khi sắp chạm giới hạn (terminal tự nối lại)
+  if (orphans < 20 || (attached.size && orphans < 150)) return;
+  console.log(`ttyd: ${orphans} client kẹt, ${attached.size} đang dùng → khởi động lại ttyd`);
+  if (process.platform === 'darwin') await run('launchctl', ['kickstart', '-k', `gui/${process.getuid()}/vn.termi.ttyd`]);
+  else await run('systemctl', ['--user', 'restart', 'termi-ttyd']);
+}
+
 // ---------- API ----------
 const routes = {
   'GET /api/sessions': () => sessions(),
@@ -570,15 +639,8 @@ const routes = {
   'GET /api/machines': async () => (await machines()).map(({ dns, ...m }) => m),
 
   async 'POST /api/sessions'(_, b) {
-    if (!validName(b.name)) throw fail(400, 'Tên phiên chỉ gồm chữ, số, - và _');
-    if (b.resume !== undefined && !validUuid(b.resume)) throw fail(400, 'Mã hội thoại không hợp lệ');
-    if (b.agent !== undefined && !Object.hasOwn(AGENTS, b.agent)) throw fail(400, 'Agent không hỗ trợ');
-    if (b.resume !== undefined && !AGENTS[b.agent]?.resume) throw fail(400, 'Agent này không mở lại được hội thoại cũ');
-    const dir = await need(b.dir);
-    await tmux('new-session', '-d', '-s', b.name, '-c', dir).catch(() => { throw fail(409, 'Phiên đã tồn tại'); });
-    // Gõ lệnh vào shell để khi agent thoát vẫn còn shell, phiên không mất
-    const a = AGENTS[b.agent];
-    if (a) await tmux('send-keys', '-t', target(b.name), b.resume ? a.resume(b.resume) : a.cmd, 'Enter');
+    await createSession(b);
+    snapshot().catch(() => {});
     return { ok: true };
   },
   // Chữ trong phiên (kể cả phần đã cuộn qua) dạng văn bản thường để chọn và copy trên điện thoại
@@ -614,6 +676,26 @@ const routes = {
   async 'POST /api/sessions/kill'(_, b) {
     if (!validName(b.name)) throw fail(400, 'Phiên không hợp lệ');
     await tmux('kill-session', '-t', target(b.name)).catch(() => { throw fail(404, 'Không tìm thấy phiên'); });
+    // Bạn chủ động đóng: bỏ khỏi bản lưu ngay để không bị khôi phục sau khi khởi động lại
+    const snap = await readSnap();
+    await saveJson('sessions.json', { ...snap, sessions: snap.sessions.filter(x => x.name !== b.name), pending: snap.pending.filter(x => x.name !== b.name) });
+    return { ok: true };
+  },
+  // Phiên có trước lần khởi động lại máy (tmux trống) chờ khôi phục
+  'GET /api/restore': () => pendingRestore(),
+  async 'POST /api/restore'() {
+    const done = [], failed = [];
+    for (const x of await pendingRestore()) {
+      try { await createSession(x); done.push(x.name); } catch (e) { failed.push(`${x.name}: ${e.message}`); }
+    }
+    const snap = await readSnap();
+    await saveJson('sessions.json', { ...snap, pending: [] });
+    await snapshot();
+    return { done, failed };
+  },
+  async 'POST /api/restore/dismiss'() {
+    const snap = await readSnap();
+    await saveJson('sessions.json', { ...snap, pending: [] });
     return { ok: true };
   },
 
@@ -880,4 +962,7 @@ if (import.meta.main) {
   })).on('upgrade', proxyUpgrade)
     .listen(PORT, process.env.TERMI_HOST || '127.0.0.1', () => console.log(`termi: http://127.0.0.1:${PORT}  roots=${ROOTS.join(', ')}`));
   setInterval(() => watch().catch(e => console.error('watch', e.message)), 3000);
+  setInterval(() => snapshot().catch(e => console.error('snapshot', e.message)), 30_000);
+  setInterval(() => ttydWatchdog().catch(e => console.error('watchdog', e.message)), 120_000);
+  setTimeout(() => snapshot().catch(() => {}), 5000);
 }

@@ -36,6 +36,7 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 [hidden] { display:none !important; }
 
 /* ---------- Khung ---------- */
+#netbar { position:fixed; top:env(safe-area-inset-top); left:50%; transform:translateX(-50%); z-index:30; margin-top:6px; padding:6px 14px; border-radius:99px; background:var(--warn); color:#1d1a10; font-size:13px; font-weight:600; box-shadow:0 4px 14px #0004; white-space:nowrap; }
 #app { display:grid; grid-template-columns:300px minmax(0,1fr); grid-template-rows:minmax(0,1fr); height:100dvh; }
 #side, #main { min-width:0; }
 #side { display:flex; flex-direction:column; min-height:0; background:var(--panel); border-right:1px solid var(--line); padding-top:env(safe-area-inset-top); }
@@ -61,12 +62,14 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 .sgrp { display:flex; align-items:center; gap:4px; padding:6px 0 0 6px; }
 .sgrp span { flex:1; min-width:0; }
 .sgrp .ibtn { width:30px; height:30px; flex:none; }
+.sgrp.idle span { font-weight:500; opacity:.75; }
 .sgrp span { font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .welcome { display:flex; flex-direction:column; align-items:center; gap:12px; padding:28px 16px; margin:auto; width:100%; max-width:460px; text-align:center; }
 .welcome img { width:56px; height:56px; border-radius:14px; }
 .welcome h2 { margin:0; font-size:19px; }
 .welcome p { margin:0; color:var(--dim); font-size:14px; }
 .wl { display:flex; flex-direction:column; gap:8px; width:100%; margin-top:6px; text-align:left; }
+.restore { margin-bottom:8px; border-color:var(--acc); }
 .wcard { display:flex; flex-direction:column; gap:8px; padding:12px; border-radius:var(--r); border:1px solid var(--line); background:var(--card); }
 .wcard .wd { display:flex; align-items:center; gap:8px; min-width:0; }
 .wcard .wd b { font-size:14px; } .wcard .wd small { color:var(--faint); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; direction:rtl; text-align:left; flex:1; }
@@ -284,6 +287,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
 </style>
 </head>
 <body data-tab="sessions">
+<div id="netbar" role="status" hidden>Mất kết nối tới máy chủ · đang thử lại…</div>
 <div id="app">
   <aside id="side">
     <div class="bar">
@@ -318,7 +322,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
       <div class="pane" id="p-term" hidden>
         <div class="term-wrap">
           <iframe id="frame" title="Terminal"></iframe>
-          <button class="t-down" id="t-down" type="button" hidden><span data-i="refresh"></span>Mất kết nối<small>Chạm để kết nối lại</small></button>
+          <button class="t-down" id="t-down" type="button" hidden><span data-i="refresh"></span>Mất kết nối<small id="t-down-note">Chạm để kết nối lại</small></button>
         </div>
         <div class="keys" id="keys"></div>
         <div class="atts" id="atts" hidden></div>
@@ -534,7 +538,14 @@ const wide = () => matchMedia('(min-width: 900px)').matches;
 const base = () => st().m ? '/m/' + encodeURIComponent(st().m) : '';
 const HUB_ONLY = /^\/api\/(machines|push\/)/;
 async function api(path, body) {
-  const r = await fetch(HUB_ONLY.test(path) ? path : base() + path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
+  let r;
+  try {
+    r = await fetch(HUB_ONLY.test(path) ? path : base() + path, body ? { method:'POST', headers:{ 'content-type':'application/json', 'x-termi':'1' }, body:JSON.stringify(body) } : {});
+  } catch (e) { // không tới được máy chủ (mất mạng, Tailscale chưa nối): báo, các vòng làm mới tự thử lại
+    $('netbar').hidden = false;
+    throw new Error('Mất kết nối tới máy chủ');
+  }
+  $('netbar').hidden = true;
   checkBuild(r.headers.get('x-termi-build'));
   const j = await r.json().catch(() => ({ error: r.statusText }));
   if (!r.ok) throw new Error(j.error || r.status);
@@ -571,7 +582,8 @@ function render() {
   const s = st();
   if ((s.m || '') !== S.machine) {
     S.machine = s.m || '';
-    Object.assign(S, { list: [], loaded: false, dirs: null, termName: null, seen: {}, git: null });
+    Object.assign(S, { list: [], loaded: false, dirs: null, termName: null, seen: {}, git: null, restore: [] });
+    loadRestore();
     $('machine').value = S.machine;
     poll();
   }
@@ -601,7 +613,7 @@ function stateEl(state, agent) {
 }
 function renderSessions() {
   const box = $('sessions'), sel = st().s;
-  if (!S.list.length) { $('sfind').hidden = true; return welcome(box); }
+  if (!S.list.length) { $('sfind').hidden = true; welcome(box); return renderRestore(box); }
   $('sfind').hidden = S.list.length < 4;
   const q = $('sq').value.trim().toLowerCase();
   // Cần chú ý lên đầu: chờ xác nhận → đang chạy → còn lại; cùng mức thì mới hoạt động trước
@@ -611,11 +623,13 @@ function renderSessions() {
   // Nhóm theo thư mục khi các phiên nằm ở nhiều thư mục
   const groups = new Map();
   for (const x of list) groups.set(x.dir, [...(groups.get(x.dir) || []), x]);
+  // Project chưa có phiên nào: lấy từ thư mục gần đây, xếp sau (shortcut: tối đa 10, thêm "xem thêm" khi cần)
+  if (S.dirs) for (const d of S.dirs.recent.filter(d => !groups.has(d) && !S.list.some(x => x.dir === d) && (!q || d.toLowerCase().includes(q))).slice(0, 10)) groups.set(d, []);
   const nodes = [];
   for (const [dir, items] of groups) {
     // Tiêu đề project: tên thư mục + nút tạo phiên mới ngay trong thư mục đó (cùng agent với phiên mới nhất)
-    const h = el('div', 'sgrp'), add = el('button', 'ibtn');
-    h.append(el('span', null, `${dir.split('/').pop() || dir} · ${items.length}`), add); h.title = dir;
+    const h = el('div', 'sgrp' + (items.length ? '' : ' idle')), add = el('button', 'ibtn');
+    h.append(el('span', null, (dir.split('/').pop() || dir) + (items.length ? ` · ${items.length}` : '')), add); h.title = dir;
     add.type = 'button'; add.innerHTML = icon('plus'); add.setAttribute('aria-label', `Phiên mới trong ${dir}`); add.title = 'Phiên mới trong thư mục này';
     add.onclick = safely(() => quickStart(dir, items.find(x => x.agent)?.agent || 'claude'));
     nodes.push(h);
@@ -623,6 +637,7 @@ function renderSessions() {
   }
   if (!nodes.length) nodes.push(el('div', 'empty', 'Không có phiên nào khớp'));
   box.replaceChildren(...nodes);
+  renderRestore(box);
   function sessionCard(x) {
     const b = el('button', 'sess' + (x.name === sel ? ' cur' : '')), body = el('div', 'sb');
     const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, x.agent));
@@ -636,6 +651,32 @@ function renderSessions() {
   }
 }
 $('sq').oninput = renderSessions;
+
+// ---- Khôi phục phiên sau khi khởi động lại máy ----
+async function loadRestore() {
+  S.restore = await api('/api/restore').catch(() => []);
+  renderSessions();
+}
+function renderRestore(box) {
+  box.querySelector('.restore')?.remove();
+  if (!S.restore?.length) return;
+  const c = el('div', 'wcard restore'), names = el('div', 'wa'), acts = el('div', 'wa');
+  const d = el('div', 'wd'); d.innerHTML = icon('history');
+  d.append(el('b', null, `Khôi phục ${S.restore.length} phiên`), el('small', null, 'từ trước lần khởi động lại máy'));
+  for (const x of S.restore) { const n = el('span', 'wbtn'); n.append(agentAvatar(x.agent, true), x.name); names.append(n); }
+  const ok = el('button', 'btn pri sm', 'Khôi phục'), no = el('button', 'btn sm', 'Bỏ qua');
+  ok.type = no.type = 'button';
+  ok.onclick = safely(async () => {
+    ok.disabled = true;
+    const r = await api('/api/restore', {});
+    toast(`Đã khôi phục ${r.done.length} phiên` + (r.failed.length ? ` · lỗi: ${r.failed.join('; ')}` : ''), !!r.failed.length);
+    S.restore = []; await poll();
+  });
+  no.onclick = safely(async () => { await api('/api/restore/dismiss', {}); S.restore = []; renderSessions(); });
+  acts.append(ok, no);
+  c.append(d, names, acts);
+  box.prepend(c);
+}
 
 // ---- Màn hình chào: khi chưa có phiên / chưa chọn phiên. Tạo nhanh phiên ở thư mục gần đây ----
 async function welcome(box) {
@@ -688,6 +729,11 @@ function renderTop() {
 }
 async function poll() {
   try {
+    // Thư mục gần đây cho danh sách project: tải lại mỗi phút hoặc khi đổi máy
+    if (!S.dirs || S.dirsFor !== (st().m || '') || Date.now() - S.dirsAt > 60_000) {
+      S.dirsFor = st().m || ''; S.dirsAt = Date.now();
+      S.dirs = await api('/api/dirs').catch(() => null);
+    }
     const list = await api('/api/sessions');
     for (const x of list) {
       // Báo trong app khi đang mở (khi đóng app thì thông báo đẩy lo)
@@ -830,13 +876,18 @@ function setFont(n) {
 
 $('frame').addEventListener('load', () => {
   const w = termWin();
-  if (!w?.location.pathname.includes('/term/')) return;
+  let page = null;
+  try { page = w?.location.pathname; } catch {} // trang lỗi của trình duyệt (không tới được máy chủ) khác origin
+  if (page === null && S.termName) return markDown(true);
+  if (!page?.includes('/term/')) return;
   let tries = 0;
   const wait = setInterval(() => { // ttyd tạo terminal sau khi trang tải xong
     const t = w.term;
     if (!t?.element && ++tries < 50) return;
     clearInterval(wait);
-    if (!t?.element) return;
+    if (!t?.element) return markDown(true);
+    // Giữ được kết nối 10 giây thì coi là ổn: lần mất sau thử lại nhanh như ban đầu
+    setTimeout(() => { if ($('t-down').hidden) retryDelay = 1000; }, 10_000);
     t.options.fontSize = fontSize; t.fit();
     t.onResize(fitTmux); // đổi cỡ chữ, xoay máy, bàn phím mở/đóng
     fitTmux();
@@ -872,23 +923,37 @@ function touchScroll(w, t) {
 }
 
 // ttyd báo mất kết nối bằng một lớp phủ (div bo góc 15px) gắn vào terminal: hiện nút to để chạm là kết nối lại
-let lastAuto = 0;
 function watchDisconnect(t) {
   const check = () => {
     const down = [...t.element.children].some(n => n.style?.borderRadius === '15px' && /to Reconnect|Connection Closed/.test(n.textContent));
-    $('t-down').hidden = !down;
-    if (down) autoReconnect();
+    markDown(down);
   };
   new t.element.ownerDocument.defaultView.MutationObserver(check).observe(t.element, { childList: true });
 }
-// Tự kết nối lại khi đang mở app; tối đa 1 lần / 5 giây để không lặp vô tận nếu server tắt
-function autoReconnect() {
-  if (document.visibilityState !== 'visible' || Date.now() - lastAuto < 5000 || !S.termName || !S.list.some(x => x.name === S.termName)) return;
-  lastAuto = Date.now();
-  ensureTerm(S.termName, true);
+// Mất kết nối: tự thử lại liên tục, khoảng cách tăng dần 1 → 2 → 4 … tối đa 30 giây (không dồn dập nếu
+// máy chủ tắt hẳn). Chạm lớp phủ, mở lại app, hoặc điện thoại có mạng lại thì thử ngay.
+let retryDelay = 1000, retryTimer = null;
+function markDown(down) {
+  $('t-down').hidden = !down;
+  if (down) autoReconnect();
 }
-$('t-down').onclick = () => S.termName && ensureTerm(S.termName, true);
-document.addEventListener('visibilitychange', () => { if (!$('t-down').hidden) autoReconnect(); });
+function autoReconnect() {
+  if (retryTimer || !S.termName || !S.list.some(x => x.name === S.termName)) return;
+  if (document.visibilityState !== 'visible') return; // đang ẩn: chờ mở lại app
+  $('t-down-note').textContent = `Thử lại sau ${Math.round(retryDelay / 1000)} giây · chạm để thử ngay`;
+  retryTimer = setTimeout(() => {
+    retryTimer = null;
+    retryDelay = Math.min(retryDelay * 2, 30_000);
+    ensureTerm(S.termName, true);
+  }, retryDelay);
+}
+function reconnectNow() {
+  clearTimeout(retryTimer); retryTimer = null; retryDelay = 1000;
+  if (S.termName) ensureTerm(S.termName, true);
+}
+$('t-down').onclick = reconnectNow;
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && !$('t-down').hidden) reconnectNow(); });
+addEventListener('online', () => { if (!$('t-down').hidden) reconnectNow(); });
 
 const KEYS = [['Esc','Escape'],['⇧Tab','BTab'],['^C','C-c'],['↑','Up'],['↓','Down'],['←','Left'],['→','Right'],['Tab','Tab'],['⏎','Enter'],['PgUp','PageUp'],['PgDn','PageDown'],['^D','C-d']];
 $('keys').append(...KEYS.map(([label, key]) => {
@@ -1417,6 +1482,8 @@ setInterval(() => document.visibilityState === 'visible' && loadMachines(), 60_0
 
 S.machine = st().m || '';
 poll().then(render);
+loadRestore();
+document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && loadRestore());
 </script>
 </body>
 </html>
