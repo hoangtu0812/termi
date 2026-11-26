@@ -117,7 +117,7 @@ async function repos() {
     await Promise.all(ents.filter(e => e.isDirectory() && !e.name.startsWith('.') && !SKIP.has(e.name))
       .map(e => walk(path.join(d, e.name), depth - 1)));
   }
-  await Promise.all(ROOTS.map(r => walk(r, 3)));
+  await Promise.all(ROOTS.map(r => walk(r, 4)));
   repoCache = { t: Date.now(), list: found.sort() };
   return repoCache.list;
 }
@@ -244,7 +244,13 @@ async function watch() {
 // ---------- API ----------
 const routes = {
   'GET /api/sessions': () => sessions(),
-  'GET /api/repos': () => repos(),
+  // Thư mục gợi ý: phiên đang mở, nơi từng chạy Claude, rồi các repo git
+  async 'GET /api/dirs'() {
+    const [s, h, r] = await Promise.all([sessions(), history().catch(() => []), repos()]);
+    const recent = [];
+    for (const d of new Set([...s.map(x => x.dir), ...h.map(x => x.cwd), ...r])) if (await safeDir(d)) recent.push(d);
+    return { roots: ROOTS, recent };
+  },
   'GET /api/history': () => history(),
 
   async 'POST /api/sessions'(_, b) {

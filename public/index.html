@@ -141,6 +141,10 @@ dialog label { display:flex; flex-direction:column; gap:6px; font-size:13px; col
 dialog input:not([type=checkbox]), dialog select { height:42px; padding:0 12px; border-radius:10px; border:1px solid var(--line2); background:var(--card); color:var(--fg); font-size:15px; width:100%; }
 dialog .chk { flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:14px; }
 dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; }
+.picker { border:1px solid var(--line2); border-radius:10px; overflow:hidden; background:var(--card); }
+.pk-bar { display:flex; align-items:center; gap:4px; padding:2px 8px 2px 2px; border-bottom:1px solid var(--line); }
+#pk-list { max-height:min(36dvh,300px); overflow:auto; }
+#pk-list .row { min-height:42px; padding:8px 12px; font-size:14px; }
 #hist-list { display:flex; flex-direction:column; overflow:auto; max-height:60dvh; margin:0 -18px; border-top:1px solid var(--line); }
 #hist-list button { text-align:left; border:0; border-bottom:1px solid var(--line); background:transparent; padding:12px 18px; display:flex; flex-direction:column; gap:3px; }
 #hist-list button:hover { background:var(--hover); }
@@ -271,9 +275,17 @@ dialog .acts { display:flex; justify-content:flex-end; gap:8px; margin-top:4px; 
   <form method="dialog">
     <h3>Phiên mới</h3>
     <label>Tên phiên<input name="name" placeholder="vd: termi" pattern="[A-Za-z0-9_\-]{1,40}" required autocapitalize="off" autocomplete="off"></label>
-    <label>Thư mục<select name="dir" required></select></label>
+    <label>Gần đây<select id="pk-recent"></select></label>
+    <label>Thư mục<input name="dir" required autocapitalize="off" autocomplete="off" spellcheck="false"></label>
+    <div class="picker">
+      <div class="pk-bar">
+        <button type="button" class="ibtn" id="pk-up" aria-label="Lên thư mục cha" data-i="up"></button>
+        <span class="crumb" id="pk-crumb"></span>
+      </div>
+      <div id="pk-list"></div>
+    </div>
     <label class="chk"><input type="checkbox" name="claude" checked> Chạy Claude ngay</label>
-    <div class="acts"><button class="btn" value="cancel" formnovalidate>Huỷ</button><button class="btn pri" value="ok">Tạo phiên</button></div>
+    <div class="acts"><button class="btn" type="button" onclick="this.closest('dialog').close('cancel')">Huỷ</button><button class="btn pri" value="ok">Tạo phiên</button></div>
   </form>
 </dialog>
 
@@ -411,15 +423,42 @@ async function poll() {
 setInterval(() => document.visibilityState === 'visible' && poll(), 3000);
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && poll());
 
-async function loadRepos(select, selected) {
-  S.repos ??= await api('/api/repos').catch(() => []);
-  const opts = [...new Set([selected, ...S.list.map(x => x.dir), ...S.repos].filter(Boolean))];
+async function loadRepos(select, selected, fresh) {
+  if (fresh || !S.dirs) S.dirs = await api('/api/dirs').catch(() => ({ roots: [], recent: [] }));
+  const opts = [...new Set([selected, ...S.dirs.recent].filter(Boolean))];
   select.replaceChildren(...opts.map(d => { const o = el('option', null, short(d)); o.value = d; o.selected = d === selected; return o; }));
 }
+
+// ---- Chọn thư mục trong hộp thoại phiên mới ----
+const NF = () => $('d-new').querySelector('form');
+let pkName = '';
+const pickDir = safely(async dir => {
+  const f = NF();
+  const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
+  f.dir.value = r.dir;
+  $('pk-crumb').textContent = ltr(short(r.dir));
+  $('pk-up').disabled = !r.parent;
+  $('pk-up').onclick = () => pickDir(r.parent);
+  // Tự điền tên phiên theo tên thư mục nếu người dùng chưa tự gõ
+  if (!f.name.value || f.name.value === pkName) f.name.value = pkName = r.dir.split('/').pop().replace(/[^A-Za-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40);
+  const dirs = r.entries.filter(e => e.dir && !e.name.startsWith('.'));
+  $('pk-list').replaceChildren(...dirs.map(e => {
+    const b = el('button', 'row dir'); b.type = 'button';
+    b.innerHTML = icon('folder'); b.append(el('span', 'nm', e.name));
+    b.onclick = () => pickDir(e.path);
+    return b;
+  }));
+  if (!dirs.length) $('pk-list').replaceChildren(el('div', 'empty', 'Không có thư mục con'));
+});
+$('pk-recent').onchange = e => pickDir(e.target.value);
+NF().dir.onchange = e => pickDir(e.target.value.replace(/^~(?=\/|$)/, S.dirs.roots[0] || '~'));
+NF().dir.onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); e.target.blur(); } }; // blur → onchange → mở thư mục
 async function newSession() {
-  const f = $('d-new').querySelector('form');
-  await loadRepos(f.dir, cur()?.dir);
+  NF().reset(); pkName = '';
   $('d-new').showModal();
+  await loadRepos($('pk-recent'), null, true);
+  $('pk-recent').prepend(Object.assign(el('option', null, '— chọn nhanh —'), { value: '', selected: true, disabled: true }));
+  await pickDir(cur()?.dir || S.dirs.recent[0] || S.dirs.roots[0]);
 }
 for (const b of [$('b-new'), $('b-new-m'), ...document.querySelectorAll('[data-new]')]) b.onclick = newSession;
 $('d-new').onclose = safely(async () => {
