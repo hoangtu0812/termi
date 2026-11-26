@@ -115,6 +115,36 @@ svg.i { width:18px; height:18px; flex:none; stroke:currentColor; fill:none; stro
 
 #panes { flex:1; min-height:0; position:relative; }
 .pane { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
+/* Chia đôi trên màn hình rộng: terminal trái, File/Git phải */
+@media (min-width:1200px) {
+  body.split #p-term { right:46%; }
+  body.split #p-files, body.split #p-git, body.split #viewer { left:54%; border-left:1px solid var(--line); }
+}
+/* Mượt hơn: hiện dần khi chuyển trang, co nhẹ khi chạm */
+@media (prefers-reduced-motion: no-preference) {
+  .pane:not([hidden]), #viewer:not([hidden]), dialog[open] { animation:pane-in .16s ease-out; }
+  .btn, .ibtn, .wbtn, .sess, .keys button, .sg, .irow { transition:transform .08s; }
+  .btn:active, .ibtn:active, .wbtn:active, .sess:active, .keys button:active, .sg:active, .irow:active { transform:scale(.97); }
+}
+@keyframes pane-in { from { opacity:0; transform:translateY(4px); } }
+.sk { height:44px; margin:8px 12px; border-radius:10px; background:linear-gradient(90deg, var(--hover) 25%, var(--card) 50%, var(--hover) 75%); background-size:300% 100%; animation:sk 1.2s infinite linear; }
+.sk.tall { height:92px; margin:4px 0; }
+@keyframes sk { from { background-position:100% 0; } to { background-position:-200% 0; } }
+.chgs { display:inline-flex; align-items:center; gap:3px; margin-right:6px; color:var(--warn); font-weight:600; }
+.chgs svg.i { width:12px; height:12px; }
+#b-bell { position:relative; }
+#b-bell[data-badge]:not([data-badge=""])::after { content:attr(data-badge); position:absolute; top:2px; right:2px; min-width:16px; height:16px; padding:0 4px; border-radius:99px; background:var(--del); color:#fff; font:700 10px/16px var(--mono); }
+#inbox-push { margin-bottom:10px; }
+.irow { display:flex; gap:10px; width:100%; padding:10px 0; border:0; border-top:1px solid var(--line); background:transparent; text-align:left; }
+.irow .ik { flex:none; width:30px; height:30px; border-radius:9px; display:grid; place-items:center; }
+.irow .ik.waiting { color:var(--warn); background:var(--warn-soft); } .irow .ik.done { color:var(--ok); background:var(--ok-soft); }
+.irow .ik svg.i { width:16px; height:16px; }
+.irow .it { flex:1; min-width:0; display:flex; flex-direction:column; gap:2px; }
+.irow .it b { font-size:14px; font-weight:500; } .irow .it small { color:var(--faint); font-size:12px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.suggest { display:flex; gap:6px; padding:8px 8px 0; overflow-x:auto; scrollbar-width:none; }
+.suggest::-webkit-scrollbar { display:none; }
+.sg { flex:none; display:inline-flex; align-items:baseline; gap:6px; max-width:80%; height:34px; padding:0 12px; border-radius:99px; border:1px solid var(--line2); background:var(--card); font-size:13px; }
+.sg b { font-weight:500; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .sg span { color:var(--faint); font-size:12px; white-space:nowrap; }
 .scroll { flex:1; overflow:auto; -webkit-overflow-scrolling:touch; }
 
 /* ---------- Terminal ---------- */
@@ -326,6 +356,7 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
         </div>
         <div class="keys" id="keys"></div>
         <div class="atts" id="atts" hidden></div>
+        <div class="suggest" id="suggest" hidden></div>
         <div class="compose">
           <button class="ibtn" id="b-quick" title="Thao tác nhanh" aria-label="Thao tác nhanh với agent" data-i="zap"></button>
           <button class="ibtn" id="b-photo" title="Gửi ảnh từ bộ sưu tập" aria-label="Gửi ảnh từ bộ sưu tập" data-i="image"></button>
@@ -425,6 +456,17 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   <div class="sheet-body" id="usage-body"></div>
 </dialog>
 
+<dialog id="d-inbox" class="sheet">
+  <div class="sheet-head">
+    <h3><span data-i="bell"></span>Thông báo</h3>
+    <button class="ibtn" type="button" aria-label="Đóng" onclick="this.closest('dialog').close()" data-i="x"></button>
+  </div>
+  <div class="sheet-body">
+    <button class="btn sm" id="inbox-push" type="button">Bật thông báo đẩy</button>
+    <div id="inbox-list"></div>
+  </div>
+</dialog>
+
 <dialog id="d-quick">
   <form method="dialog">
     <h3>Thao tác nhanh</h3>
@@ -451,6 +493,7 @@ const P = {
   history:'<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5M12 7v5l3 2"/>',
   sun:'<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon:'<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>', contrast:'<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18Z" fill="currentColor"/>',
+  check:'<path d="M20 6 9 17l-5-5"/>',
   bell:'<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.9 1.9 0 0 0 3.4 0"/>',
   plus:'<path d="M12 5v14M5 12h14"/>', back:'<path d="m15 18-6-6 6-6"/>', more:'<circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>',
   term:'<path d="m4 17 6-5-6-5M12 19h8"/>', folder:'<path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.7-.9l-.8-1.2A2 2 0 0 0 7.9 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"/>',
@@ -533,10 +576,11 @@ function agentAvatar(agent, small) {
   return a;
 }
 const wide = () => matchMedia('(min-width: 900px)').matches;
+const splitWide = () => matchMedia('(min-width: 1200px)').matches;
 
 // Máy đang chọn (m trong URL): mọi API/terminal đi qua /m/<máy>; danh sách máy và thông báo luôn ở máy này
 const base = () => st().m ? '/m/' + encodeURIComponent(st().m) : '';
-const HUB_ONLY = /^\/api\/(machines|push\/)/;
+const HUB_ONLY = /^\/api\/(machines|events|push\/)/; // máy trung tâm theo dõi mọi máy
 async function api(path, body) {
   let r;
   try {
@@ -597,18 +641,27 @@ function render() {
   const needSession = tab === 'term' || tab === 'files';
   const gone = s.s && S.loaded && !cur(); // phiên đã đóng (vd. mở lại đường dẫn cũ): không mở terminal cho nó
   const show = needSession && (!s.s || gone) ? 'none' : tab;
-  for (const p of ['none', 'term', 'files', 'git']) $('p-' + p).hidden = p !== show;
+  // Màn hình rộng: đang xem File/Git của một phiên thì terminal hiện bên trái
+  const split = splitWide() && s.s && !gone && (show === 'files' || show === 'git');
+  document.body.classList.toggle('split', !!split);
+  for (const p of ['none', 'term', 'files', 'git']) $('p-' + p).hidden = p !== show && !(split && p === 'term');
+  // Bản nháp theo từng phiên: chuyển phiên không mất chữ đang gõ dở
+  const dk = `${s.m || ''}/${s.s || ''}`;
+  if (S.draftFor !== dk) { S.draftFor = dk; $('text').value = loadDraft(dk); autosize($('text')); }
   if (show === 'none') welcome($('p-none'));
   if (s.v) return; // đang xem file/diff: giữ nguyên pane phía sau, không tải lại
-  if (show === 'term') ensureTerm(s.s);
+  if (show === 'term' || split) ensureTerm(s.s);
   if (show === 'files') loadFiles(s.d || cur()?.dir);
   if (show === 'git') loadGit(s.g || cur()?.dir);
 }
 
 // ---------- Phiên ----------
-function stateEl(state, agent) {
+// Thời gian đã ở trạng thái hiện tại: "3 phút"
+const dur = t => { const x = (Date.now() - t) / 1000; return x < 60 ? `${Math.max(1, x | 0)} giây` : x < 3600 ? `${x / 60 | 0} phút` : `${x / 3600 | 0} giờ ${(x % 3600) / 60 | 0} phút`; };
+function stateEl(state, agent, since) {
   const e = el('span', 'state st-' + state);
-  e.append(el('span', 'dot'), (agent ? agentName(agent) + ' · ' : '') + (STATE[state] || ''));
+  const live = since && (state === 'working' || state === 'waiting');
+  e.append(el('span', 'dot'), (agent ? agentName(agent) + ' · ' : '') + (STATE[state] || '') + (live ? ' · ' + dur(since) : ''));
   return e;
 }
 function renderSessions() {
@@ -640,8 +693,10 @@ function renderSessions() {
   renderRestore(box);
   function sessionCard(x) {
     const b = el('button', 'sess' + (x.name === sel ? ' cur' : '')), body = el('div', 'sb');
-    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, x.agent));
-    body.append(top, el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`));
+    const top = el('div', 'top'); top.append(el('span', 'nm', x.name), stateEl(x.state, null, x.since)); // logo đã cho biết agent
+    const dirLine = el('div', 'dir', `${short(x.dir)} · ${ago(x.activity * 1000)}`);
+    if (x.changes) { const c = el('span', 'chgs'); c.innerHTML = icon('git'); c.append(x.changes); c.title = `${x.changes} file chưa commit`; dirLine.prepend(c); }
+    body.append(top, dirLine);
     if (x.preview) body.append(el('div', 'pv' + (x.previewKind === 'reply' ? ' reply' : ''), x.preview));
     b.append(agentAvatar(x.agent), body);
     b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
@@ -719,7 +774,7 @@ async function quickStart(dir, agent) {
 function renderTop() {
   const x = cur(), s = st();
   $('t-name').textContent = s.s || 'termi';
-  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent) : el('span', 'state'), { id: 't-state' }));
+  $('t-state').replaceWith(Object.assign(x ? stateEl(x.state, x.agent, x.since) : el('span', 'state'), { id: 't-state' }));
   $('text').placeholder = `Nhắn cho ${x?.agent ? agentName(x.agent) : 'agent'}…`;
   // Dòng phụ chỉ ghi máy (nếu là máy khác) và tên thư mục cuối; đường dẫn đầy đủ trong tooltip
   const m = st().m && [...$('machine').options].find(o => o.value === st().m);
@@ -735,11 +790,7 @@ async function poll() {
       S.dirs = await api('/api/dirs').catch(() => null);
     }
     const list = await api('/api/sessions');
-    for (const x of list) {
-      // Báo trong app khi đang mở (khi đóng app thì thông báo đẩy lo)
-      if (x.state === 'waiting' && S.seen[x.name] && S.seen[x.name] !== 'waiting') { toast(`${x.name}: ${agentName(x.agent)} đang chờ bạn xác nhận`); navigator.vibrate?.(200); }
-      S.seen[x.name] = x.state;
-    }
+    loadEvents();
     S.list = list; S.loaded = true;
     checkStale();
     renderSessions(); renderTop();
@@ -801,7 +852,7 @@ $('d-new').onclose = safely(async () => {
 $('b-hist').onclick = () => showHistory(false);
 const showHistory = safely(async all => {
   const box = $('hist-list');
-  box.replaceChildren(el('div', 'empty', 'Đang tải…'));
+  box.replaceChildren(...skel(5));
   if (!$('d-hist').open) $('d-hist').showModal();
   // Đang ở một phiên: chỉ hiện hội thoại của thư mục phiên đó, có nút xem tất cả
   const dir = all ? null : cur()?.dir;
@@ -1032,17 +1083,50 @@ const send = safely(async () => {
   const text = [t.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
   if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
   await api('/api/send', { session: st().s, text, enter: true });
-  t.value = ''; autosize(t);
+  if (t.value.trim()) rememberSent(t.value.trim());
+  t.value = ''; autosize(t); saveDraft(); updateSuggest();
+  navigator.vibrate?.(10);
   S.atts.forEach(a => a.url && URL.revokeObjectURL(a.url)); S.atts = []; renderAtts();
 });
 $('b-send').onclick = send;
 // Chạm nút gửi mà ô nhắn mất focus thì bàn phím đóng, trang co lại, nút bị dời chỗ trước khi kịp
 // tính là bấm (phải bấm 2 lần). Không lấy focus: bàn phím giữ nguyên, một chạm là gửi.
 $('b-send').onpointerdown = e => e.preventDefault();
-$('text').oninput = e => autosize(e.target);
+$('text').oninput = e => { autosize(e.target); saveDraft(); updateSuggest(); };
+$('text').onfocus = updateSuggest;
+$('text').onblur = () => setTimeout(() => { $('suggest').hidden = true; }, 150);
+
+// ---- Ô nhắn thông minh: gợi ý lệnh khi gõ "/", câu đã gửi gần đây, bản nháp theo phiên ----
+const SLASH = {
+  claude: [['/compact', 'Thu gọn ngữ cảnh'], ['/clear', 'Bắt đầu hội thoại mới'], ['/model', 'Đổi model'], ['/context', 'Ngữ cảnh đang dùng'],
+    ['/usage', 'Hạn mức gói'], ['/code-review', 'Review thay đổi'], ['/resume', 'Mở lại hội thoại'], ['/init', 'Tạo CLAUDE.md'],
+    ['/memory', 'Sửa bộ nhớ'], ['/agents', 'Subagent'], ['/mcp', 'Máy chủ MCP'], ['/permissions', 'Quyền'], ['/help', 'Trợ giúp']],
+  codex: [['/compact', 'Thu gọn ngữ cảnh'], ['/review', 'Review thay đổi'], ['/model', 'Đổi model'], ['/status', 'Trạng thái, hạn mức'],
+    ['/diff', 'Xem diff'], ['/new', 'Hội thoại mới'], ['/init', 'Tạo AGENTS.md'], ['/approvals', 'Chế độ duyệt lệnh'], ['/mention', 'Nhắc tới file']],
+};
+const store = { get: k => { try { return localStorage.getItem(k); } catch { return null; } }, set: (k, v) => { try { v == null || v === '' ? localStorage.removeItem(k) : localStorage.setItem(k, v); } catch {} } };
+const loadDraft = k => store.get('termi-draft:' + k) || '';
+function saveDraft() { if (S.draftFor) store.set('termi-draft:' + S.draftFor, $('text').value); }
+const sentList = () => { try { return JSON.parse(store.get('termi-sent') || '[]'); } catch { return []; } };
+function rememberSent(t) { store.set('termi-sent', JSON.stringify([t, ...sentList().filter(x => x !== t)].slice(0, 20))); }
+function updateSuggest() {
+  const t = $('text'), v = t.value, box = $('suggest');
+  let items = [];
+  if (/^\/\S*$/.test(v)) items = (SLASH[cur()?.agent] || []).filter(([c]) => c.startsWith(v)).map(([c, d]) => [c, d, c + ' ']);
+  else if (!v && document.activeElement === t) items = sentList().slice(0, 6).map(x => [x.length > 48 ? x.slice(0, 48) + '…' : x, '', x]);
+  box.hidden = !items.length;
+  box.replaceChildren(...items.map(([label, desc, fill]) => {
+    const b = el('button', 'sg'); b.type = 'button';
+    b.append(el('b', null, label)); if (desc) b.append(el('span', null, desc));
+    b.onpointerdown = e => e.preventDefault(); // giữ bàn phím
+    b.onclick = () => { t.value = fill; autosize(t); saveDraft(); t.focus(); updateSuggest(); };
+    return b;
+  }));
+}
 $('text').onkeydown = e => {
   // Máy tính: Enter gửi, Shift+Enter xuống dòng. Điện thoại: Enter luôn xuống dòng
   if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && wide()) { e.preventDefault(); send(); }
+  if (e.key === 'ArrowUp' && !e.target.value && sentList()[0]) { e.preventDefault(); e.target.value = sentList()[0]; autosize(e.target); saveDraft(); updateSuggest(); }
 };
 $('b-attach').onclick = () => $('f-input').click();
 $('b-photo').onclick = () => $('f-photo').click();
@@ -1100,7 +1184,10 @@ function fileIcon(f) {
   return FT[ext] || ['file', 'var(--dim)'];
 }
 
+// Khung chờ khi đang tải (thay cho màn hình trống)
+const skel = (n, cls = 'sk') => Array.from({ length: n }, () => el('div', cls));
 const loadFiles = safely(async dir => {
+  if (S.filesDir !== dir) $('f-list').replaceChildren(...skel(7));
   const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
   S.filesDir = r.dir;
   $('f-crumb').textContent = ltr(short(r.dir));
@@ -1267,6 +1354,7 @@ const loadGit = safely(async dir => {
   dir ||= $('g-repo').value;
   if (!dir) return $('g-changes').replaceChildren(el('div', 'empty', 'Không tìm thấy repo git nào'));
   let g;
+  if (S.git?.dir !== dir) { $('g-changes').replaceChildren(...skel(3)); $('g-log').replaceChildren(...skel(6)); }
   try { g = await api('/api/git?dir=' + encodeURIComponent(dir)); }
   catch (e) {
     $('g-changes').replaceChildren(el('div', 'empty', e.message)); $('g-log').replaceChildren();
@@ -1376,7 +1464,7 @@ async function pushState() {
   const reg = await navigator.serviceWorker?.getRegistration();
   $('b-bell').classList.toggle('on', !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted');
 }
-$('b-bell').onclick = safely(async () => {
+const enablePush = safely(async () => {
   if (!('serviceWorker' in navigator) || !('PushManager' in window))
     throw new Error('Trình duyệt chưa hỗ trợ thông báo. Trên iPhone: thêm termi vào Màn hình chính rồi mở từ biểu tượng đó.');
   if (await Notification.requestPermission() !== 'granted') throw new Error('Bạn chưa cho phép thông báo');
@@ -1402,7 +1490,44 @@ $('b-bell').onclick = safely(async () => {
 });
 navigator.serviceWorker?.register('/sw.js').then(pushState).catch(() => {});
 
-addEventListener('resize', () => { const t = wide() ? 'w' : 'n'; if (S.layout && S.layout !== t) render(); S.layout = t; });
+addEventListener('resize', () => { const t = (wide() ? 'w' : 'n') + (splitWide() ? 's' : ''); if (S.layout && S.layout !== t) render(); S.layout = t; });
+
+// ---- Hộp thông báo: agent xong việc / cần xác nhận (cả khi chưa bật thông báo đẩy) ----
+const seenKey = 'termi-events-seen';
+const getSeen = () => { try { return Number(localStorage.getItem(seenKey)) || 0; } catch { return 0; } };
+async function loadEvents() {
+  const ev = await api('/api/events').catch(() => null);
+  if (!ev) return;
+  // Sự kiện mới khi đang mở app: báo nhẹ + rung (khi đóng app thì thông báo đẩy lo)
+  if (S.events) for (const e of ev.filter(e => e.t > S.events[0]?.t || !S.events.length).reverse()) {
+    toast(e.title);
+    navigator.vibrate?.(e.kind === 'waiting' ? [120, 60, 120] : 40);
+  }
+  S.events = ev;
+  const unseen = ev.filter(e => e.t > getSeen()).length;
+  $('b-bell').dataset.badge = unseen ? String(Math.min(unseen, 9)) : '';
+  if ($('d-inbox').open) renderInbox();
+}
+function renderInbox() {
+  const list = S.events || [];
+  $('inbox-list').replaceChildren(...(list.length ? list.map(e => {
+    const b = el('button', 'irow'); b.type = 'button';
+    const ic = el('span', 'ik ' + e.kind); ic.innerHTML = icon(e.kind === 'waiting' ? 'bell' : 'check');
+    const t = el('div', 'it'); t.append(el('b', null, e.title), el('small', null, `${ago(e.t)}${e.body ? ' · ' + e.body : ''}`));
+    b.append(ic, t);
+    b.onclick = () => { $('d-inbox').close(); go({ s: e.session, t: 'term', m: e.machine || null, d: null, g: null, v: null }); };
+    return b;
+  }) : [el('div', 'empty', 'Chưa có thông báo nào')]));
+}
+$('b-bell').onclick = async () => {
+  renderInbox(); $('d-inbox').showModal();
+  try { localStorage.setItem(seenKey, String(Date.now())); } catch {}
+  $('b-bell').dataset.badge = '';
+  const reg = await navigator.serviceWorker?.getRegistration();
+  const on = !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted';
+  $('inbox-push').textContent = on ? 'Thông báo đẩy: đang bật · gửi thử' : 'Bật thông báo đẩy';
+};
+$('inbox-push').onclick = () => enablePush();
 // ---- Chọn máy (các máy cùng tài khoản Tailscale có chạy termi) ----
 async function loadMachines() {
   const list = await api('/api/machines').catch(() => []);
@@ -1496,6 +1621,7 @@ loadUsage();
 setInterval(() => document.visibilityState === 'visible' && loadMachines(), 60_000);
 
 S.machine = st().m || '';
+if (!S.list.length) $('sessions').replaceChildren(...skel(3, 'sk tall'));
 poll().then(render);
 loadRestore();
 document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && loadRestore());

@@ -83,6 +83,18 @@ async function need(p, kind = 'dir') {
 }
 
 // ---------- Phiên ----------
+const stateSince = new Map();
+// Số file chưa commit của thư mục phiên; bộ nhớ đệm 15 giây (danh sách phiên được gọi 3 giây một lần)
+const changeCache = new Map();
+async function changeCount(dir) {
+  const c = changeCache.get(dir);
+  if (c && Date.now() - c.t < 15_000) return c.n;
+  const n = await run('git', ['-C', dir, 'status', '--porcelain=v1', '-z'], { timeout: 5000, env: { ...process.env, GIT_OPTIONAL_LOCKS: '0' } })
+    .then(r => r.stdout.split('\0').filter(Boolean).length, () => null); // không phải repo git: null
+  changeCache.set(dir, { t: Date.now(), n });
+  return n;
+}
+
 async function sessions() {
   let panes;
   try {
@@ -117,6 +129,8 @@ async function sessions() {
     by.set(name, s);
   }
   const list = [...by.values()].sort((a, b) => b.activity - a.activity);
+  const changeCounts = await Promise.all(list.map(x => changeCount(x.dir)));
+  list.forEach((x, i) => { x.changes = changeCounts[i]; });
   await Promise.all(list.map(async s => {
     const screen = (await tmux('capture-pane', '-p', '-J', '-t', target(s.name)).catch(() => ({ stdout: '' }))).stdout;
     s.state = s.agent ? agentState(screen) : 'shell';
@@ -131,6 +145,10 @@ async function sessions() {
       const reply = await lastReply(s.agent, s.dir, s.agentPid).catch(() => null);
       if (reply) { s.preview = reply; s.previewKind = 'reply'; }
     }
+    // Trạng thái bắt đầu từ lúc nào (vd. "đang chạy 3 phút"); cùng một mốc cho mọi thiết bị
+    const prev = stateSince.get(s.name);
+    if (prev?.state !== s.state) stateSince.set(s.name, { state: s.state, since: Date.now() });
+    s.since = stateSince.get(s.name).since;
   }));
   return list;
 }
@@ -506,10 +524,11 @@ async function push(title, body, session, machine = '') {
 // Theo dõi chuyển trạng thái của agent (máy này và các máy khác có termi) để báo:
 // xong việc, hoặc đang chờ bạn xác nhận. Nhờ vậy chỉ cần bật thông báo ở một máy.
 const prevState = new Map();
+// Hộp thông báo trong app: 30 sự kiện gần nhất (agent xong việc / cần xác nhận), ghi cả khi chưa bật đẩy
+const events = [];
 async function watch() {
-  if (!subs.length) return;
   const all = (await sessions()).map(s => ({ ...s, m: '' }));
-  for (const p of (await machines()).filter(x => !x.self && x.termi)) {
+  if (subs.length) for (const p of (await machines()).filter(x => !x.self && x.termi)) {
     const list = await fetch(`https://${p.dns}/api/sessions`, { signal: AbortSignal.timeout(4000) }).then(r => r.json(), () => []);
     if (Array.isArray(list)) all.push(...list.map(s => ({ ...s, m: p.id })));
   }
@@ -518,8 +537,12 @@ async function watch() {
     prevState.set(key, s.state);
     if (prev === undefined) continue;
     const who = AGENTS[s.agent]?.name || 'Agent', label = s.m ? `[${s.m}] ${s.name}` : s.name;
-    if (s.state === 'waiting' && prev !== 'waiting') await push(`${label}: ${who} cần bạn xác nhận`, s.preview, s.name, s.m);
-    else if (s.state === 'idle' && prev === 'working') await push(`${label}: ${who} đã xong`, s.preview, s.name, s.m);
+    const kind = s.state === 'waiting' && prev !== 'waiting' ? 'waiting' : s.state === 'idle' && prev === 'working' ? 'done' : null;
+    if (!kind) continue;
+    const title = `${label}: ${who} ${kind === 'waiting' ? 'cần bạn xác nhận' : 'đã xong'}`;
+    events.unshift({ t: Date.now(), kind, title, body: s.preview, session: s.name, machine: s.m, agent: s.agent });
+    events.splice(30);
+    if (subs.length) await push(title, s.preview, s.name, s.m);
   }
 }
 
@@ -789,6 +812,7 @@ const routes = {
   // ---- Thông báo ----
   'GET /api/push/key': () => ({ key: vapid.pub }),
   'GET /api/push/alert': () => lastAlert,
+  'GET /api/events': () => events,
   async 'POST /api/push/sub'(_, b) {
     let u;
     try { u = new URL(b.endpoint); } catch { throw fail(400, 'Endpoint không hợp lệ'); }
