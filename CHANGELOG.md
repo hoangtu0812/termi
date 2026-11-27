@@ -9,6 +9,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - Interface language: Vietnamese or English, switched in Settings → Ngôn ngữ · Language (the page reloads). Dates, voice input and push notifications follow the choice; server messages shown in the app are translated too. New UI text is written in Vietnamese inside `t()` with its English in `public/js/en-*.mjs`, enforced by `test/i18n.test.mjs`.
 
+### Changed
+- Architecture overview updated to `docs/ARCH-v1.1-overview.md` with the modules added since 1.0.
+
 ## [1.6.0] - 2026-11-27
 
 ### Added

@@ -11,6 +11,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 ### Thêm
 - Ngôn ngữ giao diện: tiếng Việt hoặc tiếng Anh, đổi trong Cài đặt → Ngôn ngữ · Language (trang tự tải lại). Ngày giờ, nhập bằng giọng nói và thông báo đẩy theo ngôn ngữ đã chọn; thông báo từ máy chủ hiện trong app cũng được dịch. Chữ giao diện mới viết bằng tiếng Việt trong `t()` kèm bản tiếng Anh trong `public/js/en-*.mjs`, có `test/i18n.test.mjs` kiểm tra.
 
+### Thay đổi
+- Tổng quan kiến trúc cập nhật thành `docs/ARCH-v1.1-overview.md`, thêm các module mới từ bản 1.0.
+
 ## [1.6.0] - 2026-11-27
 
 ### Thêm

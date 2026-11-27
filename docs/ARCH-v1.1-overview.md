@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.0 |
+| Version | 1.1 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
@@ -15,7 +15,7 @@ The module map of termi after the refactor in [PLAN-v1.8-architecture-refactor.m
 ```
 phone / laptop ──HTTPS──▶ tailscale serve ──HTTP──▶ termi server (127.0.0.1:7680)
                                                      ├─ /           static PWA (public/)
-                                                     ├─ /api/*      JSON API (src/routes/)
+                                                     ├─ /api/*      JSON API (src/routes/), /api/stream server-sent events
                                                      ├─ /term/*     proxy ──▶ ttyd (127.0.0.1:7681) ──▶ attach.sh ──▶ tmux
                                                      └─ /m/<peer>/* proxy ──▶ termi on another tailnet machine
 termi server ──execFile──▶ tmux, git, ps, tailscale
@@ -43,8 +43,8 @@ termi server ──reads──▶ agent transcripts (~/.claude, ~/.codex) and it
 | Module | Responsibility |
 |---|---|
 | `handler.mjs` | The order a request goes through: guards, peer proxy, ttyd proxy, static files, CSRF check, router. |
-| `guard.mjs` | Host check, Tailscale identity, Origin check, `X-Termi` header. |
-| `router.mjs` | Route tables keyed by `METHOD /path`, JSON bodies, raw and streaming responses, error responses. |
+| `guard.mjs` | Host check, Tailscale identity (or the `TERMI_TOKEN` header in embedded mode), Origin check, `X-Termi` header. |
+| `router.mjs` | Route tables keyed by `METHOD /path`, JSON bodies, raw and streaming responses, routes that own the response (event streams), error responses. |
 | `static.mjs` | Whitelisted static files and the UI build id. |
 | `proxy.mjs` | HTTP and WebSocket proxying to ttyd and to peer machines. |
 
@@ -54,10 +54,10 @@ Each file returns a table of handlers built from the shared context.
 
 | Module | Endpoints |
 |---|---|
-| `sessions.mjs` | List, create, rename, kill sessions; restore after a reboot. |
+| `sessions.mjs` | List, create, rename, kill sessions; restore after a reboot; the session event stream (`/api/stream`). |
 | `terminal.mjs` | Send text and keys, resize, refresh, capture text, chat view, submit menus. |
 | `projects.mjs` | Suggested folders, conversation history, project tree, installed agents. |
-| `files.mjs` | Directory listing, file contents, raw images, uploads. |
+| `files.mjs` | Directory listing, file name search, file contents, raw images, uploads. |
 | `git.mjs` | Status, log and graph, diffs, git operations. |
 | `notify.mjs` | Push key and subscriptions, last alert, inbox events, notification settings. |
 | `usage.mjs` | Plan limits, session tokens, machine load; tailnet machines. |
@@ -75,6 +75,10 @@ Each file returns a table of handlers built from the shared context.
 | `repos.mjs` | Find git repositories under the roots. |
 | `system.mjs` | CPU, memory and disk usage. |
 | `ttyd-watchdog.mjs` | Restart ttyd when stuck clients pile up. |
+| `live.mjs` | Server-sent events: push the session list to open streams when it changes. |
+| `file-search.mjs` | Find files by name (`git ls-files` or a bounded walk) and rank the matches. |
+| `log-rotate.mjs` | Rotate the launchd log files on macOS. |
+| `run-marker.mjs` | Record a clean shutdown so a crash can be detected at the next start. |
 | `store.mjs` | JSON state files with atomic, serialized writes. |
 | `validate.mjs`, `text.mjs`, `errors.mjs` | Input validators, text helpers, HTTP errors. |
 
@@ -88,21 +92,23 @@ Each file returns a table of handlers built from the shared context.
 |---|---|
 | `src/tmux/` | `client.mjs` (run tmux, exact session targets), `screen.mjs` (agent state, menus and previews read from the screen). |
 | `src/git/` | `run.mjs` (git runner), `ops.mjs` (stage, commit, push…), `parse.mjs` (status, numstat, log), `graph.mjs` (commit graph lanes), `marks.mjs` (file tab marks). |
-| `src/push/` | `vapid.mjs` (keys and signatures), `webpush.mjs` (delivery and subscriptions), `prefs.mjs` (notification settings), `watcher.mjs` (state changes → inbox and push). |
+| `src/push/` | `vapid.mjs` (keys and signatures), `webpush.mjs` (delivery and subscriptions), `prefs.mjs` (notification settings), `watcher.mjs` (state changes → inbox and push), `incidents.mjs` (machine offline, disk, crash and ttyd alerts), `texts.mjs` (push texts in Vietnamese and English). |
 
 ## 3. Client (`public/`)
 
 - `index.html` is markup only. It loads `js/theme-init.js` (blocking, sets the theme before the first paint), ten stylesheets from `css/` in cascade order, and `js/main.mjs`.
-- Every module in `js/` only declares. Listeners and timers are registered in an exported `setup…()` function; `main.mjs` calls them in a fixed order and starts polling.
+- Every module in `js/` only declares. Listeners and timers are registered in an exported `setup…()` function; `main.mjs` calls them in a fixed order, opens the session event stream and starts polling.
+- UI text is written in Vietnamese and wrapped in `t()` (`i18n.mjs`); the Vietnamese text is the key. English lives in `en-ui-*.mjs` and `en-server.mjs` (server messages shown in the UI). `theme-init.js` sets `<html lang>` from the saved choice before modules load, and `setupI18n()` translates the static markup. `test/i18n.test.mjs` fails on untranslated keys and on Vietnamese text outside `t()`.
 
 | Area | Modules |
 |---|---|
-| Foundations | `dom.mjs`, `storage.mjs`, `state.mjs` (URL hash state and the shared `S` object), `api.mjs` (fetch, errors, build reload), `icons.mjs`, `theme.mjs`, `wake.mjs` |
-| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs`, `navigation.mjs`, `poll.mjs` |
-| Sessions | `sessions.mjs` (project tree), `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
-| Terminal | `terminal.mjs` (ttyd iframe), `reconnect.mjs` (touch scroll, reconnect, stale detection), `keys.mjs` |
+| Foundations | `dom.mjs`, `storage.mjs`, `state.mjs` (URL hash state and the shared `S` object), `api.mjs` (fetch, errors, update bar), `i18n.mjs`, `icons.mjs`, `theme.mjs`, `wake.mjs` |
+| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs`, `navigation.mjs`, `gestures.mjs` (edge swipe, pull to refresh) |
+| Live data | `poll.mjs` (fallback polling), `live.mjs` (event stream), `conn.mjs` (connection dot), `outbox.mjs` (messages sent while offline) |
+| Sessions | `sessions.mjs` (project tree), `session-label.mjs`, `session-filter.mjs`, `session-actions.mjs`, `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
+| Terminal | `terminal.mjs` (ttyd iframes), `term-pool.mjs` (up to four live frames), `reconnect.mjs` (touch scroll, reconnect, stale detection), `keys.mjs` |
 | Composer and chat | `composer.mjs`, `attachments.mjs`, `voice.mjs`, `quick.mjs`, `confirm.mjs`, `chat.mjs`, `sanitize.mjs` |
-| Files and git | `files.mjs`, `viewer.mjs`, `markdown.mjs`, `highlight.mjs`, `diff.mjs`, `git.mjs`, `git-graph.mjs` |
+| Files and git | `files.mjs`, `file-crumb.mjs`, `file-find.mjs`, `viewer.mjs`, `markdown.mjs`, `highlight.mjs`, `diff.mjs`, `git.mjs`, `git-graph.mjs`, `git-log.mjs` |
 | Notifications and settings | `push.mjs`, `inbox.mjs`, `notify-form.mjs`, `settings.mjs`, `usage.mjs`, `palette.mjs` |
 
 `public/sw.js` is the service worker (push notifications, offline page) and `public/offline.html` the self-contained page it shows when the server cannot be reached.
