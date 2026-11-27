@@ -10,6 +10,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thay đổi
 - Ghi chú cài đặt đổi tên thành `docs/NOTES-v1.7-implementation-notes.md`, thêm lý do của các thay đổi trong bản này.
+- Lúc termi đang khởi động lại (ví dụ khi nâng cấp), app hiện trang "đang kết nối" rồi tự vào lại thay vì trang lỗi 502 của trình duyệt; các lệnh gọi API coi đó là mất kết nối.
 
 ## [1.2.0] - 2026-11-27
 

@@ -1,5 +1,6 @@
 const OFFLINE_PAGE = '/offline.html';
 const OFFLINE_CACHE = 'termi-offline';
+const GATEWAY_DOWN = new Set([502, 503, 504]);
 const FALLBACK_ALERT = { title: 'termi', body: 'Có cập nhật từ agent', session: '' };
 
 async function latestAlert() {
@@ -48,9 +49,15 @@ self.addEventListener('install', event => {
   event.waitUntil(caches.open(OFFLINE_CACHE).then(cache => cache.add(OFFLINE_PAGE)));
 });
 
+async function navigate(request) {
+  const response = await fetch(request).catch(() => null);
+  if (!response || GATEWAY_DOWN.has(response.status)) return offlineFallback();
+  return response;
+}
+
 self.addEventListener('fetch', event => {
-  if (event.request.mode !== 'navigate') return;
-  event.respondWith(fetch(event.request).catch(offlineFallback));
+  if (event.request.mode !== 'navigate' || event.request.destination !== 'document') return;
+  event.respondWith(navigate(event.request));
 });
 
 self.addEventListener('activate', event => event.waitUntil(clients.claim()));

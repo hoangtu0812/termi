@@ -8,6 +8,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Changed
 - Implementation notes renamed to `docs/NOTES-v1.7-implementation-notes.md` with the rationale for this release.
+- While termi restarts (for example during an upgrade) the app shows the "connecting" page and returns by itself instead of a browser 502 error; API calls treat it as a lost connection.
 
 ## [1.2.0] - 2026-11-27
 
