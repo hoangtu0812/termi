@@ -9,12 +9,13 @@ TS=/opt/homebrew/bin/tailscale
 xml() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' <<<"$1"; }
 
 if [[ "${1:-}" == uninstall ]]; then
-  for n in server ttyd; do
+  for n in server ttyd vscode; do
     launchctl bootout "gui/$UID/vn.termi.$n" 2>/dev/null || true
     rm -f "$LA/vn.termi.$n.plist"
   done
   $TS serve --https=443 off 2>/dev/null || true
   $TS serve --https=8443 off 2>/dev/null || true
+  $TS serve --https=9443 off 2>/dev/null || true
   echo "Đã gỡ termi (các phiên tmux vẫn giữ nguyên)."; exit 0
 fi
 

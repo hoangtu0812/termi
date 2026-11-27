@@ -8,6 +8,9 @@ const PROJECT_QUICK_FILE = 'quick-projects.json';
 const MAX_QUICK_PROJECTS = 100;
 const MAX_QUICK_ITEMS = 30;
 const QUICK_LIMITS = { emoji: 8, name: 40, desc: 80, text: 2000 };
+const EDITOR_FILE = 'editor.json';
+const MAX_EDITOR_URL = 300;
+const EDITOR_PROTOCOLS = new Set(['https:', 'http:']);
 
 const cut = (value, limit) => (typeof value === 'string' ? value.slice(0, limit) : '');
 
@@ -31,6 +34,13 @@ export function setProjectQuick(map, dir, items) {
   return next;
 }
 
+export function parseEditorUrl(value) {
+  if (value === null || value === '') return null;
+  const url = typeof value === 'string' && value.length <= MAX_EDITOR_URL ? URL.parse(value) : null;
+  if (!url || !EDITOR_PROTOCOLS.has(url.protocol)) throw fail(400, 'Địa chỉ VS Code web không hợp lệ');
+  return url.href;
+}
+
 const exists = file => fs.access(file).then(() => true, () => false);
 
 export function settingsRoutes({ store, agents, paths, config }) {
@@ -45,7 +55,15 @@ export function settingsRoutes({ store, agents, paths, config }) {
         platform: process.platform,
         claudeUsage: await exists(path.join(config.dataDir, 'claude-statusline.mjs')),
         agents: await agents.installed(),
+        editorUrl: (await store.read(EDITOR_FILE))?.url ?? null,
       };
+    },
+
+    async 'POST /api/editor'(_, body) {
+      const url = parseEditorUrl(body.url ?? null);
+      if (url) await store.write(EDITOR_FILE, { url });
+      else await store.remove(EDITOR_FILE);
+      return { url };
     },
 
     'GET /api/quick': () => store.read(QUICK_FILE),

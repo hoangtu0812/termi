@@ -1,6 +1,7 @@
 import { api, safely } from './api.mjs';
 import { $, el, short, skel } from './dom.mjs';
 import { agentAvatar, icon } from './icons.mjs';
+import { editorField } from './editor.mjs';
 import { notifyForm } from './notify-form.mjs';
 import { enablePush } from './push.mjs';
 import { fontSize, setFont } from './terminal.mjs';
@@ -128,6 +129,7 @@ async function settingRows(info, pushOn) {
     settingRow(t('Thông báo đẩy'), pushButton(pushOn)),
     settingRow(t('Báo khi'), await notifyForm()),
     settingRow(t('Hạn mức Claude trong Usage'), el('div', 'sv', usage)),
+    settingRow(t('VS Code web'), editorField(info.editorUrl)),
     settingRow(t('Agent trên máy này'), agentList(info.agents)),
     settingRow(t('Thư mục được phép truy cập'), el('div', 'sv mono', info.roots.map(short).join('\n'))),
     settingRow(t('Máy chủ'), el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
