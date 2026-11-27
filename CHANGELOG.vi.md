@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-27
+
 ### Sửa lỗi
 - Cài đặt → "Báo khi": ô tích nằm lệch phía trên chữ và mỗi ô giờ yên lặng chiếm trọn một dòng; giờ đã thẳng hàng, và trên điện thoại khoảng giờ xuống dòng nguyên khối.
 
@@ -224,7 +226,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/hoangtu0812/termi/compare/v0.10.5...v0.11.0

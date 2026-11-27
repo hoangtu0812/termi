@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.0.1] - 2026-11-27
+
 ### Fixed
 - Settings → "Báo khi": checkboxes sat above their labels and the quiet-hours time fields took a full line each; they now line up, and on phones the time range wraps as one block.
 
@@ -222,7 +224,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/hoangtu0812/termi/compare/v0.10.5...v0.11.0
