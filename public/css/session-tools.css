@@ -23,7 +23,6 @@
 .fchip.on span { color:var(--bg); opacity:.7; }
 .fchip.waiting:not(.on) span { color:var(--warn); }
 .fchip.working:not(.on) span { color:var(--acc); }
-.ci { position:relative; }
 @media (hover: hover) { .ci:hover .sacts { display:flex; } }
 .convview { padding-top:8px; }
 .convhead { display:flex; flex-direction:column; gap:2px; padding:4px 2px 10px; border-bottom:1px solid var(--line); }

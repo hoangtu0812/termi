@@ -202,7 +202,8 @@ select.sel {
   resize:vertical;
 }
 .log { padding:4px 0 24px; }
-.cm { display:flex; align-items:center; height:56px; cursor:pointer; padding-right:14px; }
+.cm { display:flex; align-items:center; height:56px; cursor:pointer; padding-right:14px; border-radius:8px; }
+@media (hover: hover) { .cm:hover { background:var(--hover); } }
 .cm svg { flex:none; overflow:visible; }
 .cm-body { flex:1; min-width:0; display:flex; flex-direction:column; gap:3px; }
 .cm-msg { font-size:14px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }

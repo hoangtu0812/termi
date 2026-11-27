@@ -3,8 +3,6 @@
 .cday { display:flex; align-items:center; height:28px; position:sticky; top:0; z-index:1; background:var(--bg); }
 .cday svg { flex:none; }
 .cday span { font-size:11.5px; font-weight:600; color:var(--faint); text-transform:uppercase; letter-spacing:.05em; }
-.cm { border-radius:8px; }
-@media (hover: hover) { .cm:hover { background:var(--hover); } }
 .ds-cell mark { color:inherit; border-radius:3px; }
 .ds-cell.d mark { background:#ef6b7350; }
 .ds-cell.a mark { background:#4fbf7f50; }

@@ -4,6 +4,7 @@ import {
   findJsComments, findCssComments, findShellComments, findHtmlComments,
 } from '../scripts/check-comments.mjs';
 import { sourceViolations, docNameViolation, classify, isAppleDouble } from '../scripts/check.mjs';
+import { cssClassViolations } from '../scripts/check-css.mjs';
 
 test('macOS AppleDouble files from exFAT drives are skipped', () => {
   assert.equal(isAppleDouble('public/js/._main.mjs'), true);
@@ -97,4 +98,35 @@ test('allowlist downgrades legacy violations and flags stale entries', () => {
   const { errors, warnings } = classify(violations, { 'a.mjs': ['comments', 'syntax', 'line-length'] });
   assert.deepEqual(warnings.map(v => v.file + v.rule), ['a.mjscomments']);
   assert.deepEqual(errors.map(v => v.file + v.rule), ['b.mjscomments', 'a.mjssyntax', 'a.mjsline-length']);
+});
+
+test('a class with base styles in two sheets is reported', () => {
+  const sheets = [
+    { file: 'public/css/pipelines.css', src: '.ci { display:grid; }' },
+    { file: 'public/css/sessions.css', src: '.ci { opacity:.85; }\n.ci:hover { color:red; }' },
+  ];
+  const [violation, ...rest] = cssClassViolations(sheets);
+  assert.equal(rest.length, 0);
+  assert.equal(violation.file, 'public/css/sessions.css');
+  assert.equal(violation.rule, 'css-class');
+});
+
+test('grouped rules, modifiers and responsive overrides are not ownership', () => {
+  const sheets = [
+    { file: 'public/css/base.css', src: '.btn { padding:0; }\n.ibtn { width:9px; }' },
+    { file: 'public/css/topbar.css', src: '.btn:active, .ibtn:active { opacity:.9; }\n.btn.sm { height:1px; }' },
+    { file: 'public/css/mobile.css', src: '@media (max-width:9px) { .btn { height:2px; } }' },
+    { file: 'public/css/layout.css', src: '.statusbar { display:flex; }\n.statusbar .btn { gap:0; }' },
+  ];
+  assert.deepEqual(cssClassViolations(sheets), []);
+});
+
+test('a desktop-only class that another sheet also styles is reported', () => {
+  const sheets = [
+    { file: 'public/css/layout.css', src: '@media (min-width:900px) { .acts { flex-direction:column; } }' },
+    { file: 'public/css/dialogs.css', src: 'dialog .acts { display:flex; }' },
+  ];
+  const [violation] = cssClassViolations(sheets);
+  assert.equal(violation.file, 'public/css/layout.css');
+  assert.match(violation.detail, /dialogs\.css/);
 });
