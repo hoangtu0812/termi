@@ -3,7 +3,6 @@ import { openDiff } from './diff.mjs';
 import { $, el, ltr, skel } from './dom.mjs';
 import { logRows } from './git-log.mjs';
 import { icon } from './icons.mjs';
-import { loadPipelines } from './pipelines.mjs';
 import { loadRepos } from './poll.mjs';
 import { S, go } from './state.mjs';
 import { openFile } from './viewer.mjs';
@@ -114,7 +113,6 @@ export const loadGit = safely(async dir => {
     return showGitError(e.message);
   }
   showGit(g);
-  loadPipelines();
 });
 const gitOp = safely(async (op, extra = {}) => {
   const btns = document.querySelectorAll('#p-git button');
@@ -134,10 +132,7 @@ export function setupGit() {
   $('g-commit').onclick = () => gitOp('commit', { message: $('g-msg').value });
   $('g-msg').oninput = e => autosize(e.target);
   $('g-repo').onchange = () => go({ g: $('g-repo').value });
-  $('g-reload').onclick = () => {
-    if (S.gitMode === 'ci') return loadPipelines({ fresh: true });
-    loadGit(S.git?.dir || $('g-repo').value);
-  };
+  $('g-reload').onclick = () => loadGit(S.git?.dir || $('g-repo').value);
   $('g-all').onclick = () => openDiff(t('Thay đổi chưa commit'), { dir: S.git.dir });
   $('g-branch').onchange = e => {
     const b = e.target.value;

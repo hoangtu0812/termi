@@ -55,7 +55,9 @@
 .pane { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
 @media (min-width:1200px) {
   body.split #p-term { right:46%; }
-  body.split #p-files, body.split #p-git, body.split #viewer { left:54%; border-left:1px solid var(--line); }
+  body.split #p-files, body.split #p-git, body.split #p-ci, body.split #viewer {
+    left:54%; border-left:1px solid var(--line);
+  }
 }
 @media (prefers-reduced-motion: no-preference) {
   .pane:not([hidden]), #viewer:not([hidden]), dialog[open] { animation:pane-in .16s ease-out; }

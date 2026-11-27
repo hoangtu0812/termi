@@ -1,15 +1,14 @@
 import { api, safely } from './api.mjs';
 import { $, el, skel } from './dom.mjs';
 import { t } from './i18n.mjs';
-import { groupNodes, pipelineChip, visibleRuns } from './pipelines-view.mjs';
-import { S, st } from './state.mjs';
-import { store } from './storage.mjs';
+import { groupNodes, pipelineChip, runState, visibleRuns } from './pipelines-view.mjs';
+import { loadRepos } from './poll.mjs';
+import { S, cur, go, st } from './state.mjs';
 
-const MODE_KEY = 'termi-git-mode';
 const REFRESH_MS = 15_000;
+const BADGE_REFRESH_MS = 60_000;
 
-const currentBranch = () => $('g-branch').dataset.cur || '';
-const repoDir = () => S.git?.dir || $('g-repo').value;
+const ciDir = () => st().g || cur()?.dir || '';
 
 function filterRow(data) {
   const row = el('div', 'cifilters');
@@ -21,9 +20,8 @@ function filterRow(data) {
   for (const pipeline of data.pipelines) {
     row.append(pipelineChip(pipeline, S.ciPipeline === pipeline.id, pick(pipeline.id)));
   }
-  const branch = currentBranch();
-  if (branch) {
-    const only = el('button', 'fchip' + (S.ciBranchOnly ? ' on' : ''), t('Nhánh {0}', branch));
+  if (data.branch) {
+    const only = el('button', 'fchip' + (S.ciBranchOnly ? ' on' : ''), t('Nhánh {0}', data.branch));
     only.type = 'button';
     only.onclick = () => {
       S.ciBranchOnly = !S.ciBranchOnly;
@@ -53,41 +51,56 @@ function renderPipelines() {
   if (!data.provider) {
     return box.replaceChildren(el('div', 'empty', t('Repo này không dùng GitHub hoặc Azure DevOps')));
   }
-  const filters = { pipeline: S.ciPipeline, branch: S.ciBranchOnly ? currentBranch() : null };
+  const filters = { pipeline: S.ciPipeline, branch: S.ciBranchOnly ? data.branch : null };
   box.replaceChildren(header(data), filterRow(data), ...groupNodes(visibleRuns(data.runs, filters)));
 }
 
-export const loadPipelines = safely(async ({ fresh = false } = {}) => {
-  const dir = repoDir();
-  if (!dir || S.gitMode !== 'ci') return;
-  if (S.ci?.dir !== dir) $('g-ci').replaceChildren(...skel(5));
+export function ciBadge(data) {
+  if (!data?.runs?.length) return null;
+  const mine = data.branch ? data.runs.filter(run => run.branch === data.branch) : [];
+  const latest = (mine.length ? mine : data.runs)[0];
+  const state = runState(latest);
+  if (state === 'running' || state === 'queued') return 'running';
+  return state === 'failure' ? 'failure' : null;
+}
+
+async function fetchCi(dir, fresh) {
   const query = `dir=${encodeURIComponent(dir)}${fresh ? '&fresh=1' : ''}`;
   try {
-    S.ci = { dir, ...(await api(`api/ci?${query}`)) };
+    return { dir, ...(await api(`api/ci?${query}`)) };
   } catch (error) {
-    S.ci = { dir, error: error.message };
+    return { dir, error: error.message };
   }
-  if (repoDir() === dir) renderPipelines();
+}
+
+export const loadPipelines = safely(async ({ fresh = false } = {}) => {
+  const dir = ciDir();
+  await loadRepos($('ci-repo'), dir);
+  for (const o of $('ci-repo').options) o.textContent = o.value.split('/').pop() || o.value;
+  if (!dir) return $('g-ci').replaceChildren(el('div', 'empty', t('Không tìm thấy repo git nào')));
+  if (S.ci?.dir !== dir) $('g-ci').replaceChildren(...skel(5));
+  const data = await fetchCi(dir, fresh);
+  if (ciDir() !== dir) return;
+  S.ci = data;
+  S.ciState = { dir, badge: ciBadge(data) };
+  renderPipelines();
+  S.onCiChange?.();
 });
 
-function showMode() {
-  $('g-main').hidden = S.gitMode === 'ci';
-  $('g-ci').hidden = S.gitMode !== 'ci';
-  for (const b of $('g-mode').querySelectorAll('button')) b.classList.toggle('on', b.dataset.mode === S.gitMode);
-}
+const refreshBadge = safely(async () => {
+  const dir = cur()?.dir;
+  if (!dir || st().t === 'ci') return;
+  const data = await fetchCi(dir, false);
+  S.ciState = { dir, badge: ciBadge(data) };
+  S.onCiChange?.();
+});
 
-export function setGitMode(mode) {
-  S.gitMode = mode;
-  store.set(MODE_KEY, mode);
-  showMode();
-  loadPipelines();
-}
+const visible = () => document.visibilityState === 'visible';
 
 export function setupPipelines() {
-  S.gitMode = store.get(MODE_KEY) === 'ci' ? 'ci' : 'git';
-  showMode();
-  for (const b of $('g-mode').querySelectorAll('button')) b.onclick = () => setGitMode(b.dataset.mode);
-  setInterval(() => {
-    if (document.visibilityState === 'visible' && st().t === 'git' && S.gitMode === 'ci') loadPipelines();
-  }, REFRESH_MS);
+  $('ci-repo').onchange = () => go({ g: $('ci-repo').value });
+  $('ci-reload').onclick = () => loadPipelines({ fresh: true });
+  setInterval(() => visible() && st().t === 'ci' && loadPipelines(), REFRESH_MS);
+  setInterval(() => visible() && refreshBadge(), BADGE_REFRESH_MS);
+  setTimeout(refreshBadge, REFRESH_MS / 3);
 }

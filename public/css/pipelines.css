@@ -1,13 +1,20 @@
-.gmode {
-  display:flex; gap:4px; margin:0 12px 8px; padding:3px; border-radius:10px; background:var(--panel);
-  border:1px solid var(--line);
-}
-.gmode button {
+.codetabs { display:flex; gap:4px; margin:8px 12px 4px; padding:3px; border-radius:10px; background:var(--panel); }
+.codetabs { border:1px solid var(--line); flex:none; }
+.codetabs button {
   flex:1; display:inline-flex; align-items:center; justify-content:center; gap:6px; height:32px; border:0;
-  border-radius:8px; background:transparent; color:var(--dim); font-size:13.5px; font-weight:500;
+  border-radius:8px; background:transparent; color:var(--dim); font-size:13.5px; font-weight:500; position:relative;
 }
-.gmode button svg.i { width:15px; height:15px; }
-.gmode button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
+.codetabs button svg.i { width:15px; height:15px; }
+.codetabs button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
+.tbadge {
+  position:absolute; top:2px; right:calc(50% - 22px); min-width:16px; height:16px; padding:0 4px; border-radius:99px;
+  background:var(--acc); color:#fff; font:700 10px/16px var(--mono); text-align:center; pointer-events:none;
+}
+.tbadge.dot { min-width:8px; width:8px; height:8px; padding:0; top:4px; right:calc(50% - 16px); }
+.tbadge.unread, .tbadge.running { background:var(--blue); }
+.tbadge.failure { background:var(--del); }
+#seg button, #tabbar button { position:relative; }
+#seg .tbadge { top:-4px; right:-2px; }
 .cihead { display:flex; align-items:center; gap:8px; padding:4px 14px 8px; }
 .cihead b { font-size:14px; }
 .cihead span {
@@ -49,3 +56,4 @@
 }
 .cipanel { display:block; padding-bottom:24px; }
 .cihead a.btn { text-decoration:none; color:var(--fg); }
+.codetabs .tbadge { position:static; margin-left:2px; }

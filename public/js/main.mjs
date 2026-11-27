@@ -34,6 +34,7 @@ import { setupViewer } from './viewer.mjs';
 import { setupVoice } from './voice.mjs';
 import { setupWake } from './wake.mjs';
 import { loadRestore } from './welcome.mjs';
+import { renderTabBadges } from './tab-badges.mjs';
 
 setupI18n();
 setupIcons();
@@ -63,6 +64,7 @@ setupFileFind();
 setupViewer();
 setupGit();
 setupPipelines();
+S.onCiChange = renderTabBadges;
 setupPush();
 setupInbox();
 setupMachines();

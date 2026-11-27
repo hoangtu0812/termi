@@ -60,12 +60,18 @@
         <button data-t="term"><span data-i="term"></span>Terminal</button>
         <button data-t="files"><span data-i="folder"></span>File</button>
         <button data-t="git"><span data-i="git"></span>Git</button>
+        <button data-t="ci"><span data-i="zap"></span>Pipelines</button>
       </div>
       <button class="uchip" id="b-usage" type="button" hidden></button>
       <button class="ibtn" id="b-menu" aria-label="Tuỳ chọn phiên" data-i="more"></button>
     </div>
 
     <div class="stabs" id="stabs" hidden></div>
+    <nav class="codetabs" id="codetabs" hidden>
+      <button data-t="files"><span data-i="folder"></span>File</button>
+      <button data-t="git"><span data-i="git"></span>Git</button>
+      <button data-t="ci"><span data-i="zap"></span>Pipelines</button>
+    </nav>
     <div id="panes">
       <div class="pane scroll" id="p-none"></div>
 
@@ -101,11 +107,6 @@
             <select class="sel" id="g-repo" aria-label="Repo" style="flex:1"></select>
             <button class="ibtn" id="g-reload" aria-label="Tải lại" data-i="refresh"></button>
           </div>
-          <div class="gmode" id="g-mode">
-            <button type="button" data-mode="git"><span data-i="git"></span>Git</button>
-            <button type="button" data-mode="ci"><span data-i="zap"></span>Pipelines</button>
-          </div>
-          <div id="g-main">
           <div class="toolbar">
             <select class="sel" id="g-branch" aria-label="Branch" style="flex:1"></select>
             <span class="chip" id="g-track"></span>
@@ -121,8 +122,16 @@
           </div>
           <div class="grp"><span>Lịch sử</span><button class="btn sm" id="g-all">Xem toàn bộ thay đổi</button></div>
           <div class="log" id="g-log"></div>
+        </div>
+      </div>
+
+      <div class="pane" id="p-ci" hidden>
+        <div class="scroll">
+          <div class="toolbar">
+            <select class="sel" id="ci-repo" aria-label="Repo" style="flex:1"></select>
+            <button class="ibtn" id="ci-reload" aria-label="Tải lại" data-i="refresh"></button>
           </div>
-          <div class="cipanel" id="g-ci" hidden></div>
+          <div class="cipanel" id="g-ci"></div>
         </div>
       </div>
 
@@ -161,8 +170,7 @@
     <button data-t="sessions"><span data-i="list"></span>Phiên</button>
     <button data-t="chat"><span data-i="chat"></span>Chat</button>
     <button data-t="term"><span data-i="term"></span>Terminal</button>
-    <button data-t="files"><span data-i="folder"></span>File</button>
-    <button data-t="git"><span data-i="git"></span>Git</button>
+    <button data-t="code"><span data-i="braces"></span>Code</button>
   </nav>
 </div>
 

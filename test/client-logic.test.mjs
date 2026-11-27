@@ -151,3 +151,26 @@ test('pipeline runs are filtered, timed and given a state', async () => {
   assert.equal(duration(runs[1], 4_000_000), '1h 6m');
   assert.equal(duration({ startedAt: null }), '');
 });
+
+test('tab badges show unread replies, uncommitted files and pipeline state', async () => {
+  const { badgeFor } = await import('../public/js/tab-badges.mjs');
+  const session = { replyAt: 200, changes: 140 };
+  const context = { session, seen: 100, ci: 'failure', viewing: 'term' };
+  assert.deepEqual(badgeFor('chat', context), { kind: 'unread', dot: true });
+  assert.equal(badgeFor('chat', { ...context, viewing: 'chat' }), null);
+  assert.equal(badgeFor('chat', { ...context, seen: 300 }), null);
+  assert.deepEqual(badgeFor('git', context), { kind: 'changes', text: '99' });
+  assert.deepEqual(badgeFor('ci', context), { kind: 'failure', dot: true });
+  assert.equal(badgeFor('git', { ...context, session: null }), null);
+});
+
+test('the pipeline badge follows the latest run on the current branch', async () => {
+  const { ciBadge } = await import('../public/js/pipelines.mjs');
+  const run = (branch, status, result) => ({ branch, status, result });
+  const mixed = [run('main', 'completed', 'failure'), run('dev', 'completed', 'success')];
+  assert.equal(ciBadge({ branch: 'dev', runs: mixed }), null);
+  assert.equal(ciBadge({ branch: 'dev', runs: [run('dev', 'running', null)] }), 'running');
+  assert.equal(ciBadge({ branch: 'x', runs: [run('main', 'completed', 'failure')] }), 'failure');
+  assert.equal(ciBadge({ runs: [] }), null);
+  assert.equal(ciBadge(null), null);
+});

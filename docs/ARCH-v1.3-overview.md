@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.2 |
+| Version | 1.3 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
@@ -99,13 +99,14 @@ Each file returns a table of handlers built from the shared context.
 ## 3. Client (`public/`)
 
 - `index.html` is markup only. It loads `js/theme-init.js` (blocking, sets the theme before the first paint), ten stylesheets from `css/` in cascade order, and `js/main.mjs`.
+- Tabs: Chat, Terminal, File, Git and Pipelines (`t=ci`). On phones File, Git and Pipelines form the Code group: the bottom bar shows Sessions, Chat, Terminal, Code, and a sub-tab bar switches inside the group.
 - Every module in `js/` only declares. Listeners and timers are registered in an exported `setup…()` function; `main.mjs` calls them in a fixed order, opens the session event stream and starts polling.
 - UI text is written in Vietnamese and wrapped in `t()` (`i18n.mjs`); the Vietnamese text is the key. English lives in `en-ui-*.mjs` and `en-server.mjs` (server messages shown in the UI). `theme-init.js` sets `<html lang>` from the saved choice before modules load, and `setupI18n()` translates the static markup. `test/i18n.test.mjs` fails on untranslated keys and on Vietnamese text outside `t()`.
 
 | Area | Modules |
 |---|---|
 | Foundations | `dom.mjs`, `storage.mjs`, `state.mjs` (URL hash state and the shared `S` object), `api.mjs` (fetch, errors, update bar), `i18n.mjs`, `icons.mjs`, `theme.mjs`, `wake.mjs` |
-| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs`, `navigation.mjs`, `gestures.mjs` (edge swipe, pull to refresh) |
+| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs`, `navigation.mjs` (tabs, Alt+1…5), `tab-memory.mjs` (last tab per session, last Code tab), `tab-badges.mjs`, `gestures.mjs` (edge swipe, pull to refresh) |
 | Live data | `poll.mjs` (fallback polling), `live.mjs` (event stream), `conn.mjs` (connection dot), `outbox.mjs` (messages sent while offline) |
 | Sessions | `sessions.mjs` (project tree), `session-label.mjs`, `session-filter.mjs`, `session-actions.mjs`, `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
 | Terminal | `terminal.mjs` (ttyd iframes), `term-pool.mjs` (up to four live frames), `reconnect.mjs` (touch scroll, reconnect, stale detection), `keys.mjs` |
