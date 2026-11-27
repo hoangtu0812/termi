@@ -3,6 +3,8 @@ import { $ } from './dom.mjs';
 import { S, st } from './state.mjs';
 
 export const base = () => (st().m ? '/m/' + encodeURIComponent(st().m) : '');
+const GATEWAY_DOWN = new Set([502, 503, 504]);
+const gatewayDown = r => GATEWAY_DOWN.has(r.status) && !r.headers.get('content-type')?.includes('json');
 const HUB_ONLY = /^\/api\/(machines|events|notify|quick|push\/)/;
 export async function api(path, body) {
   let r;
@@ -18,6 +20,9 @@ export async function api(path, body) {
         : {},
     );
   } catch {
+    r = null;
+  }
+  if (!r || gatewayDown(r)) {
     $('netbar').hidden = false;
     setServer(false);
     throw Object.assign(new Error('Mất kết nối tới máy chủ'), { offline: true });

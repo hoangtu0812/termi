@@ -31,7 +31,7 @@ Bring the codebase in line with `AGENTS.md` without changing user-visible behavi
 
 - Behavior-preserving: refactor phases change structure only. Any bug fix found on the way gets its own `fix:` commit and test.
 - Move first, then improve: extract code verbatim into its new module, run tests, then clean it up in a separate commit.
-- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.6-implementation-notes.md` (or an `ADR`), in the same commit.
+- Comments are migrated, not lost: before deleting a comment, its rationale goes to `docs/NOTES-v1.7-implementation-notes.md` (or an `ADR`), in the same commit.
 - Each phase ends green: `npm test` passes and CI is green.
 
 ## 4. Phases
@@ -65,7 +65,7 @@ Result: 35 tests pass; `npm run check` reports 0 errors and 21 allowlisted legac
 - [x] `vapid.json` is read strictly: a corrupt key stops the server with a clear message instead of being regenerated.
 - [x] `sessions.json` is changed only through `store.update`, so the snapshot, close, restore and dismiss paths no longer overwrite each other.
 - [x] The former `src/server.mjs` moved to `src/app.mjs` (see its line history from before the move with `git blame -C -C src/app.mjs`), which exports `init(config)` and `start(config)`; all top-level `await` and timers moved into them. `src/server.mjs` is a 9-line entry point, so the installers keep working unchanged.
-- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.6-implementation-notes.md`.
+- [x] Comments removed from every line touched; their rationale moved to `docs/NOTES-v1.7-implementation-notes.md`.
 - [x] Tests: atomic writes, 50 concurrent updates, write order, failed updates, corrupt files (strict and lenient), `init` keeps the VAPID key and refuses a corrupt one, config parsing, and a child-process test that imports every library module with an empty `HOME` and asserts nothing was created.
 
 Done when: importing any module has no side effects.
@@ -78,7 +78,7 @@ Result: 48 tests pass. Running the old `server.mjs` under the same test creates 
 - [x] `src/tmux/screen.mjs` (`agentState`, `parseChoices`, `parseMulti`, `stepsToSubmit`), `src/tmux/client.mjs` (`tmux`, `target`, `serverStartTime`).
 - [x] `src/validate.mjs` (all `valid*` functions, `validKey`, `safePath`, `safeDir`); `safePath` now always takes the roots explicitly.
 - [x] `src/text.mjs` (`plainText`, `prettyModel`, `clip`); `src/errors.mjs` (`fail`).
-- [x] Moved code was rewritten to the rules (no comments, small functions, named constants); rationale moved to `docs/NOTES-v1.6-implementation-notes.md`.
+- [x] Moved code was rewritten to the rules (no comments, small functions, named constants); rationale moved to `docs/NOTES-v1.7-implementation-notes.md`.
 - [x] Before the old code was deleted, old and new implementations were compared on 702 inputs (validators, model names, markdown, 15 agent screens, git status/numstat/log, the real commit history of this repo and 400 random commit graphs) with identical results.
 - [x] Tests split: `test/git.test.mjs` (including stage/unstage/commit against a temporary repository), `test/screen.test.mjs`, `test/validate.test.mjs`, `test/text.test.mjs`.
 
@@ -139,7 +139,7 @@ Result: 109 tests pass. Old and new servers returned identical responses for 27 
 - [x] `index.html` is markup only: no `<style>`, no inline script, one `<script type="module" src="/js/main.mjs">`. It left the allowlist.
 - [x] Static serving whitelists `css/*.css` and `js/*.mjs`/`*.js`; `x-termi-build` is the newest modification time of every UI file (cached 1 s).
 - [x] Service worker: no change needed. It caches only `offline.html` for navigations and never caches app files, so new modules need no cache list.
-- [x] All client comments removed; their rationale is in `docs/NOTES-v1.6-implementation-notes.md` (Client section).
+- [x] All client comments removed; their rationale is in `docs/NOTES-v1.7-implementation-notes.md` (Client section).
 - [x] Verification: a headless Chrome driver (scratch tooling, not in the repo) ran 18 steps on a 1400×900 desktop and a 390×844 phone viewport against the old and new client on the same fixture server (sessions, terminal, chat, files, Markdown preview, git, diff, settings, palette, new session, usage, inbox, quick actions, slash suggestions, session menu, light theme). Visible text, DOM structure and the computed style of every element were identical in all 432 comparisons, with no console errors or failed requests. `test/client.test.mjs` checks that every import names an existing export and that `index.html` loads existing files.
 - [ ] Manual checklist on real devices, to be done by the owner before release:
   - Android Chrome and iOS Safari as a home-screen app: open a session, type in the terminal, rotate, lock and unlock the phone (terminal must reconnect), switch sessions by swiping the title bar.
@@ -151,7 +151,7 @@ Result: 109 tests pass. Old and new servers returned identical responses for 27 
 
 ### Phase 8 — Zero comments and strict checks (v1.0.0) — done
 
-- [x] Comments removed from `public/sw.js`, `public/offline.html`, `scripts/*.sh`, `scripts/claude-statusline.mjs` and `test/server.test.mjs`; their rationale is in `docs/NOTES-v1.6-implementation-notes.md` (service worker, installers, statusline).
+- [x] Comments removed from `public/sw.js`, `public/offline.html`, `scripts/*.sh`, `scripts/claude-statusline.mjs` and `test/server.test.mjs`; their rationale is in `docs/NOTES-v1.7-implementation-notes.md` (service worker, installers, statusline).
 - [x] The usage header of `scripts/get.sh` was already in the README install section; the missing `TERMI_REPO` option was added in both languages.
 - [x] `scripts/check-allowlist.json` is empty, so every violation fails `npm run verify` and CI.
 - [x] Client: no module touches the browser while loading (`setup…()` does it), so all modules but `main.mjs` import in Node; every function in `src/`, `public/`, `scripts/` and `test/` is at most 40 lines (measured with a parser; 24 functions were split, including `createClaudeAgent` and `createMachines` on the server); `innerHTML` is limited to trusted markup and three guarded rendering paths, enforced by `test/client.test.mjs`. Two imports shadowed by locals, left over from the mechanical split, were removed.

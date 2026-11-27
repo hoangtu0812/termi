@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.6 |
+| Version | 1.7 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 
@@ -166,10 +166,14 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - The screen wake lock is requested again whenever the page becomes visible; some browsers only grant it after a user gesture, so it is also requested on `pointerdown`. A refusal (battery saver) is ignored.
 - All API and terminal traffic goes through `/m/<machine>` when another machine is selected; the machine list, events, notification settings, quick actions and push always go to the local hub, which watches every machine.
 - A network failure shows the "connection lost" bar; the regular refresh loops retry by themselves.
-- A new UI build reloads the page, but never while the user is typing in the composer or a commit message, has attachments, or has a dialog open.
+- A new UI build shows a "Tải lại" bar instead of reloading under the user. It reloads by itself only while the page is hidden and nothing is in progress (composer or commit text, attachments, an open dialog).
+- The header dot combines three signals: the browser's online state, whether the last API call reached the server, and the terminal state (connected, probing, disconnected). Its tooltip shows how long ago the terminal last received data.
+- Messages that fail to send because the network or the server is down go to an outbox in `localStorage` and are sent when the browser goes back online or the next API call succeeds. They are posted straight to `/m/<machine>/api/send` so a message reaches the machine it was written for even if another machine is selected later. A request that reached the server but whose response was lost can be sent twice; this is accepted over losing the message.
+- Gateway errors (502, 503, 504) without a JSON body come from `tailscale serve` while termi restarts and are treated like a network failure. A JSON 502 is termi's own answer about an unreachable peer and is shown as an error.
 - URL hash state: `s` session, `t` tab, `d` file folder, `g` git repo, `v` viewer open, `m` machine. A hash that points to a closed session does not open a terminal for it. Drafts are kept per machine and session.
 - On wide screens (≥ 1200 px) File and Git open next to the terminal.
 - The session list is a project tree. Projects with a running session are open by default; while searching all are open. Right-click or long-press a project to pin it; swipe a session left (or long-press) for rename and close.
+- Up to four terminal iframes stay connected (least recently used is closed first, the visible one never). Switching back to a session only shows its iframe again and refits it, so the screen does not reload or flash. Iframes of sessions that no longer exist are removed on each poll. Each kept iframe is one attached tmux client.
 - The terminal is ttyd under `/term` on the same origin, so the app can reach `window.term` in the iframe: it sets the font size through the URL (ttyd prefers URL options over the server's on every reconnect), loads JetBrains Mono into the ttyd page and switches the font once it is loaded (xterm draws on a canvas and does not pick up new fonts), pads the terminal and copies text tmux sends with OSC 52 to the clipboard.
 - The device that is being touched or typed on resizes the tmux window to its own size, because another device may have shrunk it.
 - tmux has the mouse enabled, so xterm does not scroll on touch; vertical swipes are turned into wheel events and tmux scrolls its history. A short touch still counts as a tap.
@@ -197,7 +201,7 @@ Rationale that used to live in code comments. Source files carry no comments (se
 
 - Push messages have no payload, so the worker fetches `/api/push/alert` and shows that. iOS requires every push to show a notification, so a fallback text is shown when the fetch fails.
 - Tapping a notification focuses an open window and navigates it to the session, or opens a new window.
-- The worker caches only `offline.html` and answers page navigations with it when the server cannot be reached; API calls, the terminal and app files always go to the network. `offline.html` therefore has no external resources and retries `/manifest.json` every 3 seconds, reloading once the server answers.
+- The worker caches only `offline.html` and answers top-level page navigations with it when the server cannot be reached or `tailscale serve` answers 502/503/504 while termi restarts; terminal iframes are excluded so the reconnect logic handles them; API calls, the terminal and app files always go to the network. `offline.html` therefore has no external resources and retries `/manifest.json` every 3 seconds, reloading once the server answers.
 
 ## Installers (`scripts/`)
 
@@ -207,6 +211,8 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - launchd: `AbandonProcessGroup` so restarting the service does not kill the tmux server it started; `NumberOfFiles` raised from the default 256 to 8192 because ttyd leaks a pty per dropped connection; `bootout` is asynchronous, so the installer waits for the old job to disappear before `bootstrap`, which otherwise fails with error 5.
 - systemd: `KillMode=process` for the same reason as `AbandonProcessGroup`; `LimitNOFILE=8192`; `loginctl enable-linger` keeps the services running without a login session.
 - WSL with mirrored networking shares ports with Windows, and Windows Delivery Optimization already holds 7680, so WSL defaults to ports 7690/7691. Inside WSL `tailscale.exe` of Windows is used both for `tailscale serve` and for the owner lookup (`TERMI_TAILSCALE`).
+- WSL stops a distribution shortly after its last Windows console closes, which would take termi offline. The Linux installer writes `termi-wsl.vbs` into the Windows Startup folder; it runs `wsl.exe -d <distro> --exec sleep infinity` hidden at every logon, which keeps the distribution and its systemd services running. Uninstall removes it.
+- launchd does not rotate `~/Library/Logs/termi.*.log`; the server checks them hourly and, above 5 MB, copies the file to `.1` and truncates it. launchd opens the logs in append mode, so writing continues at the new end. On Linux journald rotates.
 - ttyd runs behind termi under `/term` (`-b /term`) instead of on its own port, so the terminal shares the app's origin.
 - The first `tailscale serve` prints a link to enable Serve/HTTPS for the tailnet and waits until it is opened. Older versions served the terminal on port 8443; the installer turns that off.
 - `attach.sh` is what ttyd runs for each connection. It only attaches to an existing session and never creates one, because reconnecting to the URL of a closed session would otherwise bring it back. The session name from the URL is limited to 40 characters of `[A-Za-z0-9_-]`, and the tmux status bar is turned off because termi's header already shows the session.

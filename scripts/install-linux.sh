@@ -20,7 +20,41 @@ ts() {
   else return 127; fi
 }
 
+KEEPALIVE_VBS=termi-wsl.vbs
+WSCRIPT=/mnt/c/Windows/System32/wscript.exe
+
+windows_startup_dir() {
+  local appdata
+  appdata=$(cd /mnt/c && cmd.exe /c 'echo %APPDATA%' 2>/dev/null | tr -d '\r')
+  [ -n "$appdata" ] || return 1
+  printf '%s/Microsoft/Windows/Start Menu/Programs/Startup' "$(wslpath "$appdata")"
+}
+
+wsl_keepalive() {
+  is_wsl || return 0
+  local startup distro="${WSL_DISTRO_NAME:-Ubuntu}"
+  startup=$(windows_startup_dir) || startup=''
+  if [ ! -d "$startup" ]; then
+    echo "Không tìm thấy thư mục Startup của Windows, bỏ qua bước giữ WSL luôn chạy."
+    return 0
+  fi
+  printf 'CreateObject("WScript.Shell").Run "wsl.exe -d %s --exec sleep infinity", 0, False\r\n' "$distro" \
+    > "$startup/$KEEPALIVE_VBS"
+  if ! pgrep -fx 'sleep infinity' >/dev/null && [ -x "$WSCRIPT" ]; then
+    "$WSCRIPT" "$(wslpath -w "$startup/$KEEPALIVE_VBS")" >/dev/null 2>&1 || true
+  fi
+  echo "WSL sẽ luôn chạy khi Windows đăng nhập ($KEEPALIVE_VBS trong Startup)."
+}
+
+remove_wsl_keepalive() {
+  is_wsl || return 0
+  local startup
+  startup=$(windows_startup_dir) && rm -f "$startup/$KEEPALIVE_VBS"
+  pkill -fx 'sleep infinity' 2>/dev/null || true
+}
+
 if [[ "${1:-}" == uninstall ]]; then
+  remove_wsl_keepalive
   systemctl --user disable --now termi-server termi-ttyd 2>/dev/null || true
   rm -f "$UNIT_DIR/termi-server.service" "$UNIT_DIR/termi-ttyd.service"
   systemctl --user daemon-reload 2>/dev/null || true
@@ -103,6 +137,7 @@ systemctl --user daemon-reload
 systemctl --user enable --now termi-server termi-ttyd
 systemctl --user restart termi-server termi-ttyd
 loginctl enable-linger "$USER" 2>/dev/null || true
+wsl_keepalive
 
 if ts serve --bg --https=443 http://127.0.0.1:$PORT; then
   DNS_NAME='let s="";process.stdin.on("data",d=>s+=d)'
