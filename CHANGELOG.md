@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-27
+
 ### Added
 - Interface language: Vietnamese or English, switched in Settings → Ngôn ngữ · Language (the page reloads). Dates, voice input and push notifications follow the choice; server messages shown in the app are translated too. New UI text is written in Vietnamese inside `t()` with its English in `public/js/en-*.mjs`, enforced by `test/i18n.test.mjs`.
 
@@ -285,7 +287,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0

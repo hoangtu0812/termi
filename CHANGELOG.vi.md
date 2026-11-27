@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.7.0] - 2026-11-27
+
 ### Thêm
 - Ngôn ngữ giao diện: tiếng Việt hoặc tiếng Anh, đổi trong Cài đặt → Ngôn ngữ · Language (trang tự tải lại). Ngày giờ, nhập bằng giọng nói và thông báo đẩy theo ngôn ngữ đã chọn; thông báo từ máy chủ hiện trong app cũng được dịch. Chữ giao diện mới viết bằng tiếng Việt trong `t()` kèm bản tiếng Anh trong `public/js/en-*.mjs`, có `test/i18n.test.mjs` kiểm tra.
 
@@ -287,7 +289,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.6.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.7.0...HEAD
+[1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
