@@ -24,7 +24,8 @@ export function fileIcon(f) {
   const ext = f.name.includes('.') ? f.name.split('.').pop().toLowerCase() : '';
   return FT[ext] || ['file', 'var(--dim)'];
 }
-export const loadFiles = safely(async dir => {
+export const loadFiles = safely(async wanted => {
+  const dir = wanted || (await api('api/info')).roots[0];
   if (S.filesDir !== dir) $('f-list').replaceChildren(...skel(7));
   const r = await api('api/ls?dir=' + encodeURIComponent(dir));
   S.filesDir = r.dir;

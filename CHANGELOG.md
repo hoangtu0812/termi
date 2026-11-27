@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Fixed
+- The Files panel opened with no session selected (for example on iPad) shows the first allowed folder instead of an "outside TERMI_ROOTS" error.
+
 ## [1.14.0] - 2026-11-27
 
 ### Added
