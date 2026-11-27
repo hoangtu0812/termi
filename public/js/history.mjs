@@ -4,6 +4,7 @@ import { agentAvatar } from './icons.mjs';
 import { poll } from './poll.mjs';
 import { cur, go } from './state.mjs';
 import { t } from './i18n.mjs';
+import { openConversation } from './conversation.mjs';
 
 const showHistory = safely(async all => {
   const box = $('hist-list');
@@ -17,7 +18,14 @@ const showHistory = safely(async all => {
       b.type = 'button';
       const t2 = el('span', 't2');
       t2.append(agentAvatar(h.agent, true), `${agentName(h.agent)} · ${short(h.cwd)} · ${ago(h.mtime)}`);
-      b.append(el('span', 't1', h.title), t2);
+      const view = el('span', 'hview', t('Xem'));
+      view.setAttribute('role', 'button');
+      view.onclick = e => {
+        e.stopPropagation();
+        $('d-hist').close();
+        openConversation(h.id);
+      };
+      b.append(el('span', 't1', h.title), t2, view);
       b.onclick = safely(async () => {
         const base = (h.cwd.split('/').pop() || 'claude').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30) || 'claude';
         const name = prompt(t('Tên phiên mới để mở lại hội thoại:'), base);

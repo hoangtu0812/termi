@@ -50,26 +50,31 @@ const QUICK = [
   ],
   ['🗜️', t('Thu gọn'), t('Giảm ngữ cảnh hội thoại'), { claude: '/compact', codex: '/compact' }],
 ];
-const quickList = () => (S.quickCustom ? S.quickCustom.map(q => [q.emoji, q.name, q.desc, q.text, q.ask]) : QUICK);
+const asRows = items => items.map(q => [q.emoji, q.name, q.desc, q.text, q.ask]);
+const quickList = () => (S.quickCustom ? asRows(S.quickCustom) : QUICK);
+const projectName = () => (cur()?.dir || '').split('/').pop();
+
+function actionButton([emoji, name, desc, cmd, ask], agent) {
+  const text = typeof cmd === 'string' ? cmd : (cmd[agent] ?? cmd['*']);
+  if (!text) return null;
+  const b = el('button');
+  b.type = 'button';
+  b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
+  b.onclick = safely(async () => {
+    $('d-quick').close();
+    if (ask && !confirm(t('{0}: gửi yêu cầu này cho {1}?\n\n{2}', name, agentName(agent), text))) return;
+    await api('api/send', { session: st().s, text, enter: true });
+    toast(t('Đã gửi: {0}', name));
+  });
+  return b;
+}
+
 function renderQuick(agent) {
-  $('quick-list').replaceChildren(
-    ...quickList()
-      .map(([emoji, name, desc, cmd, ask]) => {
-        const text = typeof cmd === 'string' ? cmd : (cmd[agent] ?? cmd['*']);
-        if (!text) return null;
-        const b = el('button');
-        b.type = 'button';
-        b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
-        b.onclick = safely(async () => {
-          $('d-quick').close();
-          if (ask && !confirm(t('{0}: gửi yêu cầu này cho {1}?\n\n{2}', name, agentName(agent), text))) return;
-          await api('api/send', { session: st().s, text, enter: true });
-          toast(t('Đã gửi: {0}', name));
-        });
-        return b;
-      })
-      .filter(Boolean),
-  );
+  const general = quickList().map(row => actionButton(row, agent)).filter(Boolean);
+  const own = asRows(S.quickProject || []).map(row => actionButton(row, agent)).filter(Boolean);
+  if (!own.length) return $('quick-list').replaceChildren(...general);
+  const heading = text => el('div', 'qhead', text);
+  $('quick-list').replaceChildren(heading(t('Riêng {0}', projectName())), ...own, heading(t('Dùng chung')), ...general);
 }
 const BLANK_ACTION = { emoji: '⚡', name: '', desc: '', text: '', ask: false };
 
@@ -77,12 +82,13 @@ function openQuick() {
   if (!cur()?.agent) return toast(t('Phiên này chưa chạy agent nào'), true);
   renderQuick(cur().agent);
   $('d-quick').showModal();
-  api('api/quick')
-    .then(q => {
-      S.quickCustom = q;
+  const dir = encodeURIComponent(cur().dir);
+  Promise.all([api('api/quick').catch(() => S.quickCustom), api(`api/quick/project?dir=${dir}`).catch(() => null)])
+    .then(([general, own]) => {
+      S.quickCustom = general;
+      S.quickProject = own;
       if ($('d-quick').open && !S.quickEditing) renderQuick(cur().agent);
-    })
-    .catch(() => {});
+    });
 }
 
 const editableItems = agent =>
@@ -128,22 +134,25 @@ function quickRow(q) {
   return r;
 }
 
+const saveItems = items => (S.quickScope === 'project'
+  ? api('api/quick/project', { dir: cur().dir, items }).then(own => (S.quickProject = own))
+  : api('api/quick', { items }).then(general => (S.quickCustom = general)));
+
 function editorActions(list, agent) {
   const add = el('button', 'btn sm', t('＋ Thêm'));
   const save = el('button', 'btn pri sm', t('Lưu'));
-  const reset = el('button', 'btn sm', t('Khôi phục mặc định'));
+  const reset = el('button', 'btn sm', S.quickScope === 'project' ? t('Xoá danh sách riêng') : t('Khôi phục mặc định'));
   add.type = save.type = reset.type = 'button';
   add.onclick = () => list.append(quickRow(BLANK_ACTION));
   save.onclick = safely(async () => {
-    S.quickCustom = await api('api/quick', { items: [...list.children].map(r => r.read()) });
+    await saveItems([...list.children].map(r => r.read()));
     S.quickEditing = false;
     renderQuick(agent);
     toast(t('Đã lưu thao tác nhanh'));
   });
   reset.onclick = safely(async () => {
     if (!confirm(t('Dùng lại danh sách mặc định?'))) return;
-    await api('api/quick', { items: null });
-    S.quickCustom = null;
+    await saveItems(null);
     S.quickEditing = false;
     renderQuick(agent);
   });
@@ -152,12 +161,28 @@ function editorActions(list, agent) {
   return acts;
 }
 
+function scopePicker() {
+  const seg = el('div', 'seg2');
+  for (const [scope, label] of [['all', t('Dùng chung')], ['project', t('Riêng {0}', projectName())]]) {
+    const b = el('button', S.quickScope === scope ? 'on' : '', label);
+    b.type = 'button';
+    b.onclick = () => {
+      S.quickScope = scope;
+      openQuickEditor();
+    };
+    seg.append(b);
+  }
+  return seg;
+}
+
 function openQuickEditor() {
   S.quickEditing = true;
+  S.quickScope ||= 'all';
   const agent = cur()?.agent;
   const list = el('div', 'qedit');
-  list.append(...editableItems(agent).map(quickRow));
-  $('quick-list').replaceChildren(list, editorActions(list, agent));
+  const items = S.quickScope === 'project' ? S.quickProject || [] : editableItems(agent);
+  list.append(...items.map(quickRow));
+  $('quick-list').replaceChildren(scopePicker(), list, editorActions(list, agent));
 }
 
 export function setupQuick() {

@@ -70,7 +70,10 @@ test('registry lookups', () => {
 });
 
 test('tool calls are summarized for the chat view', () => {
-  assert.deepEqual(toolSummary('Edit', { file_path: '/x/y/index.html' }), { verb: 'Sửa', detail: 'index.html' });
+  const edit = toolSummary('Edit', { file_path: '/x/y/index.html' });
+  assert.deepEqual(edit, { verb: 'Sửa', detail: 'index.html', file: '/x/y/index.html', change: 'edit' });
+  assert.equal(toolSummary('Write', { file_path: '/x/new.md' }).change, 'create');
+  assert.equal(toolSummary('Edit', { file_path: 'relative.md' }).file, undefined);
   const bash = toolSummary('Bash', { command: 'npm test', description: 'Chạy test' });
   assert.deepEqual(bash, { verb: 'Chạy', detail: 'Chạy test' });
   const codexExec = toolSummary('exec', 'const r = await tools.exec_command({cmd:"rg -n TODO src"})');

@@ -4,6 +4,7 @@ import { validUuid } from '../validate.mjs';
 import { parseJson, readHead } from './jsonl.mjs';
 
 const SCAN_FOR_DIR = 300;
+const SCAN_FOR_ID = 1000;
 const MAX_FOR_DIR = 40;
 const DEFAULT_LIMIT = 40;
 const MAX_TITLE_CHARS = 160;
@@ -49,9 +50,19 @@ export function createHistory(agents) {
     return entry;
   }
 
-  return async function history(dir, limit = DEFAULT_LIMIT) {
+  async function history(dir, limit = DEFAULT_LIMIT) {
     const recent = (await conversationFiles(agents)).slice(0, dir ? SCAN_FOR_DIR : limit);
     const entries = await Promise.all(recent.map(cachedConversation));
     return entries.filter(entry => entry && (!dir || entry.cwd === dir)).slice(0, dir ? MAX_FOR_DIR : limit);
+  }
+
+  history.find = async id => {
+    for (const file of (await conversationFiles(agents)).slice(0, SCAN_FOR_ID)) {
+      const conversation = await cachedConversation(file);
+      if (conversation?.id === id) return { adapter: file.agent, file: file.file, conversation };
+    }
+    return null;
   };
+
+  return history;
 }

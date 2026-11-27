@@ -38,9 +38,16 @@ function shellCommand(input) {
   return Array.isArray(input.command) ? input.command.join(' ') : input.command || input.cmd;
 }
 
+const FILE_TOOLS = { Edit: 'edit', MultiEdit: 'edit', NotebookEdit: 'edit', Write: 'create' };
+
 export function toolSummary(name, rawInput) {
   const input = parseInput(rawInput);
   const describe = NAMED_TOOLS.get(name);
   const [verb, detail] = describe ? describe(input) : [SHELL_TOOLS.has(name) ? 'Chạy' : name, shellCommand(input)];
-  return { verb, detail: String(detail || '').replace(/\s+/g, ' ').trim().slice(0, MAX_DETAIL_CHARS) };
+  const step = { verb, detail: String(detail || '').replace(/\s+/g, ' ').trim().slice(0, MAX_DETAIL_CHARS) };
+  const file = input.file_path || input.notebook_path;
+  if (FILE_TOOLS[name] && typeof file === 'string' && file.startsWith('/')) {
+    Object.assign(step, { file, change: FILE_TOOLS[name] });
+  }
+  return step;
 }

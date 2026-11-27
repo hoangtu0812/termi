@@ -1,5 +1,6 @@
 import { api, safely } from './api.mjs';
 import { $, agentName, el, skel } from './dom.mjs';
+import { fileChips } from './chat-files.mjs';
 import { icon } from './icons.mjs';
 import { mdSafe } from './sanitize.mjs';
 import { cur, st } from './state.mjs';
@@ -8,7 +9,7 @@ import { locale, t } from './i18n.mjs';
 
 const chatCache = new Map();
 let chatKey = '';
-function toolsCard(x) {
+export function toolsCard(x, dir = cur()?.dir) {
   const d = el('details', 'tools'),
     sm = el('summary'),
     last = x.steps.at(-1);
@@ -23,6 +24,8 @@ function toolsCard(x) {
     }),
   );
   d.append(sm, ul);
+  const files = fileChips(x.steps, dir);
+  if (files) d.append(files);
   return d;
 }
 const IMAGE_PATH = /\/[^\s'"]+\.(?:png|jpe?g|gif|webp)\b/gi;
@@ -81,7 +84,7 @@ async function bubbleBody(m) {
 
 const timeLabel = at => new Date(at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
 
-async function bubble(m) {
+export async function bubble(m) {
   const key = m.who + '\u0000' + m.text;
   if (chatCache.has(key)) return chatCache.get(key);
   const b = el('div', 'msg ' + (m.who === 'user' ? 'me' : 'ai'));

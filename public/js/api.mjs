@@ -6,7 +6,7 @@ import { currentLang, t, translate } from './i18n.mjs';
 export const base = () => (st().m ? 'm/' + encodeURIComponent(st().m) + '/' : '');
 const GATEWAY_DOWN = new Set([502, 503, 504]);
 const gatewayDown = r => GATEWAY_DOWN.has(r.status) && !r.headers.get('content-type')?.includes('json');
-const HUB_ONLY = /^api\/(machines|events|notify|quick|push\/)/;
+const HUB_ONLY = /^api\/(machines|events|notify|quick$|push\/)/;
 export async function api(path, body) {
   let r;
   try {

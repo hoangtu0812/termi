@@ -197,3 +197,27 @@ test('side panel width is clamped and the home page picks the latest session', a
   assert.equal(latestSession([{ name: 'a', activity: 1 }, { name: 'b', activity: 5 }]).name, 'b');
   assert.equal(latestSession([]), null);
 });
+
+test('chat tool cards list each changed file once, creation wins', async () => {
+  const { changedFiles, relativeTo } = await import('../public/js/chat-files.mjs');
+  const steps = [
+    { verb: 'Đọc', file: undefined },
+    { verb: 'Tạo', file: '/r/a.md', change: 'create' },
+    { verb: 'Sửa', file: '/r/a.md', change: 'edit' },
+    { verb: 'Sửa', file: '/r/src/b.mjs', change: 'edit' },
+  ];
+  assert.deepEqual(changedFiles(steps), [
+    { file: '/r/a.md', change: 'create' },
+    { file: '/r/src/b.mjs', change: 'edit' },
+  ]);
+  assert.equal(relativeTo('/r', '/r/src/b.mjs'), 'src/b.mjs');
+  assert.equal(relativeTo('/r/', '/r/src/b.mjs'), 'src/b.mjs');
+  assert.equal(relativeTo('/r', '/other/x'), null);
+});
+
+test('pipeline run actions follow the run state', async () => {
+  const { runActions } = await import('../public/js/pipelines-view.mjs');
+  assert.deepEqual(runActions({ status: 'completed', result: 'failure' }), ['web', 'rerun', 'log']);
+  assert.deepEqual(runActions({ status: 'completed', result: 'success' }), ['web', 'rerun']);
+  assert.deepEqual(runActions({ status: 'running', result: null }), ['web', 'cancel']);
+});

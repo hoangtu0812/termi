@@ -52,4 +52,8 @@ export const EN_SERVER = {
   'Cần cài GitHub CLI và đăng nhập: gh auth login': 'Install GitHub CLI and sign in: gh auth login',
   'Cần Azure CLI có extension azure-devops và đăng nhập: az login':
     'Install Azure CLI with the azure-devops extension and sign in: az login',
+  '(không có log lỗi)': '(no error log)',
+  'Không tìm thấy lần chạy': 'Run not found',
+  'Lần chạy không hợp lệ': 'Invalid run',
+  'Không tìm thấy hội thoại': 'Conversation not found',
 };

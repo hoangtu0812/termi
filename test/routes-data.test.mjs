@@ -163,3 +163,13 @@ test('file search by name ranks name matches first and stays inside roots', asyn
   assert.deepEqual((await app.get(`/api/find?dir=${q(repo)}&q=`)).json(), []);
   assert.equal((await app.get(`/api/find?dir=${q(os.tmpdir())}&q=a`)).status, 403);
 });
+
+test('quick actions can be kept per project', async () => {
+  const items = [{ emoji: '🧪', name: 'Test backend', desc: '', text: 'npm run test:api', ask: false }];
+  assert.equal((await app.get(`/api/quick/project?dir=${q(repo)}`)).json(), null);
+  assert.deepEqual((await app.post('/api/quick/project', { dir: repo, items })).json(), items);
+  assert.deepEqual((await app.get(`/api/quick/project?dir=${q(repo)}`)).json(), items);
+  assert.equal((await app.get(`/api/quick/project?dir=${q(app.work)}`)).json(), null);
+  assert.equal((await app.post('/api/quick/project', { dir: repo, items: null })).json(), null);
+  assert.equal((await app.post('/api/quick/project', { dir: os.tmpdir(), items })).status, 403);
+});

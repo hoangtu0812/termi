@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.5 |
+| Version | 1.6 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
@@ -56,13 +56,13 @@ Each file returns a table of handlers built from the shared context.
 |---|---|
 | `sessions.mjs` | List, create, rename, kill sessions; restore after a reboot; the session event stream (`/api/stream`). |
 | `terminal.mjs` | Send text and keys, resize, refresh, capture text, chat view, submit menus. |
-| `projects.mjs` | Suggested folders, conversation history, project tree, installed agents. |
+| `projects.mjs` | Suggested folders, conversation history and read-only conversation view, project tree, installed agents. |
 | `files.mjs` | Directory listing, file name search, file contents, raw images, uploads. |
 | `git.mjs` | Status, log and graph, diffs, git operations. |
 | `notify.mjs` | Push key and subscriptions, last alert, inbox events, notification settings. |
 | `usage.mjs` | Plan limits, session tokens, machine load; tailnet machines. |
-| `settings.mjs` | Settings page info; quick actions. |
-| `ci.mjs` | Pipeline runs of a repository (`/api/ci`). |
+| `settings.mjs` | Settings page info; shared and per-project quick actions. |
+| `ci.mjs` | Pipeline runs of a repository, failed-step logs, rerun and cancel (`/api/ci`, `/api/ci/log`, `/api/ci/action`). |
 
 ### Services
 
@@ -94,7 +94,7 @@ Each file returns a table of handlers built from the shared context.
 | `src/tmux/` | `client.mjs` (run tmux, exact session targets), `screen.mjs` (agent state, menus and previews read from the screen). |
 | `src/git/` | `run.mjs` (git runner), `ops.mjs` (stage, commit, push…), `parse.mjs` (status, numstat, log), `graph.mjs` (commit graph lanes), `marks.mjs` (file tab marks). |
 | `src/push/` | `vapid.mjs` (keys and signatures), `webpush.mjs` (delivery and subscriptions), `prefs.mjs` (notification settings), `watcher.mjs` (state changes → inbox and push), `incidents.mjs` (machine offline, disk, crash and ttyd alerts), `texts.mjs` (push texts in Vietnamese and English). |
-| `src/ci/` | `remote.mjs` (recognize GitHub and Azure DevOps remotes), `normalize.mjs` (one run shape for both), `providers.mjs` (read runs through the `gh` and `az` CLIs), `index.mjs` (per-repository cache). |
+| `src/ci/` | `remote.mjs` (recognize GitHub and Azure DevOps remotes), `normalize.mjs` (one run shape for both), `providers.mjs` (read runs through the `gh` and `az` CLIs), `actions.mjs` (failed-step logs, rerun and cancel), `index.mjs` (per-repository cache). |
 
 ## 3. Client (`public/`)
 
@@ -111,7 +111,7 @@ Each file returns a table of handlers built from the shared context.
 | Live data | `poll.mjs` (fallback polling), `live.mjs` (event stream), `conn.mjs` (connection dot), `outbox.mjs` (messages sent while offline) |
 | Sessions | `home.mjs` (start page), `tips.mjs` (first-run checklist), `sessions.mjs` (project tree), `session-label.mjs`, `session-filter.mjs`, `session-actions.mjs`, `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
 | Terminal | `terminal.mjs` (ttyd iframes), `term-pool.mjs` (up to four live frames), `reconnect.mjs` (touch scroll, reconnect, stale detection), `keys.mjs` |
-| Composer and chat | `composer.mjs`, `attachments.mjs`, `voice.mjs`, `quick.mjs`, `confirm.mjs`, `chat.mjs`, `sanitize.mjs` |
+| Composer and chat | `composer.mjs`, `attachments.mjs`, `voice.mjs`, `quick.mjs`, `confirm.mjs`, `chat.mjs`, `chat-files.mjs` (changed-file chips), `conversation.mjs` (read-only conversation viewer), `sanitize.mjs` |
 | Files and git | `files.mjs`, `file-crumb.mjs`, `file-find.mjs`, `viewer.mjs`, `markdown.mjs`, `highlight.mjs`, `diff.mjs`, `git.mjs`, `git-graph.mjs`, `git-log.mjs`, `pipelines.mjs`, `pipelines-view.mjs` |
 | Notifications and settings | `push.mjs`, `inbox.mjs`, `notify-form.mjs`, `settings.mjs`, `usage.mjs`, `palette.mjs` |
 

@@ -4,6 +4,8 @@ import path from 'node:path';
 import { fail } from '../errors.mjs';
 
 const QUICK_FILE = 'quick.json';
+const PROJECT_QUICK_FILE = 'quick-projects.json';
+const MAX_QUICK_PROJECTS = 100;
 const MAX_QUICK_ITEMS = 30;
 const QUICK_LIMITS = { emoji: 8, name: 40, desc: 80, text: 2000 };
 
@@ -18,6 +20,15 @@ export function parseQuickItems(items) {
     text: cut(item.text, QUICK_LIMITS.text),
     ask: Boolean(item.ask),
   })).filter(item => item.name && item.text);
+}
+
+export function setProjectQuick(map, dir, items) {
+  const next = { ...(map && typeof map === 'object' ? map : {}) };
+  delete next[dir];
+  if (items !== null) next[dir] = parseQuickItems(items);
+  const dirs = Object.keys(next);
+  for (const old of dirs.slice(0, Math.max(0, dirs.length - MAX_QUICK_PROJECTS))) delete next[old];
+  return next;
 }
 
 const exists = file => fs.access(file).then(() => true, () => false);
@@ -47,6 +58,17 @@ export function settingsRoutes({ store, agents, paths, config }) {
       const items = parseQuickItems(body.items);
       await store.write(QUICK_FILE, items);
       return items;
+    },
+
+    async 'GET /api/quick/project'(query) {
+      const dir = await paths.need(query.get('dir'));
+      return (await store.read(PROJECT_QUICK_FILE))?.[dir] ?? null;
+    },
+
+    async 'POST /api/quick/project'(_, body) {
+      const dir = await paths.need(body.dir);
+      const map = await store.update(PROJECT_QUICK_FILE, current => setProjectQuick(current, dir, body.items ?? null));
+      return map[dir] ?? null;
     },
   };
 }
