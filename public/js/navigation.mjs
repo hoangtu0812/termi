@@ -1,9 +1,10 @@
 import { api, safely, toast } from './api.mjs';
-import { $ } from './dom.mjs';
+import { $, wide } from './dom.mjs';
 import { killSession, renameSession } from './session-actions.mjs';
 import { S, go, st } from './state.mjs';
 import { t } from './i18n.mjs';
-import { codeTab } from './tab-memory.mjs';
+import { CODE_TABS, codeTab } from './tab-memory.mjs';
+import { SIDE_PANELS } from './layout.mjs';
 
 const TAB_VIBRATION_MS = 6;
 const SHORTCUT_TABS = { Digit1: 'chat', Digit2: 'term', Digit3: 'files', Digit4: 'git', Digit5: 'ci' };
@@ -36,13 +37,17 @@ export function setupNavigation() {
     } else if (v === 'kill') await killSession(name);
   });
   $('b-back').onclick = () => go({ t: 'sessions', v: null });
-  for (const b of document.querySelectorAll('#tabbar button, #seg button, #codetabs button')) {
+  for (const b of document.querySelectorAll('#tabbar button, #seg button, #codetabs button, #acts button')) {
     b.onclick = () => openTab(b.dataset.t === 'code' ? codeTab() : b.dataset.t);
   }
   document.addEventListener('keydown', tabKey, true);
 }
 
 function openTab(tab) {
+  if (wide() && SIDE_PANELS.includes(tab)) {
+    const keepMain = CODE_TABS.includes(st().t) ? { t: null } : {};
+    return go({ p: tab, ...keepMain });
+  }
   if (st().t !== tab) navigator.vibrate?.(TAB_VIBRATION_MS);
   go({ t: tab, v: null });
 }

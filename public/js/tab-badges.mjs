@@ -33,7 +33,7 @@ export function renderTabBadges() {
     ci: S.ciState && session && S.ciState.dir === session.dir ? S.ciState.badge : null,
     viewing: st().t,
   };
-  for (const b of document.querySelectorAll('#seg button, #tabbar button, #codetabs button')) {
+  for (const b of document.querySelectorAll('#seg button, #tabbar button, #codetabs button, #acts button')) {
     place(b, b.dataset.t === 'code' ? codeBadge(context) : badgeFor(b.dataset.t, context));
   }
 }

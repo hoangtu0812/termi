@@ -24,41 +24,7 @@
 }
 .seg button.on { background:var(--card); color:var(--fg); box-shadow:0 1px 2px #0003; }
 #panes { flex:1; min-height:0; position:relative; }
-.stabs {
-  display:flex;
-  gap:4px;
-  padding:6px 8px 0;
-  overflow-x:auto;
-  scrollbar-width:none;
-  border-bottom:1px solid var(--line);
-  flex:none;
-}
-.stabs::-webkit-scrollbar { display:none; }
-.stab {
-  flex:none;
-  display:inline-flex;
-  align-items:center;
-  gap:2px;
-  max-width:220px;
-  height:34px;
-  padding:0 10px 0 6px;
-  border:1px solid transparent;
-  border-bottom:0;
-  border-radius:9px 9px 0 0;
-  background:transparent;
-  color:var(--dim);
-  font-size:13px;
-}
-.stab .n { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; margin-right:6px; }
-.stab.on { background:var(--card); border-color:var(--line); color:var(--fg); font-weight:600; }
-.stab .av.sm { margin-right:6px; }
 .pane { position:absolute; inset:0; display:flex; flex-direction:column; overflow:hidden; }
-@media (min-width:1200px) {
-  body.split #p-term { right:46%; }
-  body.split #p-files, body.split #p-git, body.split #p-ci, body.split #viewer {
-    left:54%; border-left:1px solid var(--line);
-  }
-}
 @media (prefers-reduced-motion: no-preference) {
   .pane:not([hidden]), #viewer:not([hidden]), dialog[open] { animation:pane-in .16s ease-out; }
   .btn, .ibtn, .wbtn, .sess, .keys button, .sg, .irow { transition:transform .08s; }
