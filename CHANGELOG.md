@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-27
+
 ### Added
 - Pipelines is its own tab (Chat · Terminal · File · Git · Pipelines) with its own repository picker; the Git / Pipelines switch inside the Git tab is gone.
 - Phones: the bottom bar is Sessions · Chat · Terminal · Code; Code opens the last of File, Git or Pipelines, switched by a sub-tab bar at the top.
@@ -299,7 +301,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0

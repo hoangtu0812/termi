@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.9.0] - 2026-11-27
+
 ### Thêm
 - Pipelines thành tab riêng (Chat · Terminal · File · Git · Pipelines), có ô chọn repo riêng; bỏ nút chuyển Git / Pipelines trong tab Git.
 - Điện thoại: thanh dưới còn Phiên · Chat · Terminal · Code; Code mở lại tab dùng gần nhất trong File, Git, Pipelines, chuyển qua lại bằng thanh tab con ở đầu màn hình.
@@ -301,7 +303,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.8.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.9.0...HEAD
+[1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
