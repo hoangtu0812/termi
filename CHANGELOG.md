@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-11-27
+
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
 - Architecture refactor plan `plan/PLAN-v1.8-architecture-refactor.md`.
@@ -217,7 +219,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v0.12.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0
 [0.11.0]: https://github.com/hoangtu0812/termi/compare/v0.10.5...v0.11.0
 [0.10.5]: https://github.com/hoangtu0812/termi/compare/v0.10.4...v0.10.5
