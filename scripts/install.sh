@@ -9,7 +9,7 @@ TS=/opt/homebrew/bin/tailscale
 xml() { sed -e 's/&/\&amp;/g' -e 's/</\&lt;/g' <<<"$1"; }
 
 if [[ "${1:-}" == uninstall ]]; then
-  for n in server ttyd vscode; do
+  for n in server ttyd vscode vscode-proxy; do
     launchctl bootout "gui/$UID/vn.termi.$n" 2>/dev/null || true
     rm -f "$LA/vn.termi.$n.plist"
   done

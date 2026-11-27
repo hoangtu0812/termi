@@ -1,7 +1,7 @@
 .si { position:relative; }
 .si .sip { color:var(--faint); }
-.si .sit .nm { flex:0 3 auto; min-width:5.5em; margin-right:auto; }
-.si .sit .state { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.si .sit .nm { flex:0 1 auto; min-width:4em; margin-right:auto; }
+.si .sit .state, .si .sit .chgs { flex:none; }
 .sacts {
   position:absolute; right:6px; top:6px; display:none; gap:2px; padding:2px; border-radius:8px;
   background:var(--card); box-shadow:0 0 0 1px var(--line2), -12px 0 12px -4px var(--panel);

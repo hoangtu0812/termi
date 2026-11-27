@@ -1,5 +1,6 @@
 import { api, safely } from './api.mjs';
 import { renderConfirm } from './confirm.mjs';
+import { showEditorButtons } from './editor.mjs';
 import { $, agentName, dur, el } from './dom.mjs';
 import { poll } from './poll.mjs';
 import { stateEl } from './sessions.mjs';
@@ -26,6 +27,7 @@ export function renderTop() {
     );
   $('t-state').title = x?.dir || '';
   $('b-menu').hidden = !x;
+  showEditorButtons();
   renderConfirm();
   renderDoing();
   renderTabBadges();
