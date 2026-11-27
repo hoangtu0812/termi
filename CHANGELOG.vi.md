@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
 ### Thêm
 - Chuyển phiên giữ sẵn tối đa bốn terminal đang kết nối ở nền, quay lại là hiện ngay, không tải lại.
 - Chấm kết nối trên header (xanh / vàng / đỏ) cho biết máy chủ và terminal có kết nối không và dữ liệu mới nhất cách đây bao lâu.
@@ -250,7 +252,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0

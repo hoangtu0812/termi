@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-11-27
+
 ### Added
 - Switching sessions keeps up to four terminals connected in the background, so going back is instant and does not reload.
 - A connection dot in the header (green / amber / red) shows whether the server and terminal are reachable and how long ago data arrived.
@@ -248,7 +250,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
