@@ -20,11 +20,14 @@ const DOC_PREFIXES = {
 const DOC_NAME = /^([A-Z]+)-v\d+\.\d+-[a-z0-9]+(?:-[a-z0-9]+)*(?:\.vi)?\.md$/;
 const SAMPLE_SIZE = 5;
 
+export const isAppleDouble = file => file.split('/').at(-1).startsWith('._');
+
 async function listFiles(dir) {
   const entries = await fs.readdir(path.join(ROOT, dir), { recursive: true, withFileTypes: true }).catch(() => []);
   return entries
     .filter(entry => entry.isFile())
     .map(entry => path.relative(ROOT, path.join(entry.parentPath, entry.name)).split(path.sep).join('/'))
+    .filter(file => !isAppleDouble(file))
     .sort();
 }
 

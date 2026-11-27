@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Fixed
+- `npm run check` no longer fails on macOS AppleDouble (`._*`) files created on exFAT drives.
+
 ## [1.0.1] - 2026-11-27
 
 ### Fixed

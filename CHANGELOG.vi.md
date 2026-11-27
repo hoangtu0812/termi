@@ -8,6 +8,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Sửa lỗi
+- `npm run check` không còn báo lỗi vì file AppleDouble (`._*`) của macOS sinh ra trên ổ exFAT.
+
 ## [1.0.1] - 2026-11-27
 
 ### Sửa lỗi
