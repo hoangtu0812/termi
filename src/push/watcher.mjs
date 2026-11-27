@@ -1,3 +1,4 @@
+import { pushText } from './texts.mjs';
 import { shouldPush } from './prefs.mjs';
 
 const MAX_EVENTS = 30;
@@ -30,7 +31,7 @@ export function createWatcher({ sessions, machines, agents, pusher, prefs, now =
 
   async function report(session, kind) {
     const label = session.m ? `[${session.m}] ${session.name}` : session.name;
-    const action = kind === 'waiting' ? 'cần bạn xác nhận' : 'đã xong';
+    const action = pushText(prefs.get().lang, kind);
     const title = `${label}: ${agents.nameOf(session.agent)} ${action}`;
     const event = { t: now(), kind, title, body: session.preview, session: session.name };
     events.unshift({ ...event, machine: session.m, agent: session.agent });

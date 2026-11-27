@@ -4,6 +4,15 @@ import { renderCrumb } from './file-crumb.mjs';
 import { icon } from './icons.mjs';
 import { S, go } from './state.mjs';
 import { openFile } from './viewer.mjs';
+import { t } from './i18n.mjs';
+
+const GIT_MARK_LABELS = {
+  M: () => t('Đã sửa'),
+  A: () => t('Mới thêm'),
+  D: () => t('Đã xoá'),
+  U: () => t('Chưa theo dõi'),
+  R: () => t('Đổi tên'),
+};
 
 const FT = {};
 const ft = (exts, ic, color) =>
@@ -33,15 +42,15 @@ export const loadFiles = safely(async dir => {
         const g = el('span', f.git === '•' ? 'gdot' : 'badge ' + f.git, f.git === '•' ? '' : f.git);
         g.title =
           f.git === '•'
-            ? 'Có thay đổi bên trong'
-            : { M: 'Đã sửa', A: 'Mới thêm', D: 'Đã xoá', U: 'Chưa theo dõi', R: 'Đổi tên' }[f.git] || f.git;
+            ? t('Có thay đổi bên trong')
+            : GIT_MARK_LABELS[f.git]?.() || f.git;
         b.append(g);
       }
       b.onclick = () => (f.dir ? go({ d: f.path }) : openFile(f.path));
       return b;
     }),
   );
-  if (!r.entries.length) $('f-list').replaceChildren(el('div', 'empty', 'Thư mục trống'));
+  if (!r.entries.length) $('f-list').replaceChildren(el('div', 'empty', t('Thư mục trống')));
 });
 export function setupFiles() {
   ft('js mjs cjs jsx', 'code', '#d4b106');

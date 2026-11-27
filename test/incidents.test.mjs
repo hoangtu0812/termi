@@ -60,6 +60,8 @@ test('the system preference defaults to on for clients that do not send it', () 
   assert.equal(NOTIFY_DEFAULT.system, true);
   assert.equal(parseNotifyPrefs({ waiting: true }).system, true);
   assert.equal(parseNotifyPrefs({ system: false }).system, false);
+  assert.equal(parseNotifyPrefs({ lang: 'en' }).lang, 'en');
+  assert.equal(parseNotifyPrefs({ lang: 'fr' }).lang, 'vi');
 });
 
 test('an unclean previous run is detected once', async () => {

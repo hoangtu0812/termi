@@ -5,6 +5,7 @@ import { newSession } from './new-session.mjs';
 import { poll } from './poll.mjs';
 import { loadProjects, renderSessions } from './sessions.mjs';
 import { S, go } from './state.mjs';
+import { t } from './i18n.mjs';
 
 export async function loadRestore() {
   S.restore = await api('api/restore').catch(() => []);
@@ -18,20 +19,21 @@ export function renderRestore(box) {
     acts = el('div', 'wa');
   const d = el('div', 'wd');
   d.innerHTML = icon('history');
-  d.append(el('b', null, `Khôi phục ${S.restore.length} phiên`), el('small', null, 'từ trước lần khởi động lại máy'));
+  const title = el('b', null, t('Khôi phục {0} phiên', S.restore.length));
+  d.append(title, el('small', null, t('từ trước lần khởi động lại máy')));
   for (const x of S.restore) {
     const n = el('span', 'wbtn');
     n.append(agentAvatar(x.agent, true), x.name);
     names.append(n);
   }
-  const ok = el('button', 'btn pri sm', 'Khôi phục'),
-    no = el('button', 'btn sm', 'Bỏ qua');
+  const ok = el('button', 'btn pri sm', t('Khôi phục')),
+    no = el('button', 'btn sm', t('Bỏ qua'));
   ok.type = no.type = 'button';
   ok.onclick = safely(async () => {
     ok.disabled = true;
     const r = await api('api/restore', {});
     toast(
-      `Đã khôi phục ${r.done.length} phiên` + (r.failed.length ? ` · lỗi: ${r.failed.join('; ')}` : ''),
+      t('Đã khôi phục {0} phiên', r.done.length) + (r.failed.length ? t(' · lỗi: {0}', r.failed.join('; ')) : ''),
       !!r.failed.length,
     );
     S.restore = [];
@@ -47,10 +49,10 @@ export function renderRestore(box) {
   box.prepend(c);
 }
 const GREETINGS = [
-  [11, 'Chào buổi sáng'],
-  [14, 'Chào buổi trưa'],
-  [18, 'Chào buổi chiều'],
-  [24, 'Chào buổi tối'],
+  [11, t('Chào buổi sáng')],
+  [14, t('Chào buổi trưa')],
+  [18, t('Chào buổi chiều')],
+  [24, t('Chào buổi tối')],
 ];
 const RECENT_PROJECTS = 6;
 
@@ -59,17 +61,17 @@ function greeting(hour = new Date().getHours()) {
 }
 
 function welcomeIntro() {
-  if (S.list.length) return 'Chọn một phiên bên trái, hoặc bắt đầu làm việc ở một project gần đây.';
-  return 'Chọn project và agent để bắt đầu. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.';
+  if (S.list.length) return t('Chọn một phiên bên trái, hoặc bắt đầu làm việc ở một project gần đây.');
+  return t('Chọn project và agent để bắt đầu. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.');
 }
 
 function welcomeShell(list) {
   const w = el('div', 'welcome');
   w.innerHTML = '<img src="icon.svg" alt="">';
-  w.append(el('h2', null, greeting()), el('p', null, welcomeIntro()), el('div', 'wh', 'Project gần đây'), list);
+  w.append(el('h2', null, greeting()), el('p', null, welcomeIntro()), el('div', 'wh', t('Project gần đây')), list);
   const more = el('button', 'btn');
   more.type = 'button';
-  more.innerHTML = icon('folder') + 'Thư mục khác…';
+  more.innerHTML = icon('folder') + t('Thư mục khác…');
   more.onclick = newSession;
   w.append(more);
   return w;
@@ -78,7 +80,7 @@ function welcomeShell(list) {
 function resumeButton(dir, last) {
   const r = el('button', 'wr');
   r.type = 'button';
-  r.title = 'Mở lại hội thoại này';
+  r.title = t('Mở lại hội thoại này');
   r.innerHTML = icon('refresh');
   r.append(el('span', null, last.title), el('span', 'wt', ago(last.mtime)));
   r.onclick = safely(() => quickStart(dir, last.agent, last.id));
@@ -121,7 +123,8 @@ export async function welcome(box) {
   const projects = new Map((S.projects || []).map(p => [p.dir, p]));
   const cards = dirs.recent.slice(0, RECENT_PROJECTS).map(dir => projectCard(dir, projects.get(dir), agents));
   list.replaceChildren(...cards);
-  if (!dirs.recent.length) list.replaceChildren(el('div', 'empty', 'Chưa có project nào, bấm "Thư mục khác…" để chọn'));
+  const none = t('Chưa có project nào, bấm "Thư mục khác…" để chọn');
+  if (!dirs.recent.length) list.replaceChildren(el('div', 'empty', none));
 }
 export async function quickStart(dir, agent, resume) {
   const base =
@@ -140,5 +143,5 @@ export async function quickStart(dir, agent, resume) {
       if (!/tồn tại/.test(e.message)) throw e;
     }
   }
-  throw new Error('Không tìm được tên phiên còn trống');
+  throw new Error(t('Không tìm được tên phiên còn trống'));
 }

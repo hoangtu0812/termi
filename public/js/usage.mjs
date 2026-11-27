@@ -3,26 +3,27 @@ import { $, agentName, el, short } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { loadMachines } from './machines.mjs';
 import { S, st } from './state.mjs';
+import { locale, t } from './i18n.mjs';
 
 const level = p => (p >= 90 ? 'bad' : p >= 70 ? 'warn' : '');
 const kTok = n => (n >= 1e6 ? (n / 1e6).toFixed(1) + 'M' : Math.round(n / 1e3) + 'k');
 const windowName = m =>
-  ({ 300: '5 giờ', 10080: '7 ngày', 43200: '30 ngày' })[m] || (m ? `${Math.round(m / 60)} giờ` : '');
-const until = t => {
-  const m = Math.round((t - Date.now()) / 60000);
+  ({ 300: t('5 giờ'), 10080: t('7 ngày'), 43200: t('30 ngày') })[m] || (m ? t('{0} giờ', Math.round(m / 60)) : '');
+const until = ts => {
+  const m = Math.round((ts - Date.now()) / 60000);
   return m <= 0
-    ? 'sắp reset'
+    ? t('sắp reset')
     : m < 60
-      ? `reset sau ${m} phút`
+      ? t('reset sau {0} phút', m)
       : m < 1440
-        ? `reset sau ${Math.floor(m / 60)} giờ ${m % 60} phút`
-        : `reset ${new Date(t).toLocaleDateString('vi-VN', { weekday: 'short', day: 'numeric', month: 'numeric' })}`;
+        ? t('reset sau {0} giờ {1} phút', Math.floor(m / 60), m % 60)
+        : `reset ${new Date(ts).toLocaleDateString(locale(), { weekday: 'short', day: 'numeric', month: 'numeric' })}`;
 };
 function limitRows(agent, l) {
   if (agent === 'claude' && l.claude)
     return [
-      ['5h', 'Phiên 5 giờ', l.claude.fiveHour],
-      ['7d', '7 ngày', l.claude.sevenDay],
+      ['5h', t('Phiên 5 giờ'), l.claude.fiveHour],
+      ['7d', t('7 ngày'), l.claude.sevenDay],
     ]
       .filter(r => r[2])
       .map(([s, n, w]) => [s, n, w.pct, w.resetsAt]);
@@ -30,7 +31,7 @@ function limitRows(agent, l) {
     return [l.codex.primary, l.codex.secondary]
       .filter(Boolean)
       .map(w => [
-        windowName(w.minutes).replace(' giờ', 'h').replace(' ngày', 'd'),
+        windowName(w.minutes).replace(t(' giờ'), 'h').replace(t(' ngày'), 'd'),
         windowName(w.minutes),
         w.pct,
         w.resetsAt,
@@ -53,7 +54,7 @@ function renderUsageChip() {
         : ['CPU', u.machine.cpu];
   b.className = 'uchip ' + level(pct);
   b.replaceChildren(el('i'), `${label} ${text ?? pct + '%'}`);
-  b.title = 'Usage: hạn mức, token, tài nguyên máy';
+  b.title = t('Usage: hạn mức, token, tài nguyên máy');
   b.hidden = false;
 }
 const ICON_COLOR = { claude: 'var(--acc)', codex: 'var(--blue)', ctx: '#a78bfa', machine: 'var(--ok)' };
@@ -86,7 +87,7 @@ export function group(title, ic, rows) {
 const LIMIT_AGENTS = ['claude', 'codex'];
 const GIB = 2 ** 30;
 const NO_CLAUDE_LIMITS =
-  'Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra có hạn mức này.';
+  t('Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra có hạn mức này.');
 
 function planLimitRows(limits) {
   const rows = [];
@@ -107,28 +108,28 @@ export function contextPercent(session) {
 }
 
 function sessionGroup(session) {
-  const title = `Phiên ${session.name} · ${agentName(session.agent)}`;
+  const title = t('Phiên {0} · {1}', session.name, agentName(session.agent));
   if (session.context == null)
-    return group(title, 'term', [el('div', 'uempty', 'Chưa có số liệu token cho phiên này')]);
+    return group(title, 'term', [el('div', 'uempty', t('Chưa có số liệu token cho phiên này'))]);
   const total = session.window ? ' / ' + kTok(session.window) : '';
   const detail = `${kTok(session.context)}${total} token${session.model ? ' · ' + session.model : ''}`;
-  return group(title, 'term', [meterRow('Ngữ cảnh', contextPercent(session), detail, 'layers', ICON_COLOR.ctx)]);
+  return group(title, 'term', [meterRow(t('Ngữ cảnh'), contextPercent(session), detail, 'layers', ICON_COLOR.ctx)]);
 }
 
 function machineGroup(m) {
   const ram = m.memTotal ? `${Math.round(m.memTotal / GIB)} GB` : '';
-  const free = m.diskFree != null ? `còn trống ${(m.diskFree / GIB).toFixed(0)} GB` : '';
-  return group('Máy' + (st().m ? ' · ' + st().m : ''), 'monitor', [
-    meterRow('CPU (tải 1 phút)', m.cpu, '', 'cpu', ICON_COLOR.machine),
+  const free = m.diskFree != null ? t('còn trống {0} GB', (m.diskFree / GIB).toFixed(0)) : '';
+  return group(t('Máy') + (st().m ? ' · ' + st().m : ''), 'monitor', [
+    meterRow(t('CPU (tải 1 phút)'), m.cpu, '', 'cpu', ICON_COLOR.machine),
     meterRow('RAM', m.mem, ram, 'ram', ICON_COLOR.machine),
-    meterRow('Ổ đĩa', m.disk, free, 'disk', ICON_COLOR.machine),
+    meterRow(t('Ổ đĩa'), m.disk, free, 'disk', ICON_COLOR.machine),
   ]);
 }
 
 function renderUsageDialog() {
   const u = S.usage;
   if (!u) return;
-  const parts = [group('Hạn mức gói', 'gauge', planLimitRows(u.limits))];
+  const parts = [group(t('Hạn mức gói'), 'gauge', planLimitRows(u.limits))];
   if (u.session?.agent) parts.push(sessionGroup(u.session));
   parts.push(machineGroup(u.machine));
   $('usage-body').replaceChildren(...parts);

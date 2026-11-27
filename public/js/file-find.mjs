@@ -4,6 +4,7 @@ import { fileIcon, loadFiles } from './files.mjs';
 import { icon } from './icons.mjs';
 import { S } from './state.mjs';
 import { openFile } from './viewer.mjs';
+import { t } from './i18n.mjs';
 
 const SEARCH_DELAY_MS = 250;
 let timer;
@@ -28,7 +29,7 @@ const search = safely(async () => {
   const query = `dir=${encodeURIComponent(S.filesDir)}&q=${encodeURIComponent(term)}`;
   const found = await api(`api/find?${query}`);
   if ($('f-q').value.trim() !== term) return;
-  const empty = el('div', 'empty', `Không có file nào tên chứa "${term}"`);
+  const empty = el('div', 'empty', t('Không có file nào tên chứa "{0}"', term));
   $('f-list').replaceChildren(...(found.length ? found.map(resultRow) : [empty]));
 });
 

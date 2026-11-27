@@ -1,5 +1,6 @@
 import { el } from './dom.mjs';
 import { rawUrl } from './viewer.mjs';
+import { t } from './i18n.mjs';
 
 let markedP;
 export const loadMarked = () =>
@@ -12,7 +13,7 @@ export const loadMarked = () =>
     s.onload = () => ok(window.marked);
     s.onerror = () => {
       markedP = null;
-      fail(new Error('Không tải được trình hiển thị Markdown (cần mạng)'));
+      fail(new Error(t('Không tải được trình hiển thị Markdown (cần mạng)')));
     };
     document.head.append(s);
   }));
@@ -63,10 +64,10 @@ li+li{margin-top:.25em}
 pre.mermaid{background:none;text-align:center;overflow:auto}`;
 export async function markdownNode(text, file) {
   const marked = await loadMarked();
-  const t = document.createElement('template');
-  t.innerHTML = marked.parse(text, { gfm: true });
+  const tpl = document.createElement('template');
+  tpl.innerHTML = marked.parse(text, { gfm: true });
   const base = 'file://' + file.slice(0, file.lastIndexOf('/') + 1);
-  for (const img of t.content.querySelectorAll('img[src]')) {
+  for (const img of tpl.content.querySelectorAll('img[src]')) {
     const src = img.getAttribute('src');
     if (!/^([a-z][a-z0-9+.-]*:|\/\/)/i.test(src))
       img.src = rawUrl(decodeURIComponent(new URL(src, encodeURI(base)).pathname));
@@ -90,11 +91,11 @@ export async function markdownNode(text, file) {
   }
   const f = el('iframe', 'md');
   f.setAttribute('sandbox', sandbox);
-  f.title = 'Xem trước Markdown';
+  f.title = t('Xem trước Markdown');
   f.srcdoc = [
     `<!doctype html><html data-theme="${document.documentElement.dataset.theme}"><meta charset="utf-8">`,
     `<meta http-equiv="Content-Security-Policy" content="${csp}"><base target="_blank">`,
-    `<style>${MD_CSS}</style><body>${t.innerHTML}${scripts}</body>`,
+    `<style>${MD_CSS}</style><body>${tpl.innerHTML}${scripts}</body>`,
   ].join('');
   return f;
 }

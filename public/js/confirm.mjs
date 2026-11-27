@@ -3,12 +3,13 @@ import { $, agentName, el } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { poll } from './poll.mjs';
 import { S, cur } from './state.mjs';
+import { t } from './i18n.mjs';
 
 function renderMulti(x, box, sig) {
   box.dataset.sig = sig;
   const head = el('div', 'cq');
   head.innerHTML = icon('bell');
-  head.append(x.question || 'Chọn một hoặc nhiều mục');
+  head.append(x.question || t('Chọn một hoặc nhiều mục'));
   const rows = x.options.map(o => {
     const b = el('button', 'btn ck' + (o.checked ? ' on' : ''));
     b.type = 'button';
@@ -21,8 +22,8 @@ function renderMulti(x, box, sig) {
     return b;
   });
   const acts = el('div', 'cacts'),
-    go2 = el('button', 'btn pri', 'Gửi'),
-    esc = el('button', 'btn', 'Huỷ (Esc)');
+    go2 = el('button', 'btn pri', t('Gửi')),
+    esc = el('button', 'btn', t('Huỷ (Esc)'));
   go2.type = esc.type = 'button';
   go2.onclick = safely(async () => {
     go2.disabled = true;
@@ -58,7 +59,7 @@ export function renderConfirm() {
   box.dataset.sig = sig;
   const head = el('div', 'cq');
   head.innerHTML = icon('bell');
-  head.append(x.question || `${agentName(x.agent)} cần bạn xác nhận`);
+  head.append(x.question || t('{0} cần bạn xác nhận', agentName(x.agent)));
   box.replaceChildren(
     head,
     ...x.choices.map(c => {

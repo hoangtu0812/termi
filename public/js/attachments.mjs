@@ -2,6 +2,7 @@ import { autosize, base, safely } from './api.mjs';
 import { $, el } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { S } from './state.mjs';
+import { t } from './i18n.mjs';
 
 async function addFiles(files) {
   await Promise.all(
@@ -44,7 +45,7 @@ export function renderAtts() {
       }
       const x = el('button', 'x', '✕');
       x.type = 'button';
-      x.setAttribute('aria-label', 'Bỏ ' + a.name);
+      x.setAttribute('aria-label', t('Bỏ ') + a.name);
       x.onclick = () => removeAtt(a);
       c.append(x);
       return c;
@@ -52,9 +53,9 @@ export function renderAtts() {
   );
 }
 export function insertText(s) {
-  const t = $('text');
-  t.value = (t.value && !t.value.endsWith(' ') ? t.value + ' ' : t.value) + s + ' ';
-  autosize(t);
+  const area = $('text');
+  area.value = (area.value && !area.value.endsWith(' ') ? area.value + ' ' : area.value) + s + ' ';
+  autosize(area);
 }
 export function setupAttachments() {
   $('b-attach').onclick = () => $('f-input').click();

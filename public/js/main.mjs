@@ -9,6 +9,7 @@ import { setupFiles } from './files.mjs';
 import { setupGestures } from './gestures.mjs';
 import { setupGit } from './git.mjs';
 import { setupHistory } from './history.mjs';
+import { setupI18n } from './i18n.mjs';
 import { setupIcons } from './icons.mjs';
 import { setupInbox } from './inbox.mjs';
 import { setupKeys } from './keys.mjs';
@@ -33,6 +34,7 @@ import { setupVoice } from './voice.mjs';
 import { setupWake } from './wake.mjs';
 import { loadRestore } from './welcome.mjs';
 
+setupI18n();
 setupIcons();
 setupTheme();
 setupWake();

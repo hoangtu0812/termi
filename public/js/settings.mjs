@@ -5,6 +5,7 @@ import { notifyForm } from './notify-form.mjs';
 import { enablePush } from './push.mjs';
 import { fontSize, setFont } from './terminal.mjs';
 import { THEMES, setTheme, themePref } from './theme.mjs';
+import { LANGS, LANG_LABEL, LANG_NAMES, currentLang, setLang, t } from './i18n.mjs';
 
 function settingRow(title, ...children) {
   const r = el('div', 'srow');
@@ -13,7 +14,26 @@ function settingRow(title, ...children) {
 }
 const RELEASES = 'https://github.com/hoangtu0812/termi/releases';
 const STATUSLINE_HINT =
-  'Chưa bật. Trong một phiên Claude, gõ: ! node ~/.termi/app/current/scripts/claude-statusline.mjs install';
+  t('Chưa bật. Trong một phiên Claude, gõ: ! node ~/.termi/app/current/scripts/claude-statusline.mjs install');
+
+async function switchLang(lang) {
+  setLang(lang);
+  const prefs = await api('api/notify').catch(() => null);
+  if (prefs) await api('api/notify', { ...prefs, lang }).catch(() => null);
+  location.reload();
+}
+
+function langPicker() {
+  const seg = el('div', 'seg2');
+  for (const lang of LANGS) {
+    const b = el('button', currentLang() === lang ? 'on' : '', LANG_NAMES[lang]);
+    b.type = 'button';
+    b.lang = lang;
+    b.onclick = () => lang !== currentLang() && switchLang(lang);
+    seg.append(b);
+  }
+  return seg;
+}
 
 function themePicker() {
   const seg = el('div', 'seg2');
@@ -48,7 +68,7 @@ function fontPicker() {
 }
 
 function pushButton(pushOn) {
-  const nb = el('button', 'btn sm', pushOn ? 'Đang bật · gửi thử' : 'Bật thông báo đẩy');
+  const nb = el('button', 'btn sm', pushOn ? t('Đang bật · gửi thử') : t('Bật thông báo đẩy'));
   nb.type = 'button';
   nb.onclick = () => enablePush();
   return nb;
@@ -61,7 +81,7 @@ function agentList(agents) {
     s.append(agentAvatar(a.id, true), a.name);
     return s;
   });
-  ag.append(...(items.length ? items : ['Chưa có agent nào']));
+  ag.append(...(items.length ? items : [t('Chưa có agent nào')]));
   return ag;
 }
 
@@ -70,22 +90,23 @@ async function pushEnabled(registration) {
 }
 
 async function settingRows(info, pushOn) {
-  const usage = info.claudeUsage ? '✓ Đã bật (hiện trong chip Usage trên header)' : STATUSLINE_HINT;
+  const usage = info.claudeUsage ? t('✓ Đã bật (hiện trong chip Usage trên header)') : STATUSLINE_HINT;
   const releases = Object.assign(el('a', 'sv', 'github.com/hoangtu0812/termi/releases'), {
     href: RELEASES,
     target: '_blank',
     rel: 'noopener',
   });
   return [
-    settingRow('Giao diện', themePicker()),
-    settingRow('Cỡ chữ terminal', fontPicker()),
-    settingRow('Thông báo đẩy', pushButton(pushOn)),
-    settingRow('Báo khi', await notifyForm()),
-    settingRow('Hạn mức Claude trong Usage', el('div', 'sv', usage)),
-    settingRow('Agent trên máy này', agentList(info.agents)),
-    settingRow('Thư mục được phép truy cập', el('div', 'sv mono', info.roots.map(short).join('\n'))),
-    settingRow('Máy chủ', el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
-    settingRow('Bản phát hành', releases),
+    settingRow(LANG_LABEL, langPicker()),
+    settingRow(t('Giao diện'), themePicker()),
+    settingRow(t('Cỡ chữ terminal'), fontPicker()),
+    settingRow(t('Thông báo đẩy'), pushButton(pushOn)),
+    settingRow(t('Báo khi'), await notifyForm()),
+    settingRow(t('Hạn mức Claude trong Usage'), el('div', 'sv', usage)),
+    settingRow(t('Agent trên máy này'), agentList(info.agents)),
+    settingRow(t('Thư mục được phép truy cập'), el('div', 'sv mono', info.roots.map(short).join('\n'))),
+    settingRow(t('Máy chủ'), el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
+    settingRow(t('Bản phát hành'), releases),
   ];
 }
 

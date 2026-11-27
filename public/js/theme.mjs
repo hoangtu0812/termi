@@ -1,6 +1,7 @@
 import { allTerms } from './term-pool.mjs';
+import { t } from './i18n.mjs';
 
-export const THEMES = { auto: ['Tự động', 'contrast'], light: ['Sáng', 'sun'], dark: ['Tối', 'moon'] };
+export const THEMES = { auto: [t('Tự động'), 'contrast'], light: [t('Sáng'), 'sun'], dark: [t('Tối'), 'moon'] };
 let colorScheme = null;
 const lightQuery = () => colorScheme ?? matchMedia('(prefers-color-scheme: light)');
 export function themePref() {
@@ -69,9 +70,9 @@ const TERM_THEMES = {
 };
 export function termTheme() {
   const theme = TERM_THEMES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
-  for (const t of allTerms()) {
-    t.options.theme = theme;
-    t.element.ownerDocument.body.style.background = theme.background;
+  for (const term of allTerms()) {
+    term.options.theme = theme;
+    term.element.ownerDocument.body.style.background = theme.background;
   }
 }
 export function setTheme(pref) {

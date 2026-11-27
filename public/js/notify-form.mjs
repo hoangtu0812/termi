@@ -1,5 +1,6 @@
 import { api, safely, toast } from './api.mjs';
 import { el } from './dom.mjs';
+import { t } from './i18n.mjs';
 
 function checkbox(label, owner, key, save) {
   const l = el('label', 'chk2');
@@ -24,14 +25,14 @@ function timeInput(owner, key, save) {
 function quietHours(prefs, save) {
   const quiet = el('div', 'qh');
   const range = el('span', 'qr');
-  range.append(timeInput(() => prefs.quiet, 'from', save), ' đến ', timeInput(() => prefs.quiet, 'to', save));
-  quiet.append(checkbox('Giờ yên lặng từ', () => prefs.quiet, 'on', save), range);
+  range.append(timeInput(() => prefs.quiet, 'from', save), t(' đến '), timeInput(() => prefs.quiet, 'to', save));
+  quiet.append(checkbox(t('Giờ yên lặng từ'), () => prefs.quiet, 'on', save), range);
   return quiet;
 }
 
 function mutedSessions(prefs, save) {
   const m = el('div', 'muted');
-  m.append(el('small', null, 'Phiên đã tắt thông báo:'));
+  m.append(el('small', null, t('Phiên đã tắt thông báo:')));
   for (const key of prefs.muted) {
     const b = el('button', 'btn sm', `${key.replace(/^\//, '')} ✕`);
     b.type = 'button';
@@ -50,12 +51,12 @@ export async function notifyForm() {
   const box = el('div', 'nform');
   const save = safely(async () => {
     Object.assign(prefs, await api('api/notify', prefs));
-    toast('Đã lưu cài đặt thông báo');
+    toast(t('Đã lưu cài đặt thông báo'));
   });
   box.append(
-    checkbox('Agent cần bạn xác nhận', () => prefs, 'waiting', save),
-    checkbox('Agent đã xong việc', () => prefs, 'done', save),
-    checkbox('Sự cố: máy mất kết nối, ổ đĩa sắp đầy, termi tự khởi động lại', () => prefs, 'system', save),
+    checkbox(t('Agent cần bạn xác nhận'), () => prefs, 'waiting', save),
+    checkbox(t('Agent đã xong việc'), () => prefs, 'done', save),
+    checkbox(t('Sự cố: máy mất kết nối, ổ đĩa sắp đầy, termi tự khởi động lại'), () => prefs, 'system', save),
     quietHours(prefs, save),
   );
   if (prefs.muted.length) box.append(mutedSessions(prefs, save));

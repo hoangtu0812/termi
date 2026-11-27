@@ -1,13 +1,14 @@
 import { $, el } from './dom.mjs';
 import { activeFilter, countByKind } from './session-label.mjs';
 import { S } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const MIN_SESSIONS = 3;
 const CHIPS = [
-  ['all', 'Tất cả'],
-  ['waiting', 'Chờ bạn'],
-  ['working', 'Đang chạy'],
-  ['idle', 'Rảnh'],
+  ['all', t('Tất cả')],
+  ['waiting', t('Chờ bạn')],
+  ['working', t('Đang chạy')],
+  ['idle', t('Rảnh')],
 ];
 
 function chip(kind, label, count, current, onChange) {

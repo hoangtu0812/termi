@@ -3,6 +3,7 @@ import { $, el, wide } from './dom.mjs';
 import { agentAvatar, icon } from './icons.mjs';
 import { renderSessions, stateEl } from './sessions.mjs';
 import { S, go, st } from './state.mjs';
+import { t } from './i18n.mjs';
 
 export async function loadOtherMachines() {
   const others = (S.machines || []).filter(m => m.termi && (m.id || '') !== (st().m || ''));
@@ -23,10 +24,11 @@ export function renderOthers(box) {
   box.querySelectorAll('.om').forEach(n => n.remove());
   for (const { m, list } of S.others || []) {
     const h = el('div', 'pj om'),
-      t = el('div', 'pjt');
-    t.innerHTML = icon('monitor');
-    t.append(el('span', 'pjn', m.self ? `${m.name} (máy này)` : m.name), el('span', 'pjc', String(list.length)));
-    h.append(t);
+      node = el('div', 'pjt');
+    node.innerHTML = icon('monitor');
+    const label = m.self ? t('{0} (máy này)', m.name) : m.name;
+    node.append(el('span', 'pjn', label), el('span', 'pjc', String(list.length)));
+    h.append(node);
     box.append(h);
     for (const x of list) {
       const b = el('button', 'si om');
@@ -53,8 +55,8 @@ export async function loadMachines() {
           'option',
           null,
           m.self
-            ? `💻 ${m.name} (máy này)`
-            : `🖥 ${m.name}${m.termi ? '' : m.online ? ' · chưa cài termi' : ' · offline'}`,
+            ? t('💻 {0} (máy này)', m.name)
+            : `🖥 ${m.name}${m.termi ? '' : m.online ? ' · ' + t('chưa cài termi') : ' · offline'}`,
         ),
         { value: m.id, disabled: !m.termi },
       ),

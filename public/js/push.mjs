@@ -1,5 +1,6 @@
 import { api, safely, toast } from './api.mjs';
 import { $ } from './dom.mjs';
+import { t } from './i18n.mjs';
 
 export const b64 = s => Uint8Array.from(atob(s.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
 async function pushState() {
@@ -12,9 +13,9 @@ async function pushState() {
 export const enablePush = safely(async () => {
   if (!('serviceWorker' in navigator) || !('PushManager' in window))
     throw new Error(
-      'Trình duyệt chưa hỗ trợ thông báo. Trên iPhone: thêm termi vào Màn hình chính rồi mở từ bi' + 'ểu tượng đó.',
+      t('Trình duyệt chưa hỗ trợ thông báo. Trên iPhone: thêm termi vào Màn hình chính rồi mở từ biểu tượng đó.'),
     );
-  if ((await Notification.requestPermission()) !== 'granted') throw new Error('Bạn chưa cho phép thông báo');
+  if ((await Notification.requestPermission()) !== 'granted') throw new Error(t('Bạn chưa cho phép thông báo'));
   const reg = await navigator.serviceWorker.ready;
   const { key } = await api('api/push/key');
   const subscribe = () => reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
@@ -28,12 +29,11 @@ export const enablePush = safely(async () => {
     ({ results = [] } = await api('api/push/test', {}));
   }
   const bad = results.filter(r => r.status < 200 || r.status > 299);
-  if (!results.length) throw new Error('Server chưa nhận được đăng ký của máy này');
+  if (!results.length) throw new Error(t('Server chưa nhận được đăng ký của máy này'));
   if (bad.length)
-    throw new Error('Gửi thử thất bại: ' + bad.map(r => `${r.host} ${r.status || ''} ${r.detail}`).join('; '));
+    throw new Error(t('Gửi thử thất bại: ') + bad.map(r => `${r.host} ${r.status || ''} ${r.detail}`).join('; '));
   toast(
-    'Đã gửi thử thành công. Nếu vài giây nữa không thấy thông báo, kiểm tra quyền thông báo của' +
-      ' Chrome trong Cài đặt Android.',
+    t('Đã gửi thử. Nếu vài giây nữa không thấy thông báo, kiểm tra quyền thông báo của Chrome trong Cài đặt Android.'),
   );
   pushState();
 });

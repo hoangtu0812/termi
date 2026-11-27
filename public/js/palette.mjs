@@ -5,6 +5,7 @@ import { newSession } from './new-session.mjs';
 import { S, cur, go } from './state.mjs';
 import { THEMES, setTheme } from './theme.mjs';
 import { quickStart } from './welcome.mjs';
+import { t } from './i18n.mjs';
 
 const MAX_RESULTS = 40;
 const TABS = [
@@ -14,8 +15,8 @@ const TABS = [
   ['git', 'Git', 'git'],
 ];
 
-export const fold = t =>
-  String(t || '')
+export const fold = node =>
+  String(node || '')
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/đ/gi, 'd')
@@ -30,7 +31,7 @@ const sessionItems = () =>
   S.list.map(s => ({
     icon: 'term',
     label: s.title || s.name,
-    hint: `Phiên · ${s.dir.split('/').pop()}`,
+    hint: t('Phiên · {0}', s.dir.split('/').pop()),
     run: () => go({ s: s.name, t: 'term', d: null, g: null, v: null }),
   }));
 
@@ -40,9 +41,9 @@ function projectItems() {
   for (const p of S.projects || []) {
     const name = p.dir.split('/').pop() || p.dir;
     const run = () => quickStart(p.dir, p.conversations[0]?.agent || 'claude');
-    items.push({ icon: 'folder', label: name, hint: 'Phiên mới trong project', run });
+    items.push({ icon: 'folder', label: name, hint: t('Phiên mới trong project'), run });
     for (const c of p.conversations.filter(c => !running.has(c.id))) {
-      const hint = `Mở lại hội thoại · ${name} · ${ago(c.mtime)}`;
+      const hint = t('Mở lại hội thoại · {0} · {1}', name, ago(c.mtime));
       items.push({ icon: 'chat', label: c.title, hint, run: () => quickStart(p.dir, c.agent, c.id) });
     }
   }
@@ -52,12 +53,14 @@ function projectItems() {
 function commandItems() {
   const x = cur();
   const items = [];
-  const cmd = (iconName, label, run, hint = 'Lệnh') => items.push({ icon: iconName, label, hint, run });
-  cmd('plus', 'Phiên mới…', newSession);
-  if (x) for (const [t, n, ic] of TABS) cmd(ic, `Mở tab ${n}`, () => go({ t, v: null }), x.title || x.name);
-  cmd('gear', 'Cài đặt', () => $('b-settings').click());
-  cmd('bell', 'Thông báo', () => $('b-bell').click());
-  for (const [k, [n, ic]] of Object.entries(THEMES)) cmd(ic, `Giao diện: ${n}`, () => setTheme(k));
+  const cmd = (iconName, label, run, hint = t('Lệnh')) => items.push({ icon: iconName, label, hint, run });
+  cmd('plus', t('Phiên mới…'), newSession);
+  if (x) {
+    for (const [tab, n, ic] of TABS) cmd(ic, t('Mở tab {0}', n), () => go({ t: tab, v: null }), x.title || x.name);
+  }
+  cmd('gear', t('Cài đặt'), () => $('b-settings').click());
+  cmd('bell', t('Thông báo'), () => $('b-bell').click());
+  for (const [k, [n, ic]] of Object.entries(THEMES)) cmd(ic, t('Giao diện: {0}', n), () => setTheme(k));
   return items;
 }
 
@@ -67,9 +70,9 @@ function paletteRow(it, i, palette) {
   const b = el('button', 'cmdi' + (i === palette.sel ? ' on' : ''));
   b.type = 'button';
   b.innerHTML = icon(it.icon);
-  const t = el('div');
-  t.append(el('b', null, it.label), el('small', null, it.hint));
-  b.append(t);
+  const node = el('div');
+  node.append(el('b', null, it.label), el('small', null, it.hint));
+  b.append(node);
   b.onclick = () => runAt(palette, i);
   return b;
 }
@@ -79,7 +82,7 @@ function drawPalette(palette) {
   palette.shown = matchPalette(palette.all, $('cmd-q').value);
   palette.sel = Math.min(palette.sel, Math.max(0, palette.shown.length - 1));
   const rows = palette.shown.map((it, i) => paletteRow(it, i, palette));
-  list.replaceChildren(...(rows.length ? rows : [el('div', 'empty', 'Không có gì khớp')]));
+  list.replaceChildren(...(rows.length ? rows : [el('div', 'empty', t('Không có gì khớp'))]));
   list.querySelector('.on')?.scrollIntoView({ block: 'nearest' });
 }
 

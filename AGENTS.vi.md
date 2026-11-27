@@ -64,7 +64,7 @@ Mọi người và mọi AI agent khi sửa repo này đều phải tuân theo c
 - Lưu trạng thái bằng ghi nguyên tử (ghi file tạm rồi `rename`) và tuần tự hoá các chu trình đọc–sửa–ghi trên cùng một file.
 - Giới hạn mọi lần đọc từ bên ngoài: timeout cho tiến trình và fetch, giới hạn kích thước body, file và output.
 - Lỗi trả về client dùng `fail(status, message)`. Lỗi bất ngờ ghi log phía server và trả về 500 chung chung.
-- Tên định danh, tên file và log bằng tiếng Anh. Chữ hiển thị trên giao diện giữ tiếng Việt cho tới khi có i18n.
+- Tên định danh, tên file và log bằng tiếng Anh. Chữ hiển thị trên giao diện viết bằng tiếng Việt và bọc trong `t()` của `public/js/i18n.mjs`; thêm bản tiếng Anh vào `public/js/en-*.mjs` trong cùng thay đổi (`test/i18n.test.mjs` kiểm tra cả hai).
 
 ## 5. Phong cách code
 
@@ -114,7 +114,7 @@ Mọi người và mọi AI agent khi sửa repo này đều phải tuân theo c
 | `README.md` | Tiếng Anh, kèm `README.vi.md` tiếng Việt |
 | `AGENTS.md` | Tiếng Anh, kèm `AGENTS.vi.md` tiếng Việt |
 | Tài liệu và kế hoạch | Tiếng Anh; bản dịch `.vi.md` không bắt buộc |
-| Chữ trên giao diện | Tiếng Việt |
+| Chữ trên giao diện | Câu tiếng Việt bọc trong `t()`, tiếng Anh trong `public/js/en-*.mjs` |
 
 Khi sửa tài liệu có bản dịch, cập nhật cả hai file trong cùng một commit.
 

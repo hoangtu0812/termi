@@ -4,6 +4,7 @@ import { icon } from './icons.mjs';
 import { mdSafe } from './sanitize.mjs';
 import { cur, st } from './state.mjs';
 import { openFile, rawUrl } from './viewer.mjs';
+import { locale, t } from './i18n.mjs';
 
 const chatCache = new Map();
 let chatKey = '';
@@ -12,12 +13,12 @@ function toolsCard(x) {
     sm = el('summary'),
     last = x.steps.at(-1);
   sm.innerHTML = icon('zap');
-  sm.append(el('b', null, `${x.steps.length} bước`), el('span', null, `${last.verb} ${last.detail}`));
+  sm.append(el('b', null, t('{0} bước', x.steps.length)), el('span', null, `${t(last.verb)} ${last.detail}`));
   const ul = el('ul');
   ul.append(
     ...x.steps.map(step => {
       const li = el('li');
-      li.append(el('b', null, step.verb), ' ', el('code', null, step.detail));
+      li.append(el('b', null, t(step.verb)), ' ', el('code', null, step.detail));
       return li;
     }),
   );
@@ -46,13 +47,13 @@ function copyButton(pre) {
     c.innerHTML = icon('copy');
     c.append(text);
   };
-  label('Chép');
+  label(t('Chép'));
   c.onclick = async () => {
     await navigator.clipboard?.writeText(pre.querySelector('code')?.textContent ?? pre.textContent).then(
-      () => label('Đã chép'),
-      () => label('Không chép được'),
+      () => label(t('Đã chép')),
+      () => label(t('Không chép được')),
     );
-    setTimeout(() => label('Chép'), COPY_RESET_MS);
+    setTimeout(() => label(t('Chép')), COPY_RESET_MS);
   };
   return c;
 }
@@ -78,7 +79,7 @@ async function bubbleBody(m) {
   return body;
 }
 
-const timeLabel = t => new Date(t).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+const timeLabel = at => new Date(at).toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
 
 async function bubble(m) {
   const key = m.who + '\u0000' + m.text;
@@ -108,15 +109,15 @@ export const loadChat = safely(async first => {
   chatKey = key;
   const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 120;
   const nodes = await Promise.all(r.items.map(x => (x.kind === 'tools' ? toolsCard(x) : bubble(x))));
-  if (!r.agent) nodes.push(el('div', 'empty', 'Phiên này chưa chạy agent nào'));
-  else if (!r.items.length) nodes.push(el('div', 'empty', 'Chưa có tin nhắn nào'));
+  if (!r.agent) nodes.push(el('div', 'empty', t('Phiên này chưa chạy agent nào')));
+  else if (!r.items.length) nodes.push(el('div', 'empty', t('Chưa có tin nhắn nào')));
   if (r.state === 'working') {
     const d = cur()?.doing,
-      t = el('div', 'msg ai typing');
+      node = el('div', 'msg ai typing');
     const dots = el('i');
     dots.append(el('b'), el('b'), el('b'));
-    t.append(dots, el('div', 'mb', d ? `${d.verb} ${d.detail}` : `${agentName(r.agent)} đang làm…`));
-    nodes.push(t);
+    node.append(dots, el('div', 'mb', d ? `${t(d.verb)} ${d.detail}` : t('{0} đang làm…', agentName(r.agent))));
+    nodes.push(node);
   }
   box.replaceChildren(...nodes);
   if (first || atBottom) box.scrollTop = box.scrollHeight;

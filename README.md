@@ -69,6 +69,7 @@ termi is a small web app that runs on your own Mac and is opened from your phone
 | 📁 | **File browser** | Icons and colors by file type, git change markers on files and folders; browse folders, read files and images, GitHub-style Markdown preview (including Mermaid diagrams), insert paths into the prompt. |
 | 🌳 | **Git** | Commit graph (colored lanes, merge lines, branch/tag labels); stage, unstage, commit, fetch, pull, push, switch branch; diffs per file or per commit. |
 | 📱 | **Responsive** | Desktop: sidebar and tabs. Phone: bottom tab bar. Auto / Light / Dark theme (☀ button at the top of the sidebar); keeps the screen awake while the app is open (Screen Wake Lock); installable as an app (PWA). |
+| 🌐 | **Vietnamese / English** | Switch the interface language in Settings → Ngôn ngữ · Language; push notifications follow the choice. |
 
 ## Architecture
 

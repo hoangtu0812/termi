@@ -1,6 +1,7 @@
 import { toast } from './api.mjs';
 import { $, el } from './dom.mjs';
 import { store } from './storage.mjs';
+import { t } from './i18n.mjs';
 
 const KEY = 'termi-outbox';
 const MAX_ITEMS = 20;
@@ -36,22 +37,22 @@ function renderOutbox() {
   box.hidden = !list.length;
   if (!list.length) return box.replaceChildren();
   const first = list[0].text.replace(/\s+/g, ' ').slice(0, PREVIEW_CHARS);
-  const retry = el('button', 'btn sm', 'Gửi lại');
-  const drop = el('button', 'btn sm', 'Bỏ');
+  const retry = el('button', 'btn sm', t('Gửi lại'));
+  const drop = el('button', 'btn sm', t('Bỏ'));
   retry.type = drop.type = 'button';
   retry.onclick = () => flushOutbox();
   drop.onclick = () => {
     save([]);
     renderOutbox();
   };
-  const label = el('span', 'ob-t', `${list.length} tin chưa gửi · “${first}”`);
+  const label = el('span', 'ob-t', t('{0} tin chưa gửi · “{1}”', list.length, first));
   box.replaceChildren(el('span', 'ob-dot'), label, retry, drop);
 }
 
 export function queueMessage(machine, session, text) {
   save([...load(), { machine, session, text, at: Date.now() }]);
   renderOutbox();
-  toast('Mất mạng: tin được giữ lại và sẽ tự gửi khi có mạng');
+  toast(t('Mất mạng: tin được giữ lại và sẽ tự gửi khi có mạng'));
 }
 
 export async function flushOutbox() {
@@ -64,11 +65,11 @@ export async function flushOutbox() {
       list = list.slice(1);
       save(list);
     }
-    toast('Đã gửi các tin còn chờ');
+    toast(t('Đã gửi các tin còn chờ'));
   } catch (e) {
     if (e.rejected) {
       save(list.slice(1));
-      toast('Một tin chờ không gửi được (phiên đã đóng?) nên đã bỏ', true);
+      toast(t('Một tin chờ không gửi được (phiên đã đóng?) nên đã bỏ'), true);
     }
   } finally {
     flushing = false;

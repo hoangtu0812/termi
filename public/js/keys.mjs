@@ -3,6 +3,7 @@ import { $, el } from './dom.mjs';
 import { st } from './state.mjs';
 import { fontSize, setFont } from './terminal.mjs';
 import { openViewer } from './viewer.mjs';
+import { t } from './i18n.mjs';
 
 const KEYS = [
   ['Esc', 'Escape'],
@@ -27,8 +28,8 @@ export function setupKeys() {
       return b;
     }),
     ...[
-      ['A−', -1, 'Chữ nhỏ hơn'],
-      ['A+', 1, 'Chữ to hơn'],
+      ['A−', -1, t('Chữ nhỏ hơn')],
+      ['A+', 1, t('Chữ to hơn')],
     ].map(([label, d, name]) => {
       const b = el('button', 'fs', label);
       b.type = 'button';
@@ -37,12 +38,12 @@ export function setupKeys() {
       return b;
     }),
   );
-  const copyBtn = el('button', 'fs', '📋 Chép');
+  const copyBtn = el('button', 'fs', t('📋 Chép'));
   copyBtn.type = 'button';
-  copyBtn.setAttribute('aria-label', 'Mở chữ trong phiên để chọn và sao chép');
+  copyBtn.setAttribute('aria-label', t('Mở chữ trong phiên để chọn và sao chép'));
   copyBtn.onclick = safely(async () => {
     const { text } = await api(`api/capture?session=${encodeURIComponent(st().s)}&lines=2000`);
-    openViewer(`Chữ trong phiên ${st().s}`, el('pre', 'copytext', text || '(trống)'));
+    openViewer(t('Chữ trong phiên {0}', st().s), el('pre', 'copytext', text || t('(trống)')));
     requestAnimationFrame(() => {
       $('v-body').scrollTop = $('v-body').scrollHeight;
     });
