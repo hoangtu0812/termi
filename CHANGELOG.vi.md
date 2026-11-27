@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-27
+
 ### Thêm
 - Chế độ nhúng: khi đặt `TERMI_TOKEN`, termi nhận request mang token trong `X-Termi-Token` thay cho danh tính Tailscale, để chạy được sau reverse proxy của một ứng dụng khác (ví dụ mỗi người một container sandbox). Xem `docs/GUIDE-v1.5-embedded-mode.md`.
 - Chế độ nhúng: token phải dài ít nhất 32 ký tự và không bao giờ được chuyển tiếp sang máy khác hay sang ttyd.
@@ -274,7 +276,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0

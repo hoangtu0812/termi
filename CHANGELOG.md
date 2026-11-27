@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.5.0] - 2026-11-27
+
 ### Added
 - Embedded mode: with `TERMI_TOKEN` set, termi accepts requests that carry the token in `X-Termi-Token` instead of a Tailscale identity, so it can run behind another app's reverse proxy (for example one sandbox container per user). See `docs/GUIDE-v1.5-embedded-mode.md`.
 - Embedded mode: the token must be at least 32 characters, and it is never forwarded to other machines or to ttyd.
@@ -272,7 +274,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.5.0...HEAD
+[1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
