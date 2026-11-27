@@ -9,6 +9,10 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - `scripts/vscode-proxy.mjs` compresses VS Code web traffic (about 25 MB down to 6 MB on first load) so it opens quickly over a relayed Tailscale connection; see `docs/GUIDE-v1.1-vscode-web.md`.
 
+### Changed
+- Sessions with a VS Code web address set get a VS Code button in the session header that opens the session's folder.
+- The history dialog says it is searching while a content search runs.
+
 ### Fixed
 - Session status labels ("Idle", "Working · 2 min") are no longer cut off next to long session names; the name is shortened instead.
 

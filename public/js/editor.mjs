@@ -1,6 +1,6 @@
 import { api, safely, toast } from './api.mjs';
 import { $, el } from './dom.mjs';
-import { S } from './state.mjs';
+import { S, cur } from './state.mjs';
 import { t } from './i18n.mjs';
 
 let editorUrl = null;
@@ -11,8 +11,13 @@ function folderLink(dir) {
   return url.href;
 }
 
-function showButton() {
+function openFolder(dir) {
+  if (editorUrl && dir) window.open(folderLink(dir), '_blank', 'noopener');
+}
+
+export function showEditorButtons() {
   $('f-code').hidden = !editorUrl;
+  $('b-code').hidden = !editorUrl || !cur();
 }
 
 export function editorField(current) {
@@ -25,18 +30,17 @@ export function editorField(current) {
     const saved = await api('api/editor', { url: input.value.trim() || null });
     editorUrl = saved.url;
     input.value = saved.url || '';
-    showButton();
+    showEditorButtons();
     toast(saved.url ? t('Đã lưu địa chỉ VS Code web') : t('Đã tắt nút mở VS Code'));
   });
   return input;
 }
 
 export function setupEditor() {
-  $('f-code').onclick = () => {
-    if (editorUrl && S.filesDir) window.open(folderLink(S.filesDir), '_blank', 'noopener');
-  };
+  $('f-code').onclick = () => openFolder(S.filesDir);
+  $('b-code').onclick = () => openFolder(cur()?.dir);
   api('api/info').then(info => {
     editorUrl = info.editorUrl;
-    showButton();
+    showEditorButtons();
   }, () => {});
 }

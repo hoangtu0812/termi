@@ -47,6 +47,7 @@ const load = safely(async () => {
   const params = new URLSearchParams();
   if (query) params.set('q', query);
   if (scope) params.set('dir', scope);
+  if (query) $('hist-list').replaceChildren(el('div', 'empty', t('Đang tìm "{0}"…', query)));
   const list = await api(`api/history${query ? '/search' : ''}?${params}`);
   if ($('hist-q').value.trim() !== typed) return;
   const rows = list.length ? list.map(row) : [el('div', 'empty', emptyText(query))];
