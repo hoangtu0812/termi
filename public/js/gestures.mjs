@@ -7,6 +7,7 @@ import { poll } from './poll.mjs';
 import { loadProjects } from './sessions.mjs';
 import { S, go, st } from './state.mjs';
 import { toast } from './api.mjs';
+import { t } from './i18n.mjs';
 
 const EDGE_WIDTH = 24;
 const SWIPE_DISTANCE = 70;
@@ -54,7 +55,7 @@ function pullIndicator() {
 function showPull(ptr, dy) {
   const ready = dy > PULL_DISTANCE;
   ptr.classList.toggle('go', ready);
-  ptr.lastChild.textContent = ready ? 'Thả để làm mới' : 'Kéo để làm mới';
+  ptr.lastChild.textContent = ready ? t('Thả để làm mới') : t('Kéo để làm mới');
   ptr.style.setProperty('--y', Math.min(dy * PULL_DAMPING, PULL_MAX_OFFSET) - PULL_REST_OFFSET + 'px');
   ptr.style.setProperty('--o', String(Math.min(dy / PULL_DISTANCE, 1)));
 }
@@ -80,7 +81,7 @@ function onPull(ptr, box, refresh) {
   box.addEventListener('touchend', () => {
     if (startY !== null && dy > PULL_DISTANCE && box.scrollTop <= 0) {
       navigator.vibrate?.(REFRESH_VIBRATION_MS);
-      Promise.resolve(refresh()).finally(() => toast('Đã làm mới'));
+      Promise.resolve(refresh()).finally(() => toast(t('Đã làm mới')));
     }
     startY = null;
     hidePull(ptr);

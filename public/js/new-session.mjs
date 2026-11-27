@@ -3,6 +3,7 @@ import { $, el, ltr, short } from './dom.mjs';
 import { agentAvatar, icon } from './icons.mjs';
 import { loadRepos, poll } from './poll.mjs';
 import { S, cur, go } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const NF = () => $('d-new').querySelector('form');
 let pkName = '';
@@ -31,7 +32,7 @@ const pickDir = safely(async dir => {
       return b;
     }),
   );
-  if (!dirs.length) $('pk-list').replaceChildren(el('div', 'empty', 'Không có thư mục con'));
+  if (!dirs.length) $('pk-list').replaceChildren(el('div', 'empty', t('Không có thư mục con')));
 });
 export async function newSession() {
   NF().reset();
@@ -40,7 +41,7 @@ export async function newSession() {
   const agents = await api('api/agents').catch(() => []);
   NF().agent.replaceChildren(
     ...agents.map(a => Object.assign(el('option', null, a.name), { value: a.id })),
-    Object.assign(el('option', null, 'Không, chỉ mở shell'), { value: '' }),
+    Object.assign(el('option', null, t('Không, chỉ mở shell')), { value: '' }),
   );
   NF().agent.value = cur()?.agent && agents.some(a => a.id === cur().agent) ? cur().agent : (agents[0]?.id ?? '');
   const chips = [...agents.map(a => [a.id, a.name]), ['', 'Shell']].map(([id, name]) => {
@@ -61,7 +62,7 @@ export async function newSession() {
   chips.find(([id]) => id === NF().agent.value)?.[1].click();
   await loadRepos($('pk-recent'), null, true);
   $('pk-recent').prepend(
-    Object.assign(el('option', null, '— chọn nhanh —'), { value: '', selected: true, disabled: true }),
+    Object.assign(el('option', null, t('— chọn nhanh —')), { value: '', selected: true, disabled: true }),
   );
   await pickDir(cur()?.dir || S.dirs.recent[0] || S.dirs.roots[0]);
 }

@@ -1,17 +1,18 @@
 import { el } from './dom.mjs';
 import { commitRow, passingLanesSvg } from './git-graph.mjs';
+import { locale, t } from './i18n.mjs';
 
 const DAY_MS = 86_400_000;
 const DATE_FORMAT = { weekday: 'long', day: '2-digit', month: '2-digit' };
 
-const startOfDay = t => new Date(t).setHours(0, 0, 0, 0);
+const startOfDay = ts => new Date(ts).setHours(0, 0, 0, 0);
 
-export function dayLabel(t, now = Date.now()) {
-  const days = Math.round((startOfDay(now) - startOfDay(t)) / DAY_MS);
-  if (days <= 0) return 'Hôm nay';
-  if (days === 1) return 'Hôm qua';
-  const sameYear = new Date(t).getFullYear() === new Date(now).getFullYear();
-  return new Date(t).toLocaleDateString('vi-VN', sameYear ? DATE_FORMAT : { ...DATE_FORMAT, year: 'numeric' });
+export function dayLabel(ts, now = Date.now()) {
+  const days = Math.round((startOfDay(now) - startOfDay(ts)) / DAY_MS);
+  if (days <= 0) return t('Hôm nay');
+  if (days === 1) return t('Hôm qua');
+  const sameYear = new Date(ts).getFullYear() === new Date(now).getFullYear();
+  return new Date(ts).toLocaleDateString(locale(), sameYear ? DATE_FORMAT : { ...DATE_FORMAT, year: 'numeric' });
 }
 
 function dayRow(label, row, width) {

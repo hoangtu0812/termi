@@ -10,6 +10,7 @@ import { matchesFilter, sessionLabel } from './session-label.mjs';
 import { S, go, st } from './state.mjs';
 import { store } from './storage.mjs';
 import { quickStart, renderRestore, welcome } from './welcome.mjs';
+import { t } from './i18n.mjs';
 
 export function stateEl(state, agent, since, model) {
   const e = el('span', 'state st-' + state);
@@ -66,7 +67,7 @@ function sessionSummary(x) {
     const c = el('span', 'chgs');
     c.innerHTML = icon('git');
     c.append(x.changes);
-    c.title = `${x.changes} file chưa commit`;
+    c.title = t('{0} file chưa commit', x.changes);
     top.append(c);
   }
   const body = el('div', 'sib');
@@ -83,7 +84,7 @@ function sessionRow(x, selected) {
   const unread = x.replyAt && x.name !== selected && x.replyAt > (seenMap()[seenKeyOf(x.name)] || 0);
   const b = el('button', 'si' + (x.name === selected ? ' cur' : '') + (unread ? ' unread' : ''));
   b.type = 'button';
-  if (unread) b.title = 'Có câu trả lời mới chưa xem';
+  if (unread) b.title = t('Có câu trả lời mới chưa xem');
   b.append(agentAvatar(x.agent, true), sessionSummary(x), sessionActions(x.name));
   b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
   b.oncontextmenu = e => {
@@ -100,7 +101,7 @@ function convRow(dir, c) {
   const body = el('div', 'sib');
   body.append(el('div', 'cit', c.title), el('div', 'cim', `${agentName(c.agent)} · ${ago(c.mtime)}`));
   b.append(agentAvatar(c.agent, true), body);
-  b.title = 'Mở lại hội thoại này';
+  b.title = t('Mở lại hội thoại này');
   b.onclick = safely(() => quickStart(dir, c.agent, c.id));
   return b;
 }
@@ -110,36 +111,36 @@ function togglePin(view, dir, name) {
   if (pinned.has(dir)) pinned.delete(dir);
   else pinned.add(dir);
   store.set('termi-pinned', JSON.stringify([...pinned]));
-  toast(pinned.has(dir) ? `Đã ghim ${name}` : `Bỏ ghim ${name}`);
+  toast(pinned.has(dir) ? t('Đã ghim {0}', name) : t('Bỏ ghim {0}', name));
   renderSessions();
 }
 
 function projectTitle(view, project) {
   const { dir, name, sessions, open } = project;
-  const t = el('button', 'pjt');
-  t.type = 'button';
-  t.innerHTML = icon('chevron') + icon('folder');
-  t.append(el('span', 'pjn', name));
-  if (sessions.length) t.append(el('span', 'pjc', String(sessions.length)));
+  const node = el('button', 'pjt');
+  node.type = 'button';
+  node.innerHTML = icon('chevron') + icon('folder');
+  node.append(el('span', 'pjn', name));
+  if (sessions.length) node.append(el('span', 'pjc', String(sessions.length)));
   const waiting = sessions.some(x => x.state === 'waiting');
   const working = sessions.some(x => x.state === 'working');
   if (waiting || working) {
     const d = el('span', 'state st-' + (waiting ? 'waiting' : 'working'));
     d.append(el('span', 'dot'));
-    t.append(d);
+    node.append(d);
   }
-  t.title = dir;
-  t.onclick = () => (view.byDir.has(dir) ? toggleProject(dir, !open) : toggleProject('+' + dir, open));
+  node.title = dir;
+  node.onclick = () => (view.byDir.has(dir) ? toggleProject(dir, !open) : toggleProject('+' + dir, open));
   if (view.pinned.has(dir)) {
     const pin = el('span', 'pin');
     pin.innerHTML = icon('pin');
-    t.append(pin);
+    node.append(pin);
   }
-  t.oncontextmenu = e => {
+  node.oncontextmenu = e => {
     e.preventDefault();
     togglePin(view, dir, name);
   };
-  return t;
+  return node;
 }
 
 function projectHeader(view, project) {
@@ -148,8 +149,8 @@ function projectHeader(view, project) {
   const add = el('button', 'ibtn');
   add.type = 'button';
   add.innerHTML = icon('plus');
-  add.title = 'Phiên mới trong thư mục này';
-  add.setAttribute('aria-label', `Phiên mới trong ${dir}`);
+  add.title = t('Phiên mới trong thư mục này');
+  add.setAttribute('aria-label', t('Phiên mới trong {0}', dir));
   const agent = sessions.find(x => x.agent)?.agent || conversations[0]?.agent || 'claude';
   add.onclick = safely(() => quickStart(dir, agent));
   h.append(projectTitle(view, project), add);
@@ -161,7 +162,7 @@ function conversationNodes(dir, conversations) {
   const shown = more ? conversations : conversations.slice(0, FIRST_CONVERSATIONS);
   const nodes = shown.map(c => convRow(dir, c));
   if (conversations.length > shown.length) {
-    const m = el('button', 'cmore', `Xem thêm ${conversations.length - shown.length} hội thoại`);
+    const m = el('button', 'cmore', t('Xem thêm {0} hội thoại', conversations.length - shown.length));
     m.type = 'button';
     m.onclick = () => {
       S.moreConv = { ...S.moreConv, [dir]: true };
@@ -212,7 +213,7 @@ function projectNodes(view, project) {
   nodes.push(...project.sessions.map(x => sessionRow(x, view.selected)));
   nodes.push(...conversationNodes(project.dir, project.conversations));
   if (!project.sessions.length && !project.conversations.length) {
-    nodes.push(el('div', 'cnone', 'Chưa có phiên hay hội thoại nào'));
+    nodes.push(el('div', 'cnone', t('Chưa có phiên hay hội thoại nào')));
   }
   return nodes;
 }
@@ -232,7 +233,7 @@ export function renderSessions() {
     .map(dir => describeProject(view, dir))
     .filter(Boolean)
     .flatMap(p => projectNodes(view, p));
-  if (!nodes.length) nodes.push(el('div', 'empty', 'Không có gì khớp'));
+  if (!nodes.length) nodes.push(el('div', 'empty', t('Không có gì khớp')));
   box.replaceChildren(...nodes);
   renderRestore(box);
   renderOthers(box);

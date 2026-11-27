@@ -3,11 +3,12 @@ import { el, wide } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { poll } from './poll.mjs';
 import { S, go, st } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const KILL_VIBRATION_MS = 20;
 
 export async function renameSession(name) {
-  const to = prompt('Tên mới (chữ, số, - và _):', name);
+  const to = prompt(t('Tên mới (chữ, số, - và _):'), name);
   if (!to || to === name) return;
   await api('api/sessions/rename', { name, to });
   await poll();
@@ -18,7 +19,7 @@ export async function renameSession(name) {
 }
 
 export async function killSession(name) {
-  if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
+  if (!confirm(t('Đóng phiên "{0}"? Agent và mọi tiến trình trong phiên sẽ dừng.', name))) return;
   await api('api/sessions/kill', { name });
   navigator.vibrate?.(KILL_VIBRATION_MS);
   await poll();
@@ -26,8 +27,8 @@ export async function killSession(name) {
 }
 
 const ACTIONS = [
-  ['edit', 'Đổi tên', renameSession],
-  ['x', 'Đóng phiên', killSession],
+  ['edit', t('Đổi tên'), renameSession],
+  ['x', t('Đóng phiên'), killSession],
 ];
 
 export function sessionActions(name) {

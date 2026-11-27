@@ -4,6 +4,7 @@ import { $, el, ltr, short } from './dom.mjs';
 import { codeNode } from './highlight.mjs';
 import { markdownNode } from './markdown.mjs';
 import { go, st } from './state.mjs';
+import { t } from './i18n.mjs';
 
 export function openViewer(title, node, insertPath, alt) {
   $('v-title').textContent = ltr(title);
@@ -17,7 +18,7 @@ export function openViewer(title, node, insertPath, alt) {
   $('v-alt').hidden = !alt;
   if (alt) {
     const nodes = [node, alt[1]],
-      labels = [alt[0], alt[2] || 'Xem trước'];
+      labels = [alt[0], alt[2] || t('Xem trước')];
     let i = 0;
     $('v-alt').textContent = labels[0];
     $('v-alt').onclick = () => {
@@ -38,7 +39,7 @@ export const openFile = safely(async p => {
     img.alt = p;
     return openViewer(short(p), img, p);
   }
-  const raw = el('pre', null, r.binary ? '(file nhị phân, không hiển thị được)' : r.text);
+  const raw = el('pre', null, r.binary ? t('(file nhị phân, không hiển thị được)') : r.text);
   if (!r.text) return openViewer(short(p), raw, p);
   if (!/\.(md|markdown)$/i.test(p)) return openViewer(short(p), await codeNode(r.text, p).catch(() => raw), p);
   let md;
@@ -48,7 +49,7 @@ export const openFile = safely(async p => {
     toast(e.message, true);
     return openViewer(short(p), raw, p);
   }
-  openViewer(short(p), md, p, ['Xem mã', raw]);
+  openViewer(short(p), md, p, [t('Xem mã'), raw]);
 });
 export function setupViewer() {
   $('v-close').onclick = () => history.back();

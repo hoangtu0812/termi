@@ -2,6 +2,7 @@ import { api, safely, toast } from './api.mjs';
 import { $ } from './dom.mjs';
 import { killSession, renameSession } from './session-actions.mjs';
 import { S, go, st } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const TAB_VIBRATION_MS = 6;
 
@@ -12,8 +13,8 @@ export function openSessionMenu(name) {
   api('api/notify')
     .then(p => {
       $('m-mute').lastChild.textContent = p.muted.includes(`${st().m || ''}/${name}`)
-        ? 'Bật lại thông báo phiên này'
-        : 'Tắt thông báo phiên này';
+        ? t('Bật lại thông báo phiên này')
+        : t('Tắt thông báo phiên này');
     })
     .catch(() => {});
 }
@@ -29,7 +30,7 @@ export function setupNavigation() {
         muted = new Set(p.muted);
       muted.has(key) ? muted.delete(key) : muted.add(key);
       await api('api/notify', { ...p, muted: [...muted] });
-      toast(muted.has(key) ? `Đã tắt thông báo của ${name}` : `Đã bật lại thông báo của ${name}`);
+      toast(muted.has(key) ? t('Đã tắt thông báo của {0}', name) : t('Đã bật lại thông báo của {0}', name));
     } else if (v === 'kill') await killSession(name);
   });
   $('b-back').onclick = () => go({ t: 'sessions', v: null });

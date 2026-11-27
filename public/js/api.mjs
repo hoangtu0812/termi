@@ -1,6 +1,7 @@
 import { setServer } from './conn.mjs';
 import { $ } from './dom.mjs';
 import { S, st } from './state.mjs';
+import { currentLang, t, translate } from './i18n.mjs';
 
 export const base = () => (st().m ? 'm/' + encodeURIComponent(st().m) + '/' : '');
 const GATEWAY_DOWN = new Set([502, 503, 504]);
@@ -25,7 +26,7 @@ export async function api(path, body) {
   if (!r || gatewayDown(r)) {
     $('netbar').hidden = false;
     setServer(false);
-    throw Object.assign(new Error('Mất kết nối tới máy chủ'), { offline: true });
+    throw Object.assign(new Error(t('Mất kết nối tới máy chủ')), { offline: true });
   }
   $('netbar').hidden = true;
   setServer(true);
@@ -45,18 +46,18 @@ function checkBuild(b) {
 }
 let toastT;
 export function toast(msg, err) {
-  const t = $('toast');
-  t.textContent = msg;
-  t.className = err ? 'err' : '';
-  t.hidden = false;
+  const node = $('toast');
+  node.textContent = translate(String(msg), currentLang());
+  node.className = err ? 'err' : '';
+  node.hidden = false;
   clearTimeout(toastT);
-  toastT = setTimeout(() => (t.hidden = true), err ? 6000 : 2500);
+  toastT = setTimeout(() => (node.hidden = true), err ? 6000 : 2500);
 }
 export const safely =
   fn =>
   (...a) =>
     fn(...a).catch(e => toast(e.message, true));
-export function autosize(t) {
-  t.style.height = 'auto';
-  t.style.height = Math.min(t.scrollHeight, 160) + 'px';
+export function autosize(node) {
+  node.style.height = 'auto';
+  node.style.height = Math.min(node.scrollHeight, 160) + 'px';
 }

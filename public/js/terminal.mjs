@@ -6,6 +6,7 @@ import { markDown, resetRetryDelay, touchScroll, watchDisconnect } from './recon
 import { S, st } from './state.mjs';
 import { activeEntry, allTerms, isActive, poolKey, pruneFrames, showFrame } from './term-pool.mjs';
 import { termTheme } from './theme.mjs';
+import { t } from './i18n.mjs';
 
 const termSrc = name => `${base()}term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 
@@ -85,7 +86,7 @@ export function setFont(n) {
     t.options.fontSize = fontSize;
     t.fit();
   }
-  toast(`Cỡ chữ ${fontSize}`);
+  toast(t('Cỡ chữ {0}', fontSize));
 }
 function styleTerminal(w, t) {
   t.options.fontSize = fontSize;
@@ -122,8 +123,8 @@ function copyFromTmux(data) {
   try {
     const text = new TextDecoder().decode(Uint8Array.from(atob(encoded), c => c.charCodeAt(0)));
     navigator.clipboard.writeText(text).then(
-      () => toast('Đã chép'),
-      () => toast('Trình duyệt chặn chép, dùng nút 📋 Chép'),
+      () => toast(t('Đã chép')),
+      () => toast(t('Trình duyệt chặn chép, dùng nút 📋 Chép')),
     );
   } catch {
     return true;

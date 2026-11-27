@@ -1,4 +1,5 @@
 import { shouldPush } from './prefs.mjs';
+import { pushText } from './texts.mjs';
 
 export const OFFLINE_ALERT_MS = 5 * 60_000;
 export const DISK_ALERT_PERCENT = 95;
@@ -30,13 +31,14 @@ export function diskIsLow(usage) {
   return usage.disk >= DISK_ALERT_PERCENT || (usage.diskFree != null && usage.diskFree < DISK_ALERT_FREE_BYTES);
 }
 
-const machineAlert = ({ kind, machine }) => (kind === 'down'
-  ? { title: `Máy ${machine.name} mất kết nối`, body: 'termi trên máy này không trả lời quá 5 phút.' }
-  : { title: `Máy ${machine.name} đã kết nối lại`, body: 'termi trên máy này đã trả lời trở lại.' });
+const machineAlert = (lang, { kind, machine }) => (kind === 'down'
+  ? { title: pushText(lang, 'machineDown', machine.name), body: pushText(lang, 'machineDownBody') }
+  : { title: pushText(lang, 'machineUp', machine.name), body: pushText(lang, 'machineUpBody') });
 
 export function createIncidents({ pusher, prefs, machines, usage, record, now = Date.now }) {
   const machineState = new Map();
   let diskAlertAt = -Infinity;
+  const lang = () => prefs.get().lang;
 
   async function report(title, body) {
     record({ t: now(), kind: 'system', title, body, session: '', machine: '' });
@@ -46,7 +48,7 @@ export function createIncidents({ pusher, prefs, machines, usage, record, now = 
 
   async function checkMachines() {
     for (const alert of machineTransitions(machineState, await machines.list(), now())) {
-      const { title, body } = machineAlert(alert);
+      const { title, body } = machineAlert(lang(), alert);
       await report(title, body);
     }
   }
@@ -55,12 +57,12 @@ export function createIncidents({ pusher, prefs, machines, usage, record, now = 
     const current = await usage();
     if (!diskIsLow(current) || now() - diskAlertAt < DISK_REPEAT_MS) return;
     diskAlertAt = now();
-    const free = current.diskFree == null ? '' : `, còn trống ${(current.diskFree / GIGABYTE).toFixed(1)} GB`;
-    await report('Ổ đĩa sắp đầy', `Ổ chứa thư mục nhà đã dùng ${current.disk}%${free}.`);
+    const free = current.diskFree == null ? '' : pushText(lang(), 'diskFree', (current.diskFree / GIGABYTE).toFixed(1));
+    await report(pushText(lang(), 'diskLow'), pushText(lang(), 'diskLowBody', current.disk, free));
   }
 
-  const crashed = () => report('termi đã tự khởi động lại', 'Máy chủ termi dừng bất thường và vừa được chạy lại.');
-  const ttydRestarted = count => report('Terminal được khởi động lại', `ttyd bị kẹt ${count} kết nối nên đã chạy lại.`);
+  const crashed = () => report(pushText(lang(), 'crashed'), pushText(lang(), 'crashedBody'));
+  const ttydRestarted = count => report(pushText(lang(), 'ttyd'), pushText(lang(), 'ttydBody', count));
 
   return { checkMachines, checkDisk, crashed, ttydRestarted };
 }

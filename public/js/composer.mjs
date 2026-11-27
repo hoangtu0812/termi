@@ -5,11 +5,12 @@ import { $, el, wide } from './dom.mjs';
 import { S, cur, st } from './state.mjs';
 import { store } from './storage.mjs';
 import { fitTmux } from './terminal.mjs';
+import { t } from './i18n.mjs';
 
 const send = safely(async () => {
-  const t = $('text');
-  if (S.atts.some(a => !a.path)) throw new Error('Đợi tải lên xong đã');
-  const text = [t.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
+  const area = $('text');
+  if (S.atts.some(a => !a.path)) throw new Error(t('Đợi tải lên xong đã'));
+  const text = [area.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
   if (!text) return api('api/send', { session: st().s, key: 'Enter' });
   try {
     await api('api/send', { session: st().s, text, enter: true });
@@ -17,9 +18,9 @@ const send = safely(async () => {
     if (!e.offline) throw e;
     queueMessage(st().m || '', st().s, text);
   }
-  if (t.value.trim()) rememberSent(t.value.trim());
-  t.value = '';
-  autosize(t);
+  if (area.value.trim()) rememberSent(area.value.trim());
+  area.value = '';
+  autosize(area);
   saveDraft();
   updateSuggest();
   navigator.vibrate?.(10);
@@ -29,30 +30,30 @@ const send = safely(async () => {
 });
 const SLASH = {
   claude: [
-    ['/compact', 'Thu gọn ngữ cảnh'],
-    ['/clear', 'Bắt đầu hội thoại mới'],
-    ['/model', 'Đổi model'],
-    ['/context', 'Ngữ cảnh đang dùng'],
-    ['/usage', 'Hạn mức gói'],
-    ['/code-review', 'Review thay đổi'],
-    ['/resume', 'Mở lại hội thoại'],
-    ['/init', 'Tạo CLAUDE.md'],
-    ['/memory', 'Sửa bộ nhớ'],
+    ['/compact', t('Thu gọn ngữ cảnh')],
+    ['/clear', t('Bắt đầu hội thoại mới')],
+    ['/model', t('Đổi model')],
+    ['/context', t('Ngữ cảnh đang dùng')],
+    ['/usage', t('Hạn mức gói')],
+    ['/code-review', t('Review thay đổi')],
+    ['/resume', t('Mở lại hội thoại')],
+    ['/init', t('Tạo CLAUDE.md')],
+    ['/memory', t('Sửa bộ nhớ')],
     ['/agents', 'Subagent'],
-    ['/mcp', 'Máy chủ MCP'],
-    ['/permissions', 'Quyền'],
-    ['/help', 'Trợ giúp'],
+    ['/mcp', t('Máy chủ MCP')],
+    ['/permissions', t('Quyền')],
+    ['/help', t('Trợ giúp')],
   ],
   codex: [
-    ['/compact', 'Thu gọn ngữ cảnh'],
-    ['/review', 'Review thay đổi'],
-    ['/model', 'Đổi model'],
-    ['/status', 'Trạng thái, hạn mức'],
+    ['/compact', t('Thu gọn ngữ cảnh')],
+    ['/review', t('Review thay đổi')],
+    ['/model', t('Đổi model')],
+    ['/status', t('Trạng thái, hạn mức')],
     ['/diff', 'Xem diff'],
-    ['/new', 'Hội thoại mới'],
-    ['/init', 'Tạo AGENTS.md'],
-    ['/approvals', 'Chế độ duyệt lệnh'],
-    ['/mention', 'Nhắc tới file'],
+    ['/new', t('Hội thoại mới')],
+    ['/init', t('Tạo AGENTS.md')],
+    ['/approvals', t('Chế độ duyệt lệnh')],
+    ['/mention', t('Nhắc tới file')],
   ],
 };
 export const loadDraft = k => store.get('termi-draft:' + k) || '';
@@ -66,12 +67,12 @@ const sentList = () => {
     return [];
   }
 };
-function rememberSent(t) {
-  store.set('termi-sent', JSON.stringify([t, ...sentList().filter(x => x !== t)].slice(0, 20)));
+function rememberSent(area) {
+  store.set('termi-sent', JSON.stringify([area, ...sentList().filter(x => x !== area)].slice(0, 20)));
 }
 function updateSuggest() {
-  const t = $('text'),
-    v = t.value,
+  const area = $('text'),
+    v = area.value,
     box = $('suggest');
   let items = [];
   if (/^\/\S*$/.test(v))
@@ -85,10 +86,10 @@ function updateSuggest() {
       if (desc) b.append(el('span', null, desc));
       b.onpointerdown = e => e.preventDefault();
       b.onclick = () => {
-        t.value = fill;
-        autosize(t);
+        area.value = fill;
+        autosize(area);
         saveDraft();
-        t.focus();
+        area.focus();
         updateSuggest();
       };
       return b;

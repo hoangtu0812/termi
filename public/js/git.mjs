@@ -6,17 +6,18 @@ import { icon } from './icons.mjs';
 import { loadRepos } from './poll.mjs';
 import { S, go } from './state.mjs';
 import { openFile } from './viewer.mjs';
+import { t } from './i18n.mjs';
 
 export function trackingState(track) {
   const ahead = /ahead (\d+)/.exec(track)?.[1];
   const behind = /behind (\d+)/.exec(track)?.[1];
-  if (!track) return { cls: '', text: 'chưa có upstream', title: 'Nhánh chưa liên kết với remote' };
-  const title = `${ahead || 0} commit chưa push · ${behind || 0} commit chưa pull`;
+  if (!track) return { cls: '', text: t('chưa có upstream'), title: t('Nhánh chưa liên kết với remote') };
+  const title = t('{0} commit chưa push · {1} commit chưa pull', ahead || 0, behind || 0);
   let cls = ' synced';
   if (behind) cls = ' behind';
   else if (ahead) cls = ' ahead';
-  let text = '✓ đồng bộ';
-  if (/\[gone\]/.test(track)) text = 'upstream đã mất';
+  let text = t('✓ đồng bộ');
+  if (/\[gone\]/.test(track)) text = t('upstream đã mất');
   else if (ahead || behind) text = [ahead && `↑${ahead}`, behind && `↓${behind}`].filter(Boolean).join(' ');
   return { cls, text, title };
 }
@@ -49,7 +50,7 @@ function changeRow(g, f, isStaged) {
   p.onclick = () => (f.y === '?' ? openFile(g.dir + '/' + f.path) : openDiff(f.path, diffQuery));
   const act = el('button', 'ibtn');
   act.innerHTML = icon(isStaged ? 'minus' : 'plus');
-  act.setAttribute('aria-label', isStaged ? 'Bỏ stage' : 'Stage');
+  act.setAttribute('aria-label', isStaged ? t('Bỏ stage') : 'Stage');
   act.onclick = () => gitOp(isStaged ? 'unstage' : 'stage', { paths: [f.path] });
   r.append(el('span', 'badge ' + code, code), p, act);
   return r;
@@ -59,7 +60,7 @@ function changeGroup(g, title, files, isStaged) {
   if (!files.length) return [];
   const h = el('div', 'grp');
   h.append(el('span', null, `${title} (${files.length})`));
-  const all = el('button', 'btn sm', isStaged ? 'Bỏ stage hết' : 'Stage hết');
+  const all = el('button', 'btn sm', isStaged ? t('Bỏ stage hết') : t('Stage hết'));
   all.onclick = () => gitOp(isStaged ? 'unstage' : 'stage', { paths: files.map(f => f.path) });
   h.append(all);
   return [h, ...files.map(f => changeRow(g, f, isStaged))];
@@ -68,8 +69,8 @@ function changeGroup(g, title, files, isStaged) {
 function showChanges(g) {
   const staged = g.files.filter(f => f.x !== ' ' && f.x !== '?');
   const changed = g.files.filter(f => f.y !== ' ');
-  const nodes = [...changeGroup(g, 'Đã stage', staged, true), ...changeGroup(g, 'Thay đổi', changed, false)];
-  $('g-changes').replaceChildren(...(nodes.length ? nodes : [el('div', 'empty', 'Không có thay đổi nào ✓')]));
+  const nodes = [...changeGroup(g, t('Đã stage'), staged, true), ...changeGroup(g, t('Thay đổi'), changed, false)];
+  $('g-changes').replaceChildren(...(nodes.length ? nodes : [el('div', 'empty', t('Không có thay đổi nào ✓'))]));
   $('g-commit-box').hidden = !staged.length;
 }
 
@@ -100,7 +101,7 @@ function showGit(g) {
 export const loadGit = safely(async dir => {
   await showRepos(dir);
   dir ||= $('g-repo').value;
-  if (!dir) return $('g-changes').replaceChildren(el('div', 'empty', 'Không tìm thấy repo git nào'));
+  if (!dir) return $('g-changes').replaceChildren(el('div', 'empty', t('Không tìm thấy repo git nào')));
   if (S.git?.dir !== dir) {
     $('g-changes').replaceChildren(...skel(3));
     $('g-log').replaceChildren(...skel(6));
@@ -117,7 +118,7 @@ const gitOp = safely(async (op, extra = {}) => {
   const btns = document.querySelectorAll('#p-git button');
   btns.forEach(b => (b.disabled = true));
   try {
-    if (['fetch', 'pull', 'push'].includes(op)) toast(`Đang ${op}…`);
+    if (['fetch', 'pull', 'push'].includes(op)) toast(t('Đang {0}…', op));
     const r = await api('api/git/op', { dir: S.git.dir, op, ...extra });
     if (r.output && op !== 'stage' && op !== 'unstage') toast(r.output.split('\n').slice(-3).join('\n'));
     if (op === 'commit') $('g-msg').value = '';
@@ -132,10 +133,10 @@ export function setupGit() {
   $('g-msg').oninput = e => autosize(e.target);
   $('g-repo').onchange = () => go({ g: $('g-repo').value });
   $('g-reload').onclick = () => loadGit(S.git?.dir || $('g-repo').value);
-  $('g-all').onclick = () => openDiff('Thay đổi chưa commit', { dir: S.git.dir });
+  $('g-all').onclick = () => openDiff(t('Thay đổi chưa commit'), { dir: S.git.dir });
   $('g-branch').onchange = e => {
     const b = e.target.value;
-    if (confirm(`Chuyển sang branch "${b}"?`)) gitOp('checkout', { branch: b });
+    if (confirm(t('Chuyển sang branch "{0}"?', b))) gitOp('checkout', { branch: b });
     else e.target.value = e.target.dataset.cur;
   };
 }

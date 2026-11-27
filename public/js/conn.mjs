@@ -1,12 +1,13 @@
 import { $ } from './dom.mjs';
 import { S } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const SECOND_MS = 1000;
 const MINUTE_S = 60;
 const LABELS = {
-  ok: 'Đã kết nối',
-  wait: 'Đang kết nối lại…',
-  off: 'Mất kết nối tới máy chủ',
+  ok: t('Đã kết nối'),
+  wait: t('Đang kết nối lại…'),
+  off: t('Mất kết nối tới máy chủ'),
 };
 const state = { online: true, server: true, term: 'none' };
 
@@ -19,8 +20,8 @@ export function connLevel({ online, server, term }) {
 export function ageLabel(lastData, now = Date.now()) {
   if (!lastData) return '';
   const seconds = Math.max(0, Math.round((now - lastData) / SECOND_MS));
-  if (seconds < MINUTE_S) return `terminal nhận dữ liệu ${seconds} giây trước`;
-  return `terminal nhận dữ liệu ${Math.round(seconds / MINUTE_S)} phút trước`;
+  if (seconds < MINUTE_S) return t('terminal nhận dữ liệu {0} giây trước', seconds);
+  return t('terminal nhận dữ liệu {0} phút trước', Math.round(seconds / MINUTE_S));
 }
 
 export function connText() {

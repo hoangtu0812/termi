@@ -1,3 +1,4 @@
+import { pushText } from '../push/texts.mjs';
 export function notifyRoutes({ pusher, prefs, watcher }) {
   return {
     'GET /api/push/key': () => ({ key: pusher.publicKey() }),
@@ -11,6 +12,9 @@ export function notifyRoutes({ pusher, prefs, watcher }) {
       return { ok: true };
     },
 
-    'POST /api/push/test': async () => ({ results: await pusher.send('termi', 'Thông báo hoạt động 👍', '') }),
+    'POST /api/push/test': async () => {
+      const results = await pusher.send('termi', pushText(prefs.get().lang, 'test'), '');
+      return { results };
+    },
   };
 }

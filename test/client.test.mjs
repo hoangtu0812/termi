@@ -42,15 +42,15 @@ test('index.html is markup that loads existing styles and the entry module', asy
 const TRUSTED_HTML = [
   /\.innerHTML = icon\(/,
   /\.innerHTML = icon\('chevron'\) \+ icon\('folder'\);$/,
-  /\.innerHTML = icon\('folder'\) \+ 'Thư mục khác…';$/,
+  /\.innerHTML = icon\('folder'\) \+ t\('Thư mục khác…'\);$/,
   /\.innerHTML = '<img src="icon\.svg" alt="">';$/,
   /\.innerHTML = LOGO\[agent\]$/,
   /\.insertAdjacentHTML\('afterbegin', icon\(e\.dataset\.i\)\);$/,
   /\.insertAdjacentHTML\('afterbegin', graphSvg\(c, row, width\)\);$/,
   /\.insertAdjacentHTML\('afterbegin', passingLanesSvg\(row, width\)\);$/,
-  /t\.innerHTML = marked\.parse\(text, \{ gfm: true(, breaks: true)? \}\);$/,
+  /(?:t|tpl)\.innerHTML = marked\.parse\(text, \{ gfm: true(, breaks: true)? \}\);$/,
   /\.innerHTML = hljs\.highlight\(/,
-  /<body>\$\{t\.innerHTML\}/,
+  /<body>\$\{(?:t|tpl)\.innerHTML\}/,
 ];
 
 test('HTML is only built from trusted markup', async () => {

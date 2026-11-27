@@ -69,6 +69,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | 📁 | **Duyệt file** | Icon và màu theo loại file, đánh dấu file/thư mục đang thay đổi theo git; xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
 | 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
 | 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Giao diện Tự động / Sáng / Tối (nút ☀ ở đầu sidebar); giữ màn hình sáng khi đang mở app (Screen Wake Lock); cài được như app (PWA). |
+| 🌐 | **Tiếng Việt / English** | Đổi ngôn ngữ giao diện trong Cài đặt → Ngôn ngữ · Language; thông báo đẩy dùng theo ngôn ngữ đã chọn. |
 
 ## Kiến trúc
 

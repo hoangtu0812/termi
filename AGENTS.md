@@ -62,7 +62,7 @@ These rules apply to every human and AI agent that changes this repository. They
 - Persist state with atomic writes (write a temp file, then `rename`) and serialize read-modify-write cycles on the same file.
 - Bound every external read: timeouts on processes and fetches, size caps on bodies, files and output.
 - Errors that reach the client use `fail(status, message)`. Unexpected errors are logged server-side and returned as a generic 500.
-- Identifiers, file names and logs are in English. User-facing UI strings stay in Vietnamese until i18n is introduced.
+- Identifiers, file names and logs are in English. User-facing UI strings are written in Vietnamese and wrapped in `t()` from `public/js/i18n.mjs`; add the English text to `public/js/en-*.mjs` in the same change (`test/i18n.test.mjs` enforces both).
 
 ## 5. Style
 
@@ -112,7 +112,7 @@ These rules apply to every human and AI agent that changes this repository. They
 | `README.md` | English, with `README.vi.md` in Vietnamese |
 | `AGENTS.md` | English, with `AGENTS.vi.md` in Vietnamese |
 | Docs and plans | English; a `.vi.md` translation is optional |
-| UI text | Vietnamese |
+| UI text | Vietnamese source wrapped in `t()`, English in `public/js/en-*.mjs` |
 
 When you change a document that has a translation, update both files in the same commit.
 

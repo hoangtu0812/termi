@@ -1,4 +1,5 @@
 import { el } from './dom.mjs';
+import { t } from './i18n.mjs';
 
 const HLJS = {
   src: 'https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js',
@@ -15,7 +16,7 @@ export const loadHljs = () =>
     s.onload = () => ok(window.hljs);
     s.onerror = () => {
       hljsP = null;
-      fail(new Error('Không tải được bộ tô màu'));
+      fail(new Error(t('Không tải được bộ tô màu')));
     };
     document.head.append(s);
   }));

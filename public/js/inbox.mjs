@@ -3,6 +3,7 @@ import { $, ago, el } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { enablePush } from './push.mjs';
 import { S, go } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const KIND_ICONS = { waiting: 'bell', done: 'check', system: 'gauge' };
 
@@ -36,16 +37,16 @@ function renderInbox() {
           b.type = 'button';
           const ic = el('span', 'ik ' + e.kind);
           ic.innerHTML = icon(KIND_ICONS[e.kind] || 'check');
-          const t = el('div', 'it');
-          t.append(el('b', null, e.title), el('small', null, `${ago(e.t)}${e.body ? ' · ' + e.body : ''}`));
-          b.append(ic, t);
+          const node = el('div', 'it');
+          node.append(el('b', null, e.title), el('small', null, `${ago(e.t)}${e.body ? ' · ' + e.body : ''}`));
+          b.append(ic, node);
           b.onclick = () => {
             $('d-inbox').close();
             if (e.session) go({ s: e.session, t: 'term', m: e.machine || null, d: null, g: null, v: null });
           };
           return b;
         })
-      : [el('div', 'empty', 'Chưa có thông báo nào')]),
+      : [el('div', 'empty', t('Chưa có thông báo nào'))]),
   );
 }
 export function setupInbox() {
@@ -58,7 +59,7 @@ export function setupInbox() {
     $('b-bell').dataset.badge = '';
     const reg = await navigator.serviceWorker?.getRegistration();
     const on = !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted';
-    $('inbox-push').textContent = on ? 'Thông báo đẩy: đang bật · gửi thử' : 'Bật thông báo đẩy';
+    $('inbox-push').textContent = on ? t('Thông báo đẩy: đang bật · gửi thử') : t('Bật thông báo đẩy');
   };
   $('inbox-push').onclick = () => enablePush();
 }

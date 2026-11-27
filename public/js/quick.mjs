@@ -2,52 +2,53 @@ import { api, safely, toast } from './api.mjs';
 import { $, agentName, el } from './dom.mjs';
 import { icon } from './icons.mjs';
 import { S, cur, st } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const QUICK = [
   [
     '📋',
-    'Tình trạng',
-    'Nhánh, thay đổi, commit chưa push',
-    'Cho tôi biết ngắn gọn: đang ở nhánh nào, có thay đổi gì chưa commit, có commit nào chưa pu' + 'sh.',
+    t('Tình trạng'),
+    t('Nhánh, thay đổi, commit chưa push'),
+    t('Cho tôi biết ngắn gọn: đang ở nhánh nào, có thay đổi gì chưa commit, có commit nào chưa push.'),
   ],
   [
     '💾',
     'Commit',
-    'Xem thay đổi và commit',
-    'Xem các thay đổi hiện tại và commit với message rõ ràng (tách thành nhiều commit nếu hợp l' + 'ý).',
+    t('Xem thay đổi và commit'),
+    t('Xem các thay đổi hiện tại và commit với message rõ ràng (tách thành nhiều commit nếu hợp lý).'),
   ],
-  ['⬆️', 'Push', 'Đẩy nhánh lên remote', 'Push nhánh hiện tại lên remote.', true],
+  ['⬆️', 'Push', t('Đẩy nhánh lên remote'), t('Push nhánh hiện tại lên remote.'), true],
   [
     '🔀',
-    'Tạo PR',
-    'Pull request kèm mô tả',
-    'Tạo pull request cho nhánh hiện tại bằng gh, viết tiêu đề và mô tả tóm tắt các thay đổi.',
+    t('Tạo PR'),
+    t('Pull request kèm mô tả'),
+    t('Tạo pull request cho nhánh hiện tại bằng gh, viết tiêu đề và mô tả tóm tắt các thay đổi.'),
     true,
   ],
   [
     '✅',
     'Merge PR',
-    'Kiểm tra CI rồi merge',
-    'Kiểm tra CI của pull request cho nhánh hiện tại; nếu tất cả đều qua thì merge, nếu không t' + 'hì báo lại lỗi.',
+    t('Kiểm tra CI rồi merge'),
+    t('Kiểm tra CI của pull request cho nhánh hiện tại; nếu tất cả đều qua thì merge, nếu không thì báo lại lỗi.'),
     true,
   ],
   [
     '🔍',
     'Review',
-    'Rà lỗi trong thay đổi',
+    t('Rà lỗi trong thay đổi'),
     {
       claude: '/code-review',
       codex: '/review',
-      '*': 'Review các thay đổi chưa commit: tìm lỗi logic, bảo mật, chỗ thiếu test.',
+      '*': t('Review các thay đổi chưa commit: tìm lỗi logic, bảo mật, chỗ thiếu test.'),
     },
   ],
   [
     '🧪',
-    'Chạy test',
-    'Báo kết quả, giải thích lỗi',
-    'Chạy test của dự án và báo kết quả; nếu có lỗi thì giải thích nguyên nhân.',
+    t('Chạy test'),
+    t('Báo kết quả, giải thích lỗi'),
+    t('Chạy test của dự án và báo kết quả; nếu có lỗi thì giải thích nguyên nhân.'),
   ],
-  ['🗜️', 'Thu gọn', 'Giảm ngữ cảnh hội thoại', { claude: '/compact', codex: '/compact' }],
+  ['🗜️', t('Thu gọn'), t('Giảm ngữ cảnh hội thoại'), { claude: '/compact', codex: '/compact' }],
 ];
 const quickList = () => (S.quickCustom ? S.quickCustom.map(q => [q.emoji, q.name, q.desc, q.text, q.ask]) : QUICK);
 function renderQuick(agent) {
@@ -61,9 +62,9 @@ function renderQuick(agent) {
         b.append(el('b', null, `${emoji} ${name}`), el('span', null, desc));
         b.onclick = safely(async () => {
           $('d-quick').close();
-          if (ask && !confirm(`${name}: gửi yêu cầu này cho ${agentName(agent)}?\n\n${text}`)) return;
+          if (ask && !confirm(t('{0}: gửi yêu cầu này cho {1}?\n\n{2}', name, agentName(agent), text))) return;
           await api('api/send', { session: st().s, text, enter: true });
-          toast(`Đã gửi: ${name}`);
+          toast(t('Đã gửi: {0}', name));
         });
         return b;
       })
@@ -73,7 +74,7 @@ function renderQuick(agent) {
 const BLANK_ACTION = { emoji: '⚡', name: '', desc: '', text: '', ask: false };
 
 function openQuick() {
-  if (!cur()?.agent) return toast('Phiên này chưa chạy agent nào', true);
+  if (!cur()?.agent) return toast(t('Phiên này chưa chạy agent nào'), true);
   renderQuick(cur().agent);
   $('d-quick').showModal();
   api('api/quick')
@@ -100,46 +101,47 @@ function deleteButton(row) {
   del.type = 'button';
   del.innerHTML = icon('trash');
   del.onclick = () => row.remove();
-  del.setAttribute('aria-label', 'Xoá');
+  del.setAttribute('aria-label', t('Xoá'));
   return del;
 }
 
 function quickRow(q) {
   const r = el('div', 'qrow');
   const e = textInput(q.emoji, '⚡', 'qe');
-  const n = textInput(q.name, 'Tên', 'qn');
-  const d = textInput(q.desc, 'Mô tả ngắn', 'qd');
-  const t = Object.assign(el('textarea', 'qt'), { value: q.text, placeholder: 'Câu lệnh gửi cho agent', rows: 2 });
+  const n = textInput(q.name, t('Tên'), 'qn');
+  const d = textInput(q.desc, t('Mô tả ngắn'), 'qd');
+  const area = Object.assign(el('textarea', 'qt'), { value: q.text, rows: 2 });
+  area.placeholder = t('Câu lệnh gửi cho agent');
   const a = el('label', 'qa');
   const c = Object.assign(el('input'), { type: 'checkbox', checked: q.ask });
-  a.append(c, ' Hỏi trước khi gửi');
+  a.append(c, t(' Hỏi trước khi gửi'));
   const top = el('div', 'qtop');
   top.append(e, n, deleteButton(r));
-  r.append(top, d, t, a);
+  r.append(top, d, area, a);
   r.read = () => ({
     emoji: e.value.trim(),
     name: n.value.trim(),
     desc: d.value.trim(),
-    text: t.value.trim(),
+    text: area.value.trim(),
     ask: c.checked,
   });
   return r;
 }
 
 function editorActions(list, agent) {
-  const add = el('button', 'btn sm', '＋ Thêm');
-  const save = el('button', 'btn pri sm', 'Lưu');
-  const reset = el('button', 'btn sm', 'Khôi phục mặc định');
+  const add = el('button', 'btn sm', t('＋ Thêm'));
+  const save = el('button', 'btn pri sm', t('Lưu'));
+  const reset = el('button', 'btn sm', t('Khôi phục mặc định'));
   add.type = save.type = reset.type = 'button';
   add.onclick = () => list.append(quickRow(BLANK_ACTION));
   save.onclick = safely(async () => {
     S.quickCustom = await api('api/quick', { items: [...list.children].map(r => r.read()) });
     S.quickEditing = false;
     renderQuick(agent);
-    toast('Đã lưu thao tác nhanh');
+    toast(t('Đã lưu thao tác nhanh'));
   });
   reset.onclick = safely(async () => {
-    if (!confirm('Dùng lại danh sách mặc định?')) return;
+    if (!confirm(t('Dùng lại danh sách mặc định?'))) return;
     await api('api/quick', { items: null });
     S.quickCustom = null;
     S.quickEditing = false;

@@ -3,6 +3,7 @@ import { $, agentName, ago, el, short, skel } from './dom.mjs';
 import { agentAvatar } from './icons.mjs';
 import { poll } from './poll.mjs';
 import { cur, go } from './state.mjs';
+import { t } from './i18n.mjs';
 
 const showHistory = safely(async all => {
   const box = $('hist-list');
@@ -19,7 +20,7 @@ const showHistory = safely(async all => {
       b.append(el('span', 't1', h.title), t2);
       b.onclick = safely(async () => {
         const base = (h.cwd.split('/').pop() || 'claude').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30) || 'claude';
-        const name = prompt('Tên phiên mới để mở lại hội thoại:', base);
+        const name = prompt(t('Tên phiên mới để mở lại hội thoại:'), base);
         if (!name) return;
         await api('api/sessions', { name, dir: h.cwd, agent: h.agent, resume: h.id });
         $('d-hist').close();
@@ -29,10 +30,12 @@ const showHistory = safely(async all => {
       return b;
     }),
   );
-  if (!list.length)
-    box.replaceChildren(el('div', 'empty', dir ? `Chưa có hội thoại nào ở ${short(dir)}` : 'Không có hội thoại nào'));
+  if (!list.length) {
+    const empty = dir ? t('Chưa có hội thoại nào ở {0}', short(dir)) : t('Không có hội thoại nào');
+    box.replaceChildren(el('div', 'empty', empty));
+  }
   if (dir) {
-    const b = el('button', 'btn', 'Xem mọi thư mục');
+    const b = el('button', 'btn', t('Xem mọi thư mục'));
     b.type = 'button';
     b.onclick = () => showHistory(true);
     box.append(b);

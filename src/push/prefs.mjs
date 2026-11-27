@@ -1,5 +1,6 @@
 import { fail } from '../errors.mjs';
 import { validTime } from '../validate.mjs';
+import { PUSH_LANGS } from './texts.mjs';
 
 const FILE = 'notify.json';
 const QUIET_FROM = '23:00';
@@ -12,6 +13,7 @@ export const NOTIFY_DEFAULT = {
   waiting: true,
   done: true,
   system: true,
+  lang: 'vi',
   quiet: { on: false, from: QUIET_FROM, to: QUIET_TO },
   muted: [],
 };
@@ -45,6 +47,7 @@ export function parseNotifyPrefs(body) {
     waiting: Boolean(body.waiting),
     done: Boolean(body.done),
     system: body.system !== false,
+    lang: PUSH_LANGS.includes(body.lang) ? body.lang : 'vi',
     quiet: { on: Boolean(quiet.on), from: quiet.from || QUIET_FROM, to: quiet.to || QUIET_TO },
     muted,
   };

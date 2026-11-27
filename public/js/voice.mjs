@@ -1,6 +1,7 @@
 import { autosize, toast } from './api.mjs';
 import { saveDraft } from './composer.mjs';
 import { $ } from './dom.mjs';
+import { locale, t } from './i18n.mjs';
 
 let rec = null;
 export function setupVoice() {
@@ -10,20 +11,20 @@ export function setupVoice() {
     $('b-mic').onpointerdown = e => e.preventDefault();
     $('b-mic').onclick = () => {
       if (rec) return rec.stop();
-      const t = $('text'),
-        base = t.value ? t.value.replace(/\s*$/, ' ') : '';
+      const area = $('text'),
+        base = area.value ? area.value.replace(/\s*$/, ' ') : '';
       rec = new Speech();
-      rec.lang = 'vi-VN';
+      rec.lang = locale();
       rec.interimResults = true;
       rec.continuous = true;
       rec.onresult = e => {
-        t.value = base + [...e.results].map(r => r[0].transcript).join('');
-        autosize(t);
+        area.value = base + [...e.results].map(r => r[0].transcript).join('');
+        autosize(area);
         saveDraft();
       };
       rec.onerror = e => {
         if (e.error !== 'aborted' && e.error !== 'no-speech')
-          toast('Micro: ' + (e.error === 'not-allowed' ? 'chưa cho phép dùng micro' : e.error), true);
+          toast('Micro: ' + (e.error === 'not-allowed' ? t('chưa cho phép dùng micro') : e.error), true);
       };
       rec.onend = () => {
         rec = null;

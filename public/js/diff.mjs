@@ -1,6 +1,7 @@
 import { api, safely } from './api.mjs';
 import { ago, el, ltr, wide } from './dom.mjs';
 import { openViewer } from './viewer.mjs';
+import { t } from './i18n.mjs';
 
 function diffNode(text) {
   const pre = el('pre', 'diff');
@@ -34,7 +35,7 @@ function plusMinusBar(add, del) {
 }
 export const openDiff = safely(async (title, qs) => {
   const r = await api('api/show?' + new URLSearchParams(qs));
-  if (wide()) openViewer(title, diffBox(r, true), null, ['Một cột', diffBox(r, false), 'Hai cột']);
+  if (wide()) openViewer(title, diffBox(r, true), null, [t('Một cột'), diffBox(r, false), t('Hai cột')]);
   else openViewer(title, diffBox(r, false));
 });
 function diffBox(r, split) {
@@ -60,7 +61,7 @@ function diffBox(r, split) {
         const p = el('span', 'p', ltr(f.path));
         p.title = f.path;
         row.append(p);
-        if (f.add == null) row.append(el('span', 'pm', 'nhị phân'));
+        if (f.add == null) row.append(el('span', 'pm', t('nhị phân')));
         else row.append(el('span', 'pm pa', `+${f.add}`), el('span', 'pm pd', `−${f.del}`), plusMinusBar(f.add, f.del));
         row.onclick = () =>
           diff.querySelector(`[data-file="${CSS.escape(f.path)}"]`)?.scrollIntoView({ block: 'start' });

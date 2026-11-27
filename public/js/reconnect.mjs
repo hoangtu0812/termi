@@ -3,6 +3,7 @@ import { setTerm } from './conn.mjs';
 import { $, wide } from './dom.mjs';
 import { S, cur, st } from './state.mjs';
 import { ensureTerm, fontSize } from './terminal.mjs';
+import { t } from './i18n.mjs';
 
 const TAP_SLOP_PX = 8;
 const LINE_HEIGHT = 1.3;
@@ -53,22 +54,22 @@ function createTouchScroller(w, target) {
   return { start, move, end };
 }
 
-export function touchScroll(w, t) {
-  const target = t.element.querySelector('.xterm-screen') || t.element;
+export function touchScroll(w, term) {
+  const target = term.element.querySelector('.xterm-screen') || term.element;
   const options = { capture: true, passive: false };
   const scroller = createTouchScroller(w, target);
   w.document.addEventListener('touchstart', scroller.start, options);
   w.document.addEventListener('touchmove', scroller.move, options);
   w.document.addEventListener('touchend', scroller.end, options);
 }
-export function watchDisconnect(t, onChange) {
+export function watchDisconnect(term, onChange) {
   const check = () => {
     const down = [...t.element.children].some(
       n => n.style?.borderRadius === '15px' && /to Reconnect|Connection Closed/.test(n.textContent),
     );
     onChange(down);
   };
-  new t.element.ownerDocument.defaultView.MutationObserver(check).observe(t.element, { childList: true });
+  new term.element.ownerDocument.defaultView.MutationObserver(check).observe(term.element, { childList: true });
 }
 let retryDelay = 1000,
   retryTimer = null;
@@ -83,7 +84,7 @@ export function markDown(down) {
 function autoReconnect() {
   if (retryTimer || !S.termName || !S.list.some(x => x.name === S.termName)) return;
   if (document.visibilityState !== 'visible') return;
-  $('t-down-note').textContent = `Thử lại sau ${Math.round(retryDelay / 1000)} giây · chạm để thử ngay`;
+  $('t-down-note').textContent = t('Thử lại sau {0} giây · chạm để thử ngay', Math.round(retryDelay / 1000));
   retryTimer = setTimeout(() => {
     retryTimer = null;
     retryDelay = Math.min(retryDelay * 2, 30_000);

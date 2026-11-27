@@ -8,6 +8,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Ngôn ngữ giao diện: tiếng Việt hoặc tiếng Anh, đổi trong Cài đặt → Ngôn ngữ · Language (trang tự tải lại). Ngày giờ, nhập bằng giọng nói và thông báo đẩy theo ngôn ngữ đã chọn; thông báo từ máy chủ hiện trong app cũng được dịch. Chữ giao diện mới viết bằng tiếng Việt trong `t()` kèm bản tiếng Anh trong `public/js/en-*.mjs`, có `test/i18n.test.mjs` kiểm tra.
+
 ## [1.6.0] - 2026-11-27
 
 ### Thêm
@@ -97,7 +100,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Đã bỏ comment khỏi mọi file mã nguồn, kể cả script cài đặt, service worker và statusline của Claude; lý do được chuyển sang `docs/NOTES-v1.9-implementation-notes.md`. Allowlist của bộ kiểm tra quy tắc đã rỗng.
 - Mọi hàm đều không quá 40 dòng; module client không còn đụng tới trình duyệt lúc nạp, nên phần logic có unit test.
 - Các script shell có quyền thực thi ngay trong repo.
-- `docs/ARCH-v1.0-overview.md` mô tả sơ đồ module.
+- `docs/ARCH-v1.1-overview.md` mô tả sơ đồ module.
 
 ### Hiệu năng
 - Danh sách phiên được dựng tối đa một lần mỗi giây và dùng chung cho mọi thiết bị đang mở cùng bộ theo dõi thông báo; 5 request cùng lúc với 10 phiên agent giảm từ khoảng 65 ms xuống 19 ms.
