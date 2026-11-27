@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-27
+
 ### Added
 - Push notifications when a pipeline of a project with an open session succeeds or fails (GitHub and Azure DevOps). Toggle in Settings › Notify when.
 - `npm run check` reports CSS class collisions: a class styled as its own component in two stylesheets, or a desktop/mobile-only class that another stylesheet also styles.

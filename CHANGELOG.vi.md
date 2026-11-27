@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.13.0] - 2026-11-27
+
 ### Thêm
 - Thông báo đẩy khi pipeline của project đang có phiên chạy xong hoặc lỗi (GitHub và Azure DevOps). Bật tắt trong Cài đặt › Báo khi.
 - `npm run check` báo trùng class CSS: một class được định nghĩa như thành phần riêng ở hai file CSS, hoặc class chỉ dành cho máy tính/điện thoại nhưng bị file khác style lại.
