@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-27
+
 ### Added
 - Session list: filter chips (All / Waiting / Working / Idle) with counts, and rename/close buttons that appear on hover.
 - Git history is grouped by day ("Hôm nay", "Hôm qua", then dates) and shows an author initial badge.
@@ -238,7 +240,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0

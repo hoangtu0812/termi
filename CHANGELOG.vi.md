@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-11-27
+
 ### Thêm
 - Danh sách phiên: hàng lọc (Tất cả / Chờ bạn / Đang chạy / Rảnh) kèm số lượng, nút đổi tên/đóng phiên hiện khi rê chuột.
 - Lịch sử git nhóm theo ngày ("Hôm nay", "Hôm qua", rồi ngày cụ thể) và có avatar chữ cái đầu của tác giả.
@@ -240,7 +242,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/hoangtu0812/termi/compare/v0.12.0...v1.0.0
 [0.12.0]: https://github.com/hoangtu0812/termi/compare/v0.11.0...v0.12.0
