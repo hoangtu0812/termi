@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.14.1] - 2026-11-27
+
 ### Sửa
 - Panel Files mở khi chưa chọn phiên (ví dụ trên iPad) hiện thư mục được phép đầu tiên thay vì báo lỗi "nằm ngoài TERMI_ROOTS".
 
