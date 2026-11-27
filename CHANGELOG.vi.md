@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-27
+
 ### Thay đổi
 - Bố cục máy tính kiểu VS Code: thanh icon dọc bên trái (Phiên, File, Git, Pipelines; Lịch sử, Thông báo, Cài đặt ở dưới), panel bên hiện nội dung theo icon đang chọn, vùng chính chỉ còn Chat | Terminal của phiên đang mở. File và diff mở ở vùng chính. Huy hiệu chuyển lên các icon.
 - Máy tính gọn hơn: chữ 13,5 px, header mỏng hơn.
@@ -312,7 +314,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/hoangtu0812/termi/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0

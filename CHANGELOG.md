@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.10.0] - 2026-11-27
+
 ### Changed
 - Desktop layout in the style of VS Code: an activity bar on the left (Sessions, File, Git, Pipelines; history, notifications and settings at the bottom), a side panel showing the chosen view, and a main area with only Chat | Terminal of the open session. Files and diffs open in the main area. Badges move to the activity bar icons.
 - Desktop is denser: 13.5 px text and a thinner header.
@@ -310,7 +312,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.9.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.10.0...HEAD
+[1.10.0]: https://github.com/hoangtu0812/termi/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
