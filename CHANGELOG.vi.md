@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-27
+
 ### Thay đổi
 - Trạng thái phiên được máy chủ đẩy xuống qua luồng (`GET /api/stream`): phiên mới, "chờ bạn" và câu trả lời xong hiện trong khoảng một giây; app chỉ hỏi định kỳ 15 giây một lần để dự phòng, đỡ tốn pin điện thoại.
 
@@ -265,7 +267,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0

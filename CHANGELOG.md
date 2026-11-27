@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.4.0] - 2026-11-27
+
 ### Changed
 - Session states update over a server push stream (`GET /api/stream`): new sessions, "waiting for you" and finished replies show within about a second, and the app polls only every 15 s as a fallback, which saves battery on phones.
 
@@ -263,7 +265,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
