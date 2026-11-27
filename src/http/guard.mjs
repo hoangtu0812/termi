@@ -20,7 +20,12 @@ export const sameOrigin = headers => !headers.origin
 
 export const hasCsrfHeader = req => req.method !== 'POST' || req.headers['x-termi'] === '1';
 
+export const MIN_TOKEN_LENGTH = 32;
+
 export function createGuard(allowedUsers, token = null) {
+  if (token && token.length < MIN_TOKEN_LENGTH) {
+    throw new Error(`TERMI_TOKEN must be at least ${MIN_TOKEN_LENGTH} characters`);
+  }
   const allowed = async headers => (token ? hasToken(headers, token) : isAllowed(headers, await allowedUsers()));
 
   async function checkRequest(req) {

@@ -1,5 +1,11 @@
 # Embedded mode
 
+| | |
+|---|---|
+| Version | 1.5 |
+| Status | Active |
+| Last updated | 2026-11-27 |
+
 termi normally listens on `127.0.0.1` and trusts the identity that `tailscale serve` attaches to each request. Embedded mode lets another application put termi behind its own reverse proxy instead, for example Flowie, which runs one sandbox container per user and serves termi at `/api/v1/sandbox/ui/`.
 
 ## Turning it on
@@ -22,3 +28,4 @@ Never set `TERMI_HOST` to a reachable address without `TERMI_TOKEN`: without a T
 - Keep the token on the server side; it must never reach the browser.
 - Strip its own prefix before forwarding, so termi still sees `/`, `/api/...` and `/term/...`.
 - Redirect the prefix without a trailing slash to the prefix with one: the web app uses relative URLs and resolves them against the page address.
+- Do not buffer `text/event-stream` responses (`api/stream`). If the proxy buffers them the app still works but falls back to polling the session list every 3 seconds.

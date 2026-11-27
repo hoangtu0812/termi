@@ -258,7 +258,7 @@ Sửa `public/index.html` không cần khởi động lại: trang đang mở s�
 | `TERMI_DATA` | `~/.termi` | Thư mục dữ liệu (khoá, đăng ký thông báo, file tải lên) |
 | `TERMI_ALLOWED_USERS` | Chủ máy | Tài khoản Tailscale được phép vào, cách nhau bằng dấu phẩy |
 | `TERMI_HOST` | `127.0.0.1` | Địa chỉ lắng nghe; chỉ đổi khi đặt kèm `TERMI_TOKEN` |
-| `TERMI_TOKEN` | không đặt | Chế độ nhúng: request phải mang giá trị này trong `X-Termi-Token` thay cho danh tính Tailscale (xem `docs/GUIDE-v1.4-embedded-mode.md`) |
+| `TERMI_TOKEN` | không đặt | Chế độ nhúng: request phải mang giá trị này trong `X-Termi-Token` thay cho danh tính Tailscale (xem `docs/GUIDE-v1.5-embedded-mode.md`) |
 
 Dữ liệu cục bộ nằm trong `~/.termi/`: khoá VAPID, danh sách thiết bị nhận thông báo và file tải lên (`uploads/`, không tự xoá). Log ở `~/Library/Logs/termi.*.log`.
 
