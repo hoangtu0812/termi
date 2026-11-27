@@ -5,7 +5,7 @@ import { enablePush } from './push.mjs';
 import { S, go } from './state.mjs';
 import { t } from './i18n.mjs';
 
-const KIND_ICONS = { waiting: 'bell', done: 'check', system: 'gauge' };
+const KIND_ICONS = { waiting: 'bell', done: 'check', system: 'gauge', cifail: 'zap', cidone: 'zap' };
 
 const seenKey = 'termi-events-seen';
 const getSeen = () => {

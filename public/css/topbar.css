@@ -118,4 +118,5 @@
 .conn.ok::before { background:var(--ok); box-shadow:0 0 0 3px var(--ok-soft); }
 .conn.wait::before { background:var(--warn); box-shadow:0 0 0 3px var(--warn-soft); animation:pulse 1.2s infinite; }
 .conn.off::before { background:var(--del); box-shadow:0 0 0 3px color-mix(in srgb, var(--del) 20%, transparent); }
-.irow .ik.system { color:var(--del); background:color-mix(in srgb, var(--del) 14%, transparent); }
+.irow .ik.system, .irow .ik.cifail { color:var(--del); background:color-mix(in srgb, var(--del) 14%, transparent); }
+.irow .ik.cidone { color:var(--ok); background:var(--ok-soft); }

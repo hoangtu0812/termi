@@ -4,6 +4,7 @@ import path from 'node:path';
 import { execFile } from 'node:child_process';
 import { promisify } from 'node:util';
 import { commentFinder } from './check-comments.mjs';
+import { cssClassViolations } from './check-css.mjs';
 
 const run = promisify(execFile);
 const ROOT = path.join(import.meta.dirname, '..');
@@ -86,7 +87,10 @@ async function collectViolations() {
   }));
   const scripts = sources.filter(file => SYNTAX_EXTENSIONS.has(path.extname(file)));
   const syntax = await Promise.all(scripts.map(syntaxViolation));
-  return [...fromSources.flat(), ...docs.map(docNameViolation), ...syntax].filter(Boolean);
+  const sheets = await Promise.all(sources.filter(file => path.extname(file) === '.css')
+    .map(async file => ({ file, src: await fs.readFile(path.join(ROOT, file), 'utf8') })));
+  const css = cssClassViolations(sheets);
+  return [...fromSources.flat(), ...docs.map(docNameViolation), ...syntax, ...css].filter(Boolean);
 }
 
 export function classify(violations, allowlist) {

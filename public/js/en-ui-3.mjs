@@ -87,4 +87,5 @@ export const EN_UI_3 = {
   'Riêng {0}': 'Only {0}',
   'Dùng chung': 'Shared',
   'Xoá danh sách riêng': 'Remove project list',
+  'Pipeline của các project đang mở chạy xong hoặc lỗi': 'Pipelines of open projects succeed or fail',
 };

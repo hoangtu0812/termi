@@ -16,6 +16,7 @@ import { loadNotifyPrefs } from './push/prefs.mjs';
 import { loadVapidKeys } from './push/vapid.mjs';
 import { createIncidents } from './push/incidents.mjs';
 import { createWatcher } from './push/watcher.mjs';
+import { CI_WATCH_MS, createCiWatcher } from './push/ci-watch.mjs';
 import { createPusher } from './push/webpush.mjs';
 import { createLiveFeed } from './live.mjs';
 import { createLogRotator, launchdLogFiles } from './log-rotate.mjs';
@@ -67,9 +68,12 @@ export async function init(config) {
   const incidents = createIncidents({
     pusher, prefs, machines, record: watcher.record, usage: () => machineUsage(config.home),
   });
+  const ci = createCi();
+  const ciWatcher = createCiWatcher({ sessions, ci, pusher, prefs, record: watcher.record });
   return {
     incidents,
-    ci: createCi(),
+    ci,
+    ciWatcher,
     runMarker: createRunMarker(store),
     config, paths, uploadDir, store, agents, sessions, machines, pusher, prefs, watcher, statics,
     home: config.home,
@@ -99,7 +103,7 @@ function createServer(context) {
 
 const logged = (name, task) => () => task().catch(error => console.error(name, error.message));
 
-function startTimers({ watcher, snapshots, checkTtyd, rotateLogs, incidents }) {
+function startTimers({ watcher, ciWatcher, snapshots, checkTtyd, rotateLogs, incidents }) {
   return [
     setInterval(logged('machines', incidents.checkMachines), MACHINE_CHECK_MS),
     setInterval(logged('disk', incidents.checkDisk), DISK_CHECK_MS),
@@ -107,6 +111,7 @@ function startTimers({ watcher, snapshots, checkTtyd, rotateLogs, incidents }) {
     setInterval(logged('log', rotateLogs), LOG_ROTATE_MS),
     setTimeout(logged('log', rotateLogs), FIRST_SNAPSHOT_MS),
     setInterval(logged('watch', watcher.tick), WATCH_MS),
+    setInterval(logged('ci-watch', ciWatcher.tick), CI_WATCH_MS),
     setInterval(logged('snapshot', snapshots.save), SNAPSHOT_MS),
     setInterval(logged('watchdog', checkTtyd), WATCHDOG_MS),
     setTimeout(logged('snapshot', snapshots.save), FIRST_SNAPSHOT_MS),
