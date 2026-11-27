@@ -4,7 +4,6 @@ import { $, agentName, dur, el } from './dom.mjs';
 import { poll } from './poll.mjs';
 import { stateEl } from './sessions.mjs';
 import { cur, st } from './state.mjs';
-import { renderTabs } from './switcher.mjs';
 import { t } from './i18n.mjs';
 import { renderTabBadges } from './tab-badges.mjs';
 
@@ -26,7 +25,6 @@ export function renderTop() {
     );
   $('t-state').title = x?.dir || '';
   $('b-menu').hidden = !x;
-  renderTabs();
   renderConfirm();
   renderDoing();
   renderTabBadges();

@@ -2,7 +2,7 @@ import { autosize } from './api.mjs';
 import { loadChat } from './chat.mjs';
 import { loadDraft } from './composer.mjs';
 import { renderConfirm } from './confirm.mjs';
-import { $, splitWide, wide } from './dom.mjs';
+import { $, wide } from './dom.mjs';
 import { loadFiles } from './files.mjs';
 import { loadGit } from './git.mjs';
 import { loadOtherMachines } from './machines.mjs';
@@ -16,9 +16,9 @@ import { loadRestore, welcome } from './welcome.mjs';
 import { loadPipelines } from './pipelines.mjs';
 import { renderTabBadges } from './tab-badges.mjs';
 import { CODE_TABS, codeTab, rememberTab } from './tab-memory.mjs';
+import { mainView, placePanes, sidePanel } from './layout.mjs';
 
 const PANES = ['none', 'term', 'files', 'git', 'ci', 'chat'];
-const SPLIT_TABS = new Set(['files', 'git', 'ci']);
 const SESSION_TABS = new Set(['term', 'files', 'chat']);
 
 function switchMachine(machine) {
@@ -48,22 +48,28 @@ function currentTab(s) {
   return wide() && tab === 'sessions' ? 'term' : tab;
 }
 
-function showTab(tab, viewing) {
-  document.body.dataset.tab = tab;
-  const inCode = CODE_TABS.includes(tab);
+function markTabs(main, panel) {
+  const inCode = CODE_TABS.includes(main);
   for (const b of document.querySelectorAll('#tabbar button, #seg button, #codetabs button')) {
-    b.classList.toggle('on', b.dataset.t === tab || (b.dataset.t === 'code' && inCode));
+    b.classList.toggle('on', b.dataset.t === main || (b.dataset.t === 'code' && inCode));
   }
-  $('codetabs').hidden = wide() || !inCode;
+  for (const b of document.querySelectorAll('#acts button')) b.classList.toggle('on', b.dataset.t === panel);
+}
+
+function showTab(tab, viewing, panel) {
+  document.body.dataset.tab = tab;
+  document.body.dataset.panel = panel;
+  markTabs(tab, panel);
+  $('codetabs').hidden = wide() || !CODE_TABS.includes(tab);
   $('viewer').hidden = !viewing;
   renderSessions();
   renderTop();
 }
 
-function showPanes(s, show, split, gone) {
-  document.body.classList.toggle('split', !!split);
-  for (const p of PANES) $('p-' + p).hidden = p !== show && !(split && p === 'term');
-  $('composer').hidden = !(s.s && !gone && (show === 'term' || show === 'chat' || split));
+function showPanes(s, show, panel, gone) {
+  for (const p of PANES) $('p-' + p).hidden = p !== show && p !== panel;
+  $('spanel-sessions').hidden = wide() && panel !== 'sessions';
+  $('composer').hidden = !(s.s && !gone && (show === 'term' || show === 'chat'));
   renderConfirm();
 }
 
@@ -76,35 +82,41 @@ function restoreDraft(s, show) {
   autosize($('text'));
 }
 
-function loadPane(s, show, split) {
-  if (show === 'term' || split) ensureTerm(s.s);
-  if (show === 'chat') loadChat(true);
-  if (show === 'files') loadFiles(s.d || cur()?.dir);
-  if (show === 'git') loadGit(s.g || cur()?.dir);
-  if (show === 'ci') loadPipelines();
+function loadPane(s, view) {
+  if (view === 'term') ensureTerm(s.s);
+  if (view === 'chat') loadChat(true);
+  if (view === 'files') loadFiles(s.d || cur()?.dir);
+  if (view === 'git') loadGit(s.g || cur()?.dir);
+  if (view === 'ci') loadPipelines();
+}
+
+function views(s) {
+  if (!wide()) return { tab: currentTab(s), panel: null };
+  return { tab: mainView(s), panel: sidePanel(s) };
 }
 
 export function render() {
   const s = st();
   if ((s.m || '') !== S.machine) switchMachine(s.m || '');
   if (s.v && !$('v-body').childElementCount) return go({ v: null });
-  const tab = currentTab(s);
-  showTab(tab, s.v);
+  placePanes();
+  const { tab, panel } = views(s);
+  showTab(tab, s.v, panel);
   const gone = s.s && S.loaded && !cur();
   const show = SESSION_TABS.has(tab) && (!s.s || gone) ? 'none' : tab;
-  const split = splitWide() && s.s && !gone && SPLIT_TABS.has(show);
-  showPanes(s, show, split, gone);
+  showPanes(s, show, panel, gone);
   restoreDraft(s, show);
   if (s.s && !gone) rememberTab(s.s, tab);
   renderTabBadges();
   if (show === 'none') welcome($('p-none'));
   if (s.v) return;
-  loadPane(s, show, split);
+  loadPane(s, show);
+  if (panel && panel !== 'sessions') loadPane(s, panel);
 }
 export function setupRender() {
   addEventListener('hashchange', render);
   addEventListener('resize', () => {
-    const t = (wide() ? 'w' : 'n') + (splitWide() ? 's' : '');
+    const t = wide() ? 'w' : 'n';
     if (S.layout && S.layout !== t) render();
     S.layout = t;
   });

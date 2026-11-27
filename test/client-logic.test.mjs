@@ -174,3 +174,14 @@ test('the pipeline badge follows the latest run on the current branch', async ()
   assert.equal(ciBadge({ runs: [] }), null);
   assert.equal(ciBadge(null), null);
 });
+
+test('desktop picks the side panel from p or a code tab, and the main view from t', async () => {
+  const { mainView, sidePanel } = await import('../public/js/layout.mjs');
+  assert.equal(sidePanel({}), 'sessions');
+  assert.equal(sidePanel({ p: 'git' }), 'git');
+  assert.equal(sidePanel({ p: 'git', t: 'ci' }), 'ci');
+  assert.equal(sidePanel({ p: 'nonsense' }), 'sessions');
+  assert.equal(mainView({ t: 'chat' }), 'chat');
+  assert.equal(mainView({ t: 'files' }), 'term');
+  assert.equal(mainView({}), 'term');
+});
