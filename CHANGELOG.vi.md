@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-27
+
 ### Thêm
 - WSL: script cài giữ bản Linux luôn chạy khi đăng nhập Windows, nên máy không còn biến mất khỏi danh sách khi đóng cửa sổ Ubuntu.
 - macOS: máy chủ tự xoay vòng `~/Library/Logs/termi.*.log` khi quá 5 MB.
@@ -260,7 +262,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1

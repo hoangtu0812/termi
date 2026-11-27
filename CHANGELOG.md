@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.3.0] - 2026-11-27
+
 ### Added
 - WSL: the installer keeps the Linux distribution running at Windows logon, so the machine no longer disappears from the list when the Ubuntu window is closed.
 - macOS: the server rotates `~/Library/Logs/termi.*.log` above 5 MB.
@@ -258,7 +260,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/hoangtu0812/termi/compare/v1.0.0...v1.0.1
