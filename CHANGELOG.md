@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.12.1] - 2026-11-27
+
 ### Fixed
 - Pipelines: the pipeline filter row wraps so every pipeline is visible, and long branch names are truncated instead of widening the panel.
 - The session search box shows an accent border on focus instead of a thick outline pressed against the filter row.
