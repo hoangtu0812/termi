@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.8 |
+| Version | 1.9 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 
@@ -197,6 +197,14 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - Push: a test notification shows the push service's response code. A subscription the browser kept but the push service dropped is removed and re-created once. New events while the app is open show a toast and vibrate.
 - Hover styles apply only on devices with a mouse; on touch screens hover sticks after a tap.
 - The terminal iframe has `min-height: 0`: an iframe defaults to a 150 px minimum and would push the composer off screen when the keyboard opens.
+
+## Incident alerts (`src/push/incidents.mjs`)
+
+- Alerts use the same push path as agent events and appear in the inbox as kind `system`. They respect quiet hours and a separate `system` switch that defaults to on; clients that do not send the switch keep it on.
+- A peer is tracked only after it has been seen running termi, so machines that never had termi are not reported. It is reported down after five minutes without an answer (one short Wi-Fi drop or a reboot stays quiet) and reported up once, when it answers again. The check runs every minute.
+- The disk under the home folder is low at 95 % used or less than 5 GB free, checked every 10 minutes and reported at most once a day.
+- `run.json` in the data folder is written with `clean: false` at startup and `clean: true` when the server stops on SIGTERM or SIGINT (launchd, systemd and upgrades send SIGTERM). Finding `clean: false` at the next start means the previous run crashed or was killed, which is reported. The exit is forced after 3 s so a hung connection cannot block shutdown.
+- The ttyd watchdog reports when it restarts ttyd because of stuck connections.
 
 ## Service worker (`public/sw.js`) and offline page
 

@@ -11,6 +11,7 @@ const MINUTES_PER_HOUR = 60;
 export const NOTIFY_DEFAULT = {
   waiting: true,
   done: true,
+  system: true,
   quiet: { on: false, from: QUIET_FROM, to: QUIET_TO },
   muted: [],
 };
@@ -43,6 +44,7 @@ export function parseNotifyPrefs(body) {
   return {
     waiting: Boolean(body.waiting),
     done: Boolean(body.done),
+    system: body.system !== false,
     quiet: { on: Boolean(quiet.on), from: quiet.from || QUIET_FROM, to: quiet.to || QUIET_TO },
     muted,
   };

@@ -4,6 +4,8 @@ import { icon } from './icons.mjs';
 import { enablePush } from './push.mjs';
 import { S, go } from './state.mjs';
 
+const KIND_ICONS = { waiting: 'bell', done: 'check', system: 'gauge' };
+
 const seenKey = 'termi-events-seen';
 const getSeen = () => {
   try {
@@ -33,13 +35,13 @@ function renderInbox() {
           const b = el('button', 'irow');
           b.type = 'button';
           const ic = el('span', 'ik ' + e.kind);
-          ic.innerHTML = icon(e.kind === 'waiting' ? 'bell' : 'check');
+          ic.innerHTML = icon(KIND_ICONS[e.kind] || 'check');
           const t = el('div', 'it');
           t.append(el('b', null, e.title), el('small', null, `${ago(e.t)}${e.body ? ' · ' + e.body : ''}`));
           b.append(ic, t);
           b.onclick = () => {
             $('d-inbox').close();
-            go({ s: e.session, t: 'term', m: e.machine || null, d: null, g: null, v: null });
+            if (e.session) go({ s: e.session, t: 'term', m: e.machine || null, d: null, g: null, v: null });
           };
           return b;
         })
