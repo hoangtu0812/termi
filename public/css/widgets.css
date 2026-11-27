@@ -116,9 +116,13 @@ dialog.palette { width:min(94vw, 620px); padding:0; margin-top:10vh; }
 .qrow .qe { width:52px; text-align:center; } .qrow .qn { flex:1; } .qrow textarea { resize:vertical; }
 .qrow .qa { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); }
 .nform { display:flex; flex-direction:column; gap:8px; font-size:14px; }
-.chk2 { display:inline-flex; align-items:center; gap:8px; }
+.nform .chk2 { display:inline-flex; flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:14px; }
 .qh { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
-.qh .tm { padding:4px 6px; border-radius:8px; border:1px solid var(--line2); background:var(--card); color:var(--fg); }
+.qr { display:inline-flex; align-items:center; gap:6px; }
+.nform .qh .tm {
+  width:auto; height:34px; padding:4px 8px; border-radius:8px; border:1px solid var(--line2);
+  background:var(--card); color:var(--fg); font-size:14px;
+}
 .muted { display:flex; flex-wrap:wrap; gap:6px; align-items:center; } .muted small { width:100%; color:var(--faint); }
 .pj.om .pjt { cursor:default; } .pj.om .pjt svg.i { color:var(--ok); }
 #v-body pre.copytext { white-space:pre-wrap; overflow-wrap:anywhere; -webkit-user-select:text; user-select:text; }

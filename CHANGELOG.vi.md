@@ -8,6 +8,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Sửa lỗi
+- Cài đặt → "Báo khi": ô tích nằm lệch phía trên chữ và mỗi ô giờ yên lặng chiếm trọn một dòng; giờ đã thẳng hàng, và trên điện thoại khoảng giờ xuống dòng nguyên khối.
+
 ## [1.0.0] - 2026-11-27
 
 ### Thêm
