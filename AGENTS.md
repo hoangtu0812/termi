@@ -8,7 +8,7 @@ These rules apply to every human and AI agent that changes this repository. They
 
 - termi is a zero-dependency Node.js (≥ 24) server plus a no-build static PWA. Do not add runtime dependencies, bundlers, transpilers or frameworks.
 - Only Node built-in modules (`node:*`) on the server. Browser-native APIs and ES modules on the client.
-- The server listens on `127.0.0.1` only. The single entry point from outside is `tailscale serve`. The one exception is embedded mode (`TERMI_TOKEN`, `docs/EMBEDDED.md`), where a trusted reverse proxy is the entry point and every request must carry the token.
+- The server listens on `127.0.0.1` only. The single entry point from outside is `tailscale serve`. The one exception is embedded mode (`TERMI_TOKEN`, `docs/GUIDE-v1.4-embedded-mode.md`), where a trusted reverse proxy is the entry point and every request must carry the token.
 - Client URLs are relative (`api/...`, not `/api/...`) so the app works under any path prefix.
 - Supported hosts: macOS, Linux, Windows via WSL2. Any OS-specific branch must handle all three.
 
