@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Changed
+- Implementation notes renamed to `docs/NOTES-v1.7-implementation-notes.md` with the rationale for this release.
+
 ## [1.2.0] - 2026-11-27
 
 ### Added
@@ -42,7 +45,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
 - Architecture refactor plan `plan/PLAN-v1.8-architecture-refactor.md`.
-- Implementation notes `docs/NOTES-v1.6-implementation-notes.md` for rationale moved out of code comments.
+- Implementation notes `docs/NOTES-v1.7-implementation-notes.md` for rationale moved out of code comments.
 - `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
 - `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
 - `.editorconfig`.
@@ -63,7 +66,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - `src/app.mjs` is gone: the HTTP layer lives in `src/http/`, the API in one file per area under `src/routes/`, Web Push in `src/push/`, and sessions, snapshots, machines and the ttyd watchdog in their own modules; `src/start.mjs` wires them together.
 - Server logs are in English.
 - The web client is split into `public/css/` (10 stylesheets) and `public/js/` (native ES modules); `index.html` is markup only. Any change to a UI file now makes open pages reload.
-- Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.6-implementation-notes.md`. The rule-check allowlist is empty.
+- Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.7-implementation-notes.md`. The rule-check allowlist is empty.
 - Every function is at most 40 lines; client modules no longer touch the browser while loading, so their logic has unit tests.
 - The shell scripts are executable in the repository.
 - `docs/ARCH-v1.0-overview.md` describes the module map.
