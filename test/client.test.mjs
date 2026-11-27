@@ -38,3 +38,24 @@ test('index.html is markup that loads existing styles and the entry module', asy
   assert.ok(assets.filter(asset => asset.endsWith('.css')).length > 0);
   for (const asset of assets) await fs.access(path.join(PUBLIC, asset));
 });
+
+const TRUSTED_HTML = [
+  /\.innerHTML = icon\(/,
+  /\.innerHTML = icon\('chevron'\) \+ icon\('folder'\);$/,
+  /\.innerHTML = icon\('folder'\) \+ 'Thư mục khác…';$/,
+  /\.innerHTML = '<img src="\/icon\.svg" alt="">';$/,
+  /\.innerHTML = LOGO\[agent\]$/,
+  /\.insertAdjacentHTML\('afterbegin', icon\(e\.dataset\.i\)\);$/,
+  /\.insertAdjacentHTML\('afterbegin', graphSvg\(c, row, width\)\);$/,
+  /t\.innerHTML = marked\.parse\(text, \{ gfm: true(, breaks: true)? \}\);$/,
+  /\.innerHTML = hljs\.highlight\(/,
+  /<body>\$\{t\.innerHTML\}/,
+];
+
+test('HTML is only built from trusted markup', async () => {
+  for (const [name, text] of await modules()) {
+    for (const line of text.split('\n').filter(l => /innerHTML|insertAdjacentHTML|outerHTML/.test(l))) {
+      assert.ok(TRUSTED_HTML.some(pattern => pattern.test(line.trim())), `${name}: ${line.trim()}`);
+    }
+  }
+});

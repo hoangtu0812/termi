@@ -89,6 +89,38 @@ function updateSuggest() {
     }),
   );
 }
+const KEYBOARD_RATIO = 0.78;
+const BLUR_HIDE_MS = 150;
+
+function watchKeyboard() {
+  const tallest = new Map();
+  const checkKeyboard = () => {
+    const height = tallest.get(innerWidth) || 0;
+    if (innerHeight > height) tallest.set(innerWidth, innerHeight);
+    const typing = /TEXTAREA|INPUT/.test(document.activeElement?.tagName || '');
+    const shrunk = innerHeight < (tallest.get(innerWidth) || innerHeight) * KEYBOARD_RATIO;
+    document.body.classList.toggle('kb', typing && shrunk);
+  };
+  addEventListener('resize', checkKeyboard);
+  document.addEventListener('focusin', () => setTimeout(checkKeyboard, 300));
+  document.addEventListener('focusout', () => setTimeout(checkKeyboard, 100));
+  checkKeyboard();
+}
+
+function onComposerKey(e) {
+  if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && wide()) {
+    e.preventDefault();
+    send();
+  }
+  if (e.key === 'ArrowUp' && !e.target.value && sentList()[0]) {
+    e.preventDefault();
+    e.target.value = sentList()[0];
+    autosize(e.target);
+    saveDraft();
+    updateSuggest();
+  }
+}
+
 export function setupComposer() {
   $('b-send').onclick = send;
   $('b-send').onpointerdown = e => e.preventDefault();
@@ -104,31 +136,7 @@ export function setupComposer() {
   $('text').onblur = () =>
     setTimeout(() => {
       $('suggest').hidden = true;
-    }, 150);
-  {
-    const tallest = new Map();
-    const checkKb = () => {
-      const h = tallest.get(innerWidth) || 0;
-      if (innerHeight > h) tallest.set(innerWidth, innerHeight);
-      const typing = /TEXTAREA|INPUT/.test(document.activeElement?.tagName || '');
-      document.body.classList.toggle('kb', typing && innerHeight < (tallest.get(innerWidth) || innerHeight) * 0.78);
-    };
-    addEventListener('resize', checkKb);
-    document.addEventListener('focusin', () => setTimeout(checkKb, 300));
-    document.addEventListener('focusout', () => setTimeout(checkKb, 100));
-    checkKb();
-  }
-  $('text').onkeydown = e => {
-    if (e.key === 'Enter' && !e.shiftKey && !e.isComposing && wide()) {
-      e.preventDefault();
-      send();
-    }
-    if (e.key === 'ArrowUp' && !e.target.value && sentList()[0]) {
-      e.preventDefault();
-      e.target.value = sentList()[0];
-      autosize(e.target);
-      saveDraft();
-      updateSuggest();
-    }
-  };
+    }, BLUR_HIDE_MS);
+  watchKeyboard();
+  $('text').onkeydown = onComposerKey;
 }

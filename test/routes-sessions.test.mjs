@@ -81,6 +81,10 @@ test('session lifecycle in tmux', async t => {
   assert.equal((await app.get('/api/capture?session=nobody')).status, 404);
   assert.equal((await app.get('/api/chat?session=nobody')).status, 404);
 
+});
+
+test('session usage, projects, rename and kill', async t => {
+  if (!tmuxAvailable) return t.skip('tmux is not installed');
   const usage = (await app.get('/api/usage?session=alpha')).json();
   assert.equal(usage.session.name, 'alpha');
   assert.equal(usage.session.agent, null);

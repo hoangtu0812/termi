@@ -1,10 +1,10 @@
-import { autosize, base, toast } from './api.mjs';
+import { autosize, toast } from './api.mjs';
 import { saveDraft } from './composer.mjs';
 import { $ } from './dom.mjs';
 
-const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
 let rec = null;
 export function setupVoice() {
+  const Speech = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (Speech) {
     $('b-mic').hidden = false;
     $('b-mic').onpointerdown = e => e.preventDefault();

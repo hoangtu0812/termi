@@ -29,39 +29,23 @@ async function describePeer(peer) {
 
 const byRelevance = (a, b) => b.termi - a.termi || b.online - a.online || a.name.localeCompare(b.name);
 
-export function createMachines({ tailscale, allowedUsers, now = Date.now }) {
-  let cache = { at: -Infinity, list: [] };
+async function discover(status) {
+  const name = os.hostname().replace(/\.local$/, '');
+  const self = { id: '', name, os: process.platform, online: true, termi: true, self: true };
+  let current;
+  try {
+    current = await status();
+  } catch {
+    return [self];
+  }
+  self.name = current.Self?.HostName || self.name;
+  const peers = await Promise.all(Object.values(current.Peer || {}).filter(isDesktopPeer).map(describePeer));
+  return [self, ...peers.sort(byRelevance)];
+}
+
+function createOwner(status, allowedUsers) {
   let owner = null;
-
-  const status = async () => JSON.parse((await run(tailscale, ['status', '--json'], {
-    maxBuffer: STATUS_MAX_BUFFER,
-    timeout: STATUS_TIMEOUT_MS,
-  })).stdout);
-
-  async function discover() {
-    const name = os.hostname().replace(/\.local$/, '');
-    const self = { id: '', name, os: process.platform, online: true, termi: true, self: true };
-    let current;
-    try {
-      current = await status();
-    } catch {
-      return [self];
-    }
-    self.name = current.Self?.HostName || self.name;
-    const peers = await Promise.all(Object.values(current.Peer || {}).filter(isDesktopPeer).map(describePeer));
-    return [self, ...peers.sort(byRelevance)];
-  }
-
-  async function list() {
-    if (now() - cache.at < CACHE_MS) return cache.list;
-    const found = await discover();
-    cache = { at: now(), list: found };
-    return cache.list;
-  }
-
-  const peerDns = async id => (await list()).find(machine => !machine.self && machine.termi && machine.id === id)?.dns;
-
-  async function users() {
+  return async function users() {
     if (allowedUsers) return allowedUsers;
     if (!owner) {
       const current = await status().catch(() => null);
@@ -69,7 +53,28 @@ export function createMachines({ tailscale, allowedUsers, now = Date.now }) {
       if (login) owner = [login.toLowerCase()];
     }
     return owner || [];
+  };
+}
+
+function tailscaleStatus(tailscale) {
+  return async () => JSON.parse((await run(tailscale, ['status', '--json'], {
+    maxBuffer: STATUS_MAX_BUFFER,
+    timeout: STATUS_TIMEOUT_MS,
+  })).stdout);
+}
+
+export function createMachines({ tailscale, allowedUsers, now = Date.now }) {
+  const status = tailscaleStatus(tailscale);
+  let cache = { at: -Infinity, list: [] };
+
+  async function list() {
+    if (now() - cache.at < CACHE_MS) return cache.list;
+    const found = await discover(status);
+    cache = { at: now(), list: found };
+    return cache.list;
   }
 
-  return { list, peerDns, allowedUsers: users };
+  const peerDns = async id => (await list()).find(machine => !machine.self && machine.termi && machine.id === id)?.dns;
+
+  return { list, peerDns, allowedUsers: createOwner(status, allowedUsers) };
 }

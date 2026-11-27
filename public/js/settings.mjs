@@ -11,75 +11,92 @@ function settingRow(title, ...children) {
   r.append(el('div', 'st', title), ...children);
   return r;
 }
-export function setupSettings() {
-  $('b-settings').onclick = safely(async () => {
-    $('d-settings').showModal();
-    const body = $('settings-body');
-    body.replaceChildren(...skel(4));
-    const [info, reg] = await Promise.all([api('/api/info'), navigator.serviceWorker?.getRegistration()]);
-    const pushOn = !!(await reg?.pushManager?.getSubscription()) && Notification.permission === 'granted';
-    const seg = el('div', 'seg2');
-    for (const [k, [name, ic]] of Object.entries(THEMES)) {
-      const b = el('button', themePref() === k ? 'on' : '');
-      b.type = 'button';
-      b.innerHTML = icon(ic);
-      b.append(name);
-      b.onclick = () => {
-        setTheme(k);
-        seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
-      };
-      seg.append(b);
-    }
-    const fs = el('div', 'seg2'),
-      val = el('span', 'fsv', String(fontSize));
-    const fb = (label, d) => {
-      const b = el('button', null, label);
-      b.type = 'button';
-      b.onclick = () => {
-        setFont(fontSize + d);
-        val.textContent = fontSize;
-      };
-      return b;
+const RELEASES = 'https://github.com/hoangtu0812/termi/releases';
+const STATUSLINE_HINT =
+  'Chưa bật. Trong một phiên Claude, gõ: ! node ~/.termi/app/current/scripts/claude-statusline.mjs install';
+
+function themePicker() {
+  const seg = el('div', 'seg2');
+  for (const [k, [name, ic]] of Object.entries(THEMES)) {
+    const b = el('button', themePref() === k ? 'on' : '');
+    b.type = 'button';
+    b.innerHTML = icon(ic);
+    b.append(name);
+    b.onclick = () => {
+      setTheme(k);
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
     };
-    fs.append(fb('A−', -1), val, fb('A+', 1));
-    const nb = el('button', 'btn sm', pushOn ? 'Đang bật · gửi thử' : 'Bật thông báo đẩy');
-    nb.type = 'button';
-    nb.onclick = () => enablePush();
-    const cu = el(
-      'div',
-      'sv',
-      info.claudeUsage
-        ? '✓ Đã bật (hiện trong chip Usage trên header)'
-        : 'Chưa bật. Trong một phiên Claude, gõ: ! node ~/.termi/app/current/scripts/claude-statuslin' +
-            'e.mjs install',
-    );
-    const ag = el('div', 'sv');
-    ag.append(
-      ...(info.agents.length
-        ? info.agents.map(a => {
-            const s = el('span', 'agi');
-            s.append(agentAvatar(a.id, true), a.name);
-            return s;
-          })
-        : ['Chưa có agent nào']),
-    );
-    body.replaceChildren(
-      settingRow('Giao diện', seg),
-      settingRow('Cỡ chữ terminal', fs),
-      settingRow('Thông báo đẩy', nb),
-      settingRow('Báo khi', await notifyForm()),
-      settingRow('Hạn mức Claude trong Usage', cu),
-      settingRow('Agent trên máy này', ag),
-      settingRow('Thư mục được phép truy cập', el('div', 'sv mono', info.roots.map(short).join('\n'))),
-      settingRow('Máy chủ', el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
-      settingRow(
-        'Bản phát hành',
-        Object.assign(el('a', 'sv', 'github.com/hoangtu0812/termi/releases'), {
-          href: 'https://github.com/hoangtu0812/termi/releases',
-          target: '_blank',
-          rel: 'noopener',
-        }),
-      ),
-    );
+    seg.append(b);
+  }
+  return seg;
+}
+
+function fontPicker() {
+  const fs = el('div', 'seg2');
+  const val = el('span', 'fsv', String(fontSize));
+  const step = (label, delta) => {
+    const b = el('button', null, label);
+    b.type = 'button';
+    b.onclick = () => {
+      setFont(fontSize + delta);
+      val.textContent = fontSize;
+    };
+    return b;
+  };
+  fs.append(step('A−', -1), val, step('A+', 1));
+  return fs;
+}
+
+function pushButton(pushOn) {
+  const nb = el('button', 'btn sm', pushOn ? 'Đang bật · gửi thử' : 'Bật thông báo đẩy');
+  nb.type = 'button';
+  nb.onclick = () => enablePush();
+  return nb;
+}
+
+function agentList(agents) {
+  const ag = el('div', 'sv');
+  const items = agents.map(a => {
+    const s = el('span', 'agi');
+    s.append(agentAvatar(a.id, true), a.name);
+    return s;
   });
+  ag.append(...(items.length ? items : ['Chưa có agent nào']));
+  return ag;
+}
+
+async function pushEnabled(registration) {
+  return !!(await registration?.pushManager?.getSubscription()) && Notification.permission === 'granted';
+}
+
+async function settingRows(info, pushOn) {
+  const usage = info.claudeUsage ? '✓ Đã bật (hiện trong chip Usage trên header)' : STATUSLINE_HINT;
+  const releases = Object.assign(el('a', 'sv', 'github.com/hoangtu0812/termi/releases'), {
+    href: RELEASES,
+    target: '_blank',
+    rel: 'noopener',
+  });
+  return [
+    settingRow('Giao diện', themePicker()),
+    settingRow('Cỡ chữ terminal', fontPicker()),
+    settingRow('Thông báo đẩy', pushButton(pushOn)),
+    settingRow('Báo khi', await notifyForm()),
+    settingRow('Hạn mức Claude trong Usage', el('div', 'sv', usage)),
+    settingRow('Agent trên máy này', agentList(info.agents)),
+    settingRow('Thư mục được phép truy cập', el('div', 'sv mono', info.roots.map(short).join('\n'))),
+    settingRow('Máy chủ', el('div', 'sv', `${info.host} · ${info.platform} · termi ${info.version}`)),
+    settingRow('Bản phát hành', releases),
+  ];
+}
+
+async function openSettings() {
+  $('d-settings').showModal();
+  const body = $('settings-body');
+  body.replaceChildren(...skel(4));
+  const [info, registration] = await Promise.all([api('/api/info'), navigator.serviceWorker?.getRegistration()]);
+  body.replaceChildren(...(await settingRows(info, await pushEnabled(registration))));
+}
+
+export function setupSettings() {
+  $('b-settings').onclick = safely(openSettings);
 }

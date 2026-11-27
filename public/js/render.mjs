@@ -14,57 +14,81 @@ import { ensureTerm } from './terminal.mjs';
 import { renderTop } from './topbar.mjs';
 import { loadRestore, welcome } from './welcome.mjs';
 
-export function render() {
-  const s = st();
-  if ((s.m || '') !== S.machine) {
-    S.machine = s.m || '';
-    Object.assign(S, {
-      list: [],
-      loaded: false,
-      dirs: null,
-      termName: null,
-      seen: {},
-      git: null,
-      restore: [],
-      projects: null,
-    });
-    loadProjects();
-    S.others = [];
-    loadOtherMachines();
-    loadRestore();
-    $('machine').value = S.machine;
-    poll();
-  }
-  if (s.v && !$('v-body').childElementCount) return go({ v: null });
-  let tab = s.t || (s.s ? 'term' : 'sessions');
-  if (wide() && tab === 'sessions') tab = 'term';
+const PANES = ['none', 'term', 'files', 'git', 'chat'];
+const SESSION_TABS = new Set(['term', 'files', 'chat']);
+
+function switchMachine(machine) {
+  S.machine = machine;
+  Object.assign(S, {
+    list: [],
+    loaded: false,
+    dirs: null,
+    termName: null,
+    seen: {},
+    git: null,
+    restore: [],
+    projects: null,
+  });
+  loadProjects();
+  S.others = [];
+  loadOtherMachines();
+  loadRestore();
+  $('machine').value = S.machine;
+  poll();
+}
+
+function currentTab(s) {
+  const tab = s.t || (s.s ? 'term' : 'sessions');
+  return wide() && tab === 'sessions' ? 'term' : tab;
+}
+
+function showTab(tab, viewing) {
   document.body.dataset.tab = tab;
-  for (const b of document.querySelectorAll('#tabbar button, #seg button'))
+  for (const b of document.querySelectorAll('#tabbar button, #seg button')) {
     b.classList.toggle('on', b.dataset.t === tab);
-  $('viewer').hidden = !s.v;
+  }
+  $('viewer').hidden = !viewing;
   renderSessions();
   renderTop();
-  const needSession = tab === 'term' || tab === 'files' || tab === 'chat';
-  const gone = s.s && S.loaded && !cur();
-  const show = needSession && (!s.s || gone) ? 'none' : tab;
-  const split = splitWide() && s.s && !gone && (show === 'files' || show === 'git');
+}
+
+function showPanes(s, show, split, gone) {
   document.body.classList.toggle('split', !!split);
-  for (const p of ['none', 'term', 'files', 'git', 'chat']) $('p-' + p).hidden = p !== show && !(split && p === 'term');
+  for (const p of PANES) $('p-' + p).hidden = p !== show && !(split && p === 'term');
   $('composer').hidden = !(s.s && !gone && (show === 'term' || show === 'chat' || split));
   renderConfirm();
-  const dk = `${s.m || ''}/${s.s || ''}`;
+}
+
+function restoreDraft(s, show) {
+  const key = `${s.m || ''}/${s.s || ''}`;
   if (s.s && show !== 'none') markSeen(s.s);
-  if (S.draftFor !== dk) {
-    S.draftFor = dk;
-    $('text').value = loadDraft(dk);
-    autosize($('text'));
-  }
-  if (show === 'none') welcome($('p-none'));
-  if (s.v) return;
+  if (S.draftFor === key) return;
+  S.draftFor = key;
+  $('text').value = loadDraft(key);
+  autosize($('text'));
+}
+
+function loadPane(s, show, split) {
   if (show === 'term' || split) ensureTerm(s.s);
   if (show === 'chat') loadChat(true);
   if (show === 'files') loadFiles(s.d || cur()?.dir);
   if (show === 'git') loadGit(s.g || cur()?.dir);
+}
+
+export function render() {
+  const s = st();
+  if ((s.m || '') !== S.machine) switchMachine(s.m || '');
+  if (s.v && !$('v-body').childElementCount) return go({ v: null });
+  const tab = currentTab(s);
+  showTab(tab, s.v);
+  const gone = s.s && S.loaded && !cur();
+  const show = SESSION_TABS.has(tab) && (!s.s || gone) ? 'none' : tab;
+  const split = splitWide() && s.s && !gone && (show === 'files' || show === 'git');
+  showPanes(s, show, split, gone);
+  restoreDraft(s, show);
+  if (show === 'none') welcome($('p-none'));
+  if (s.v) return;
+  loadPane(s, show, split);
 }
 export function setupRender() {
   addEventListener('hashchange', render);

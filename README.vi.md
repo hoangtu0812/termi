@@ -118,6 +118,7 @@ curl -fsSL https://raw.githubusercontent.com/hoangtu0812/termi/main/scripts/get.
 - Chọn thư mục termi được phép truy cập (mặc định `~`): đặt `TERMI_ROOTS="$HOME:/Volumes/Data"` trước lệnh. Khi nâng cấp, giá trị cũ được giữ.
 - Cài một bản cụ thể: `TERMI_VERSION=v0.6.0`.
 - Chỉ tải và giải nén, không cài dịch vụ: `TERMI_NO_SERVICE=1`.
+- Cài từ một bản fork: `TERMI_REPO=<chủ>/<repo>` (mặc định `hoangtu0812/termi`).
 - Cùng lệnh này chạy được trên **Linux** và **Windows (WSL2)**, xem mục bên dưới.
 
 Script in ra địa chỉ dạng `https://<máy>.<tailnet>.ts.net`. Mở địa chỉ đó trên điện thoại (đã bật Tailscale), rồi:

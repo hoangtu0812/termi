@@ -3,63 +3,62 @@ import { $, wide } from './dom.mjs';
 import { S, cur, st } from './state.mjs';
 import { ensureTerm, fontSize } from './terminal.mjs';
 
-export function touchScroll(w, t) {
-  const target = t.element.querySelector('.xterm-screen') || t.element,
-    opts = { capture: true, passive: false };
-  let y = null,
-    acc = 0,
-    moved = false;
-  w.document.addEventListener(
-    'touchstart',
-    e => {
-      if (e.touches.length === 1) {
-        y = e.touches[0].clientY;
-        acc = 0;
-        moved = false;
-      }
-    },
-    opts,
+const TAP_SLOP_PX = 8;
+const LINE_HEIGHT = 1.3;
+const WHEEL_STEP = 100;
+
+function scrollWheel(w, target, point, direction) {
+  target.dispatchEvent(
+    new w.WheelEvent('wheel', {
+      deltaY: direction * WHEEL_STEP,
+      deltaMode: 0,
+      clientX: point.clientX,
+      clientY: point.clientY,
+      bubbles: true,
+      cancelable: true,
+    }),
   );
-  w.document.addEventListener(
-    'touchmove',
-    e => {
-      if (y === null || e.touches.length !== 1) return;
-      const p = e.touches[0],
-        step = fontSize * 1.3;
-      acc += y - p.clientY;
-      y = p.clientY;
-      if (!moved && Math.abs(acc) < 8) return;
-      moved = true;
+}
+
+function createTouchScroller(w, target) {
+  const swipe = { y: null, acc: 0, moved: false };
+  const start = e => {
+    if (e.touches.length !== 1) return;
+    Object.assign(swipe, { y: e.touches[0].clientY, acc: 0, moved: false });
+  };
+  const move = e => {
+    if (swipe.y === null || e.touches.length !== 1) return;
+    const point = e.touches[0];
+    const step = fontSize * LINE_HEIGHT;
+    swipe.acc += swipe.y - point.clientY;
+    swipe.y = point.clientY;
+    if (!swipe.moved && Math.abs(swipe.acc) < TAP_SLOP_PX) return;
+    swipe.moved = true;
+    e.preventDefault();
+    e.stopPropagation();
+    while (Math.abs(swipe.acc) >= step) {
+      const direction = Math.sign(swipe.acc);
+      swipe.acc -= direction * step;
+      scrollWheel(w, target, point, direction);
+    }
+  };
+  const end = e => {
+    if (swipe.moved) {
       e.preventDefault();
       e.stopPropagation();
-      while (Math.abs(acc) >= step) {
-        const dir = Math.sign(acc);
-        acc -= dir * step;
-        target.dispatchEvent(
-          new w.WheelEvent('wheel', {
-            deltaY: dir * 100,
-            deltaMode: 0,
-            clientX: p.clientX,
-            clientY: p.clientY,
-            bubbles: true,
-            cancelable: true,
-          }),
-        );
-      }
-    },
-    opts,
-  );
-  w.document.addEventListener(
-    'touchend',
-    e => {
-      if (moved) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-      y = null;
-    },
-    opts,
-  );
+    }
+    swipe.y = null;
+  };
+  return { start, move, end };
+}
+
+export function touchScroll(w, t) {
+  const target = t.element.querySelector('.xterm-screen') || t.element;
+  const options = { capture: true, passive: false };
+  const scroller = createTouchScroller(w, target);
+  w.document.addEventListener('touchstart', scroller.start, options);
+  w.document.addEventListener('touchmove', scroller.move, options);
+  w.document.addEventListener('touchend', scroller.end, options);
 }
 export function watchDisconnect(t) {
   const check = () => {

@@ -1,63 +1,59 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import fs from 'node:fs/promises';
 import { isAllowed, sameOrigin } from '../src/http/guard.mjs';
 import { matchPeer } from '../src/machines.mjs';
 import { shouldPush } from '../src/push/prefs.mjs';
 import { computePending } from '../src/snapshot.mjs';
 import { orphanCount } from '../src/ttyd-watchdog.mjs';
 
-test('index.html: không có </script> lọt trong code JS (sẽ cắt ngang thẻ script)', async () => {
-  const html = await fs.readFile(new URL('../public/index.html', import.meta.url), 'utf8');
-  assert.equal(html.match(/<\/script>/gi).length, html.match(/^<script[\s>]/gim).length); // thẻ thật đứng đầu dòng
-});
-
-test('đường dẫn sang máy khác', () => {
-  assert.deepEqual(matchPeer('/m/desktop-37bc1du/api/sessions?x=1'), { id: 'desktop-37bc1du', rest: '/api/sessions?x=1' });
+test('peer paths', () => {
+  const peer = { id: 'desktop-37bc1du', rest: '/api/sessions?x=1' };
+  assert.deepEqual(matchPeer('/m/desktop-37bc1du/api/sessions?x=1'), peer);
   assert.deepEqual(matchPeer('/m/Desktop-ABC'), { id: 'desktop-abc', rest: '/' });
-  for (const bad of ['/api/m/x', '/m/', '/m/a.b/api', '/m/evil.com/api', '/mx/a/api']) assert.equal(matchPeer(bad), null, bad);
+  for (const bad of ['/api/m/x', '/m/', '/m/a.b/api', '/m/evil.com/api', '/mx/a/api']) {
+    assert.equal(matchPeer(bad), null, bad);
+  }
 });
 
-test('chỉ chủ máy được vào', () => {
-  const owner = ['chu@may.com'];
-  assert.ok(isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'Chu@May.com' }, owner));
-  assert.ok(!isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'khac@x.com' }, owner));
-  assert.ok(!isAllowed({ host: 'may.tail1.ts.net' }, owner)); // thiết bị gắn tag / Funnel: không có danh tính
-  assert.ok(!isAllowed({ host: 'may.tail1.ts.net', 'tailscale-user-login': 'chu@may.com' }, [])); // không biết chủ máy: chặn
-  assert.ok(isAllowed({ host: '127.0.0.1:7680' }, owner)); // gọi thẳng trên máy này
+test('only the machine owner gets in', () => {
+  const owner = ['owner@example.com'];
+  const tailnet = { host: 'mac.tail1.ts.net' };
+  assert.ok(isAllowed({ ...tailnet, 'tailscale-user-login': 'Owner@Example.com' }, owner));
+  assert.ok(!isAllowed({ ...tailnet, 'tailscale-user-login': 'other@example.com' }, owner));
+  assert.ok(!isAllowed(tailnet, owner));
+  assert.ok(!isAllowed({ ...tailnet, 'tailscale-user-login': 'owner@example.com' }, []));
+  assert.ok(isAllowed({ host: '127.0.0.1:7680' }, owner));
 });
 
-test('WebSocket chỉ nhận Origin của chính app', () => {
-  assert.ok(sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://may.tail1.ts.net' }));
-  assert.ok(sameOrigin({ host: 'may.tail1.ts.net' }));
-  assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://evil.com' }));
-  assert.ok(!sameOrigin({ host: 'may.tail1.ts.net', origin: 'https://may.tail1.ts.net.evil.com' }));
+test('WebSockets accept only the app origin', () => {
+  assert.ok(sameOrigin({ host: 'mac.tail1.ts.net', origin: 'https://mac.tail1.ts.net' }));
+  assert.ok(sameOrigin({ host: 'mac.tail1.ts.net' }));
+  assert.ok(!sameOrigin({ host: 'mac.tail1.ts.net', origin: 'https://evil.com' }));
+  assert.ok(!sameOrigin({ host: 'mac.tail1.ts.net', origin: 'https://mac.tail1.ts.net.evil.com' }));
 });
 
-test('khôi phục phiên sau khi khởi động lại', () => {
+test('sessions to restore after a reboot', () => {
   const snap = { at: 1000, sessions: [{ name: 'a' }, { name: 'b' }], pending: [] };
-  // tmux khởi động lại sau lần lưu cuối: mọi phiên đã lưu (trừ phiên đang có) chờ khôi phục
   assert.deepEqual(computePending(snap, new Set(['b']), 2000).map(x => x.name), ['a']);
-  assert.deepEqual(computePending(snap, new Set(), Infinity).map(x => x.name), ['a', 'b']); // chưa có tmux server
-  // tmux vẫn chạy từ trước lần lưu: không có gì để khôi phục
+  assert.deepEqual(computePending(snap, new Set(), Infinity).map(x => x.name), ['a', 'b']);
   assert.deepEqual(computePending(snap, new Set(), 500), []);
-  // phần chờ khôi phục được giữ qua các lần lưu, không trùng
-  assert.deepEqual(computePending({ at: 3000, sessions: [{ name: 'c' }], pending: [{ name: 'a' }, { name: 'a' }] }, new Set(['c']), 500).map(x => x.name), ['a']);
+  const kept = { at: 3000, sessions: [{ name: 'c' }], pending: [{ name: 'a' }, { name: 'a' }] };
+  assert.deepEqual(computePending(kept, new Set(['c']), 500).map(x => x.name), ['a']);
 });
 
-test('đếm client tmux mồ côi của ttyd', () => {
+test('orphaned tmux clients of ttyd', () => {
   const ps = '  1 100\n100 201\n100 202\n100 203\n 55 204\n';
-  assert.equal(orphanCount(ps, '100', new Set(['202'])), 2); // 201, 203 mồ côi; 202 đang gắn; 204 con của tiến trình khác
+  assert.equal(orphanCount(ps, '100', new Set(['202'])), 2);
   assert.equal(orphanCount(ps, '100', new Set()), 3);
 });
 
-test('tuỳ chỉnh thông báo', () => {
-  const p = { waiting: true, done: false, quiet: { on: true, from: '23:00', to: '07:00' }, muted: ['/x'] };
-  const at = h => new Date(2026, 0, 1, h, 0);
-  assert.ok(shouldPush(p, 'waiting', '/a', at(12)));
-  assert.ok(!shouldPush(p, 'done', '/a', at(12)));   // loại không bật
-  assert.ok(!shouldPush(p, 'waiting', '/x', at(12))); // phiên bị tắt
-  assert.ok(!shouldPush(p, 'waiting', '/a', at(23))); // giờ yên lặng qua nửa đêm
-  assert.ok(!shouldPush(p, 'waiting', '/a', at(3)));
-  assert.ok(shouldPush(p, 'waiting', '/a', at(7)));
+test('notification settings', () => {
+  const prefs = { waiting: true, done: false, quiet: { on: true, from: '23:00', to: '07:00' }, muted: ['/x'] };
+  const at = hour => new Date(2026, 0, 1, hour, 0);
+  assert.ok(shouldPush(prefs, 'waiting', '/a', at(12)));
+  assert.ok(!shouldPush(prefs, 'done', '/a', at(12)));
+  assert.ok(!shouldPush(prefs, 'waiting', '/x', at(12)));
+  assert.ok(!shouldPush(prefs, 'waiting', '/a', at(23)));
+  assert.ok(!shouldPush(prefs, 'waiting', '/a', at(3)));
+  assert.ok(shouldPush(prefs, 'waiting', '/a', at(7)));
 });

@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| Version | 1.5 |
+| Version | 1.6 |
 | Status | Active |
-| Last updated | 2026-11-26 |
+| Last updated | 2026-11-27 |
 
 Rationale that used to live in code comments. Source files carry no comments (see [AGENTS.md](../AGENTS.md)), so every non-obvious decision is recorded here, grouped by area. When you remove a legacy comment, add its reasoning to the matching section.
 
@@ -157,7 +157,8 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - Every other script is an ES module. Modules only declare; statements that register listeners or start timers live in an exported `setup…()` function. `js/main.mjs` calls the setups in the order the old single script ran them, then starts polling. This keeps import order irrelevant even though modules import each other in cycles.
 - A module must not call another module's function while it is being loaded (for example `const x = safely(...)` at the top level) if that module imports it back: the binding is not initialized yet. `state.mjs`, `dom.mjs`, `storage.mjs` and `api.mjs` import nothing that leads back to them, so they are safe to use at load time.
 - Imported bindings are read-only. State that several modules change lives in the shared `S` object (`state.mjs`) or behind a function exported by its owner (for example `resetRetryDelay()` in `reconnect.mjs`).
-- Known gaps, left for Phase 8: a few modules still read `localStorage` or create an element at load time (`terminal.mjs`, `keys.mjs`, `theme.mjs`), many client functions are longer than 40 lines, and some markup is still built with `innerHTML` from escaped strings.
+- Client modules touch nothing in the browser while they load: no `localStorage`, `matchMedia`, element creation or listeners at the top level. That work runs in `setup…()`. As a result every module except `main.mjs` can be imported by Node, and `test/client-logic.test.mjs` tests the pure helpers (diff rows, tracking chip, commit graph, palette search, context percentage) without a browser.
+- HTML is built from data only in three places, each guarded: chat replies (Markdown parsed into an inert `<template>`, then filtered against an allow-list), the Markdown preview (rendered inside a sandboxed iframe without `allow-same-origin`), and syntax highlighting (highlight.js escapes the source). Every other `innerHTML` inserts trusted markup: icons from the static path table, agent logos, the commit graph SVG built from numbers. `test/client.test.mjs` fails on any other `innerHTML` use.
 
 ### Behaviour notes
 
@@ -191,3 +192,28 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - Push: a test notification shows the push service's response code. A subscription the browser kept but the push service dropped is removed and re-created once. New events while the app is open show a toast and vibrate.
 - Hover styles apply only on devices with a mouse; on touch screens hover sticks after a tap.
 - The terminal iframe has `min-height: 0`: an iframe defaults to a 150 px minimum and would push the composer off screen when the keyboard opens.
+
+## Service worker (`public/sw.js`) and offline page
+
+- Push messages have no payload, so the worker fetches `/api/push/alert` and shows that. iOS requires every push to show a notification, so a fallback text is shown when the fetch fails.
+- Tapping a notification focuses an open window and navigates it to the session, or opens a new window.
+- The worker caches only `offline.html` and answers page navigations with it when the server cannot be reached; API calls, the terminal and app files always go to the network. `offline.html` therefore has no external resources and retries `/manifest.json` every 3 seconds, reloading once the server answers.
+
+## Installers (`scripts/`)
+
+- `get.sh` installs from a GitHub release without cloning: through `gh` when it is signed in (private repository), otherwise through the public API. It unpacks into `~/.termi/app/<version>` (npm pack puts everything under `package/`, hence `--strip-components=1`), points `~/.termi/app/current` at it, keeps the two newest versions and runs the platform installer from `current`, so later upgrades only switch the link.
+- On macOS only Homebrew tools are checked; on Linux and WSL `install-linux.sh` installs what is missing (tmux, git, curl, Node.js 24 from NodeSource, and the official ttyd binary, because distribution packages are often too old for the options termi uses).
+- `TERMI_ROOTS` defaults to the value of the previous install, read back from the plist or unit file, so an upgrade keeps it.
+- launchd: `AbandonProcessGroup` so restarting the service does not kill the tmux server it started; `NumberOfFiles` raised from the default 256 to 8192 because ttyd leaks a pty per dropped connection; `bootout` is asynchronous, so the installer waits for the old job to disappear before `bootstrap`, which otherwise fails with error 5.
+- systemd: `KillMode=process` for the same reason as `AbandonProcessGroup`; `LimitNOFILE=8192`; `loginctl enable-linger` keeps the services running without a login session.
+- WSL with mirrored networking shares ports with Windows, and Windows Delivery Optimization already holds 7680, so WSL defaults to ports 7690/7691. Inside WSL `tailscale.exe` of Windows is used both for `tailscale serve` and for the owner lookup (`TERMI_TAILSCALE`).
+- ttyd runs behind termi under `/term` (`-b /term`) instead of on its own port, so the terminal shares the app's origin.
+- The first `tailscale serve` prints a link to enable Serve/HTTPS for the tailnet and waits until it is opened. Older versions served the terminal on port 8443; the installer turns that off.
+- `attach.sh` is what ttyd runs for each connection. It only attaches to an existing session and never creates one, because reconnecting to the URL of a closed session would otherwise bring it back. The session name from the URL is limited to 40 characters of `[A-Za-z0-9_-]`, and the tmux status bar is turned off because termi's header already shows the session.
+- The shell scripts are stored with the executable bit; the installers still run `chmod +x` on them for packages that lose it.
+
+## Claude statusline (`scripts/claude-statusline.mjs`)
+
+- `install` copies the script into the data directory and points Claude Code's `statusLine` at that copy through a stable Node path (Homebrew's Cellar path changes on every upgrade). The previous statusline is saved in `statusline-next.json` and `settings.json` is backed up once.
+- When Claude Code runs it, it records plan limits and per-folder and per-conversation context usage in `claude-usage.json` next to itself, drops entries older than 7 days, and never fails: errors are swallowed so Claude Code's UI is never broken. It then runs the previous statusline command and prints its output.
+- Running the previous statusline uses `/bin/sh -c`, the one place termi runs a shell: Claude Code defines `statusLine.command` as a shell command string, so the user's own command can only be run that way. It gets the same input and a 5-second timeout.

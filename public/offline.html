@@ -6,30 +6,44 @@
 <meta name="theme-color" content="#111318">
 <title>termi · đang kết nối</title>
 <style>
-  /* Trang hiện khi không tới được máy chủ (service worker trả về). Không dùng tài nguyên ngoài. */
   :root { color-scheme:dark; --bg:#111318; --fg:#e8eaee; --dim:#8d94a3; --acc:#e07a55; }
-  @media (prefers-color-scheme: light) { :root { color-scheme:light; --bg:#f6f7f9; --fg:#171a21; --dim:#5f6675; --acc:#c95f3a; } }
-  html, body { margin:0; height:100%; background:var(--bg); color:var(--fg); font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif; }
+  @media (prefers-color-scheme: light) {
+    :root { color-scheme:light; --bg:#f6f7f9; --fg:#171a21; --dim:#5f6675; --acc:#c95f3a; }
+  }
+  html, body {
+    margin:0; height:100%; background:var(--bg); color:var(--fg);
+    font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+  }
   body { display:grid; place-items:center; padding:24px; box-sizing:border-box; text-align:center; }
   main { display:flex; flex-direction:column; align-items:center; gap:14px; max-width:360px; }
   svg { width:72px; height:72px; }
   h1 { margin:0; font-size:19px; }
   p { margin:0; color:var(--dim); font-size:14px; }
-  .dot { display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--acc); margin-right:8px; animation:p 1s infinite; }
+  .dot {
+    display:inline-block; width:8px; height:8px; border-radius:50%; background:var(--acc); margin-right:8px;
+    animation:p 1s infinite;
+  }
   @keyframes p { 50% { opacity:.25; } }
-  button { margin-top:6px; height:42px; padding:0 20px; border-radius:10px; border:0; background:var(--acc); color:#fff; font:600 15px inherit; }
+  button {
+    margin-top:6px; height:42px; padding:0 20px; border-radius:10px; border:0; background:var(--acc); color:#fff;
+    font:600 15px inherit;
+  }
 </style>
 </head>
 <body>
 <main>
-  <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="96" fill="#16181d"/><path d="M130 170l100 86-100 86" fill="none" stroke="#d97757" stroke-width="40" stroke-linecap="round" stroke-linejoin="round"/><path d="M260 350h130" stroke="#e6e6e6" stroke-width="40" stroke-linecap="round"/></svg>
+  <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" rx="96" fill="#16181d"/><path
+    d="M130 170l100 86-100 86" fill="none" stroke="#d97757" stroke-width="40" stroke-linecap="round"
+    stroke-linejoin="round"/><path d="M260 350h130" stroke="#e6e6e6" stroke-width="40" stroke-linecap="round"/></svg>
   <h1><span class="dot"></span>Đang kết nối tới máy chủ…</h1>
-  <p>Kiểm tra Tailscale trên điện thoại đang bật và máy chủ đang chạy. termi sẽ tự vào lại khi kết nối được.</p>
+  <p>Kiểm tra Tailscale trên điện thoại đang bật và máy chủ đang chạy.
+    termi sẽ tự vào lại khi kết nối được.</p>
   <button type="button" onclick="location.reload()">Thử lại ngay</button>
 </main>
 <script>
-  // Tự thử lại 3 giây một lần; tới được máy chủ thì tải lại trang thật
-  setInterval(() => fetch('/manifest.json', { cache: 'no-store' }).then(r => r.ok && location.reload(), () => {}), 3000);
+  const RETRY_MS = 3000;
+  const reloadWhenUp = res => res.ok && location.reload();
+  setInterval(() => fetch('/manifest.json', { cache: 'no-store' }).then(reloadWhenUp, () => {}), RETRY_MS);
 </script>
 </body>
 </html>

@@ -71,47 +71,57 @@ function diffBox(r, split) {
   box.append(diff);
   return box;
 }
-function diffSplitNode(text) {
-  const box = el('div', 'dsplit'),
-    rows = [];
-  let dels = [],
-    adds = [];
+const DIFF_METADATA = /^(index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary)/;
+
+export function splitDiffRows(text) {
+  const rows = [];
+  let dels = [];
+  let adds = [];
   const flush = () => {
     for (let i = 0; i < Math.max(dels.length, adds.length); i++) rows.push(['chg', dels[i] ?? null, adds[i] ?? null]);
     dels = [];
     adds = [];
   };
-  for (const l of text.split('\n')) {
-    if (l.startsWith('diff --git ')) {
+  for (const line of text.split('\n')) {
+    if (line.startsWith('diff --git ')) {
       flush();
-      rows.push(['file', l.slice(l.lastIndexOf(' b/') + 3)]);
-    } else if (/^(index |--- |\+\+\+ |new file|deleted file|similarity|rename |old mode|new mode|Binary)/.test(l))
+      rows.push(['file', line.slice(line.lastIndexOf(' b/') + 3)]);
+    } else if (DIFF_METADATA.test(line)) {
       flush();
-    else if (l.startsWith('@@')) {
+    } else if (line.startsWith('@@')) {
       flush();
-      rows.push(['hunk', l]);
-    } else if (l[0] === '-') dels.push(l.slice(1));
-    else if (l[0] === '+') adds.push(l.slice(1));
-    else {
+      rows.push(['hunk', line]);
+    } else if (line[0] === '-') {
+      dels.push(line.slice(1));
+    } else if (line[0] === '+') {
+      adds.push(line.slice(1));
+    } else {
       flush();
-      rows.push(['ctx', l.slice(1), l.slice(1)]);
+      rows.push(['ctx', line.slice(1), line.slice(1)]);
     }
   }
   flush();
-  box.append(
-    ...rows.map(([kind, a, b]) => {
-      if (kind === 'file') {
-        const d = el('div', 'ds-file', a);
-        d.dataset.file = a;
-        return d;
-      }
-      if (kind === 'hunk') return el('div', 'ds-hunk', a);
-      const row = el('div', 'ds-row');
-      const cell = (v, cls) =>
-        el('div', 'ds-cell' + (v === null ? ' empty' : kind === 'chg' ? ' ' + cls : ''), v ?? '');
-      row.append(cell(a, 'd'), cell(b, 'a'));
-      return row;
-    }),
-  );
+  return rows;
+}
+
+function splitRowNode([kind, a, b]) {
+  if (kind === 'file') {
+    const d = el('div', 'ds-file', a);
+    d.dataset.file = a;
+    return d;
+  }
+  if (kind === 'hunk') return el('div', 'ds-hunk', a);
+  const row = el('div', 'ds-row');
+  const cell = (value, cls) => {
+    const changed = kind === 'chg' ? ' ' + cls : '';
+    return el('div', 'ds-cell' + (value === null ? ' empty' : changed), value ?? '');
+  };
+  row.append(cell(a, 'd'), cell(b, 'a'));
+  return row;
+}
+
+function diffSplitNode(text) {
+  const box = el('div', 'dsplit');
+  box.append(...splitDiffRows(text).map(splitRowNode));
   return box;
 }

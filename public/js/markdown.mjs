@@ -1,4 +1,3 @@
-import { base } from './api.mjs';
 import { el } from './dom.mjs';
 import { rawUrl } from './viewer.mjs';
 

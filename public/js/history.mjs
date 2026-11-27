@@ -1,4 +1,4 @@
-import { api, base, safely } from './api.mjs';
+import { api, safely } from './api.mjs';
 import { $, agentName, ago, el, short, skel } from './dom.mjs';
 import { agentAvatar } from './icons.mjs';
 import { poll } from './poll.mjs';

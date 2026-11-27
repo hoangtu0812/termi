@@ -1,7 +1,8 @@
 import { termWin } from './terminal.mjs';
 
 export const THEMES = { auto: ['Tự động', 'contrast'], light: ['Sáng', 'sun'], dark: ['Tối', 'moon'] };
-const lightQuery = matchMedia('(prefers-color-scheme: light)');
+let colorScheme = null;
+const lightQuery = () => colorScheme ?? matchMedia('(prefers-color-scheme: light)');
 export function themePref() {
   try {
     return THEMES[localStorage.getItem('termi-theme')] ? localStorage.getItem('termi-theme') : 'auto';
@@ -11,7 +12,7 @@ export function themePref() {
 }
 function applyTheme() {
   const pref = themePref(),
-    theme = pref === 'auto' ? (lightQuery.matches ? 'light' : 'dark') : pref;
+    theme = pref === 'auto' ? (lightQuery().matches ? 'light' : 'dark') : pref;
   document.documentElement.dataset.theme = theme;
   document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#0d0e11';
   try {
@@ -80,6 +81,7 @@ export function setTheme(pref) {
   applyTheme();
 }
 export function setupTheme() {
-  lightQuery.addEventListener('change', applyTheme);
+  colorScheme = matchMedia('(prefers-color-scheme: light)');
+  colorScheme.addEventListener('change', applyTheme);
   applyTheme();
 }

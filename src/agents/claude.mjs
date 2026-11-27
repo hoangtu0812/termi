@@ -64,13 +64,17 @@ function rateWindow(window, now) {
   };
 }
 
-export function createClaudeAgent({ home, dataDir }) {
-  const claudeDir = path.join(home, '.claude');
-  const projectsDir = path.join(claudeDir, 'projects');
-  const usageFile = path.join(dataDir, 'claude-usage.json');
-  const projectDir = cwd => path.join(projectsDir, cwd.replace(/[^A-Za-z0-9]/g, '-'));
+const MATCHES_HISTORY = name => name.split(path.sep).length === 2 && validUuid(path.basename(name, '.jsonl'));
+
+const HISTORY_SPEC = {
+  accept: MATCHES_HISTORY,
+  start: file => ({ id: path.basename(file, '.jsonl') }),
+  parse: parseHistory,
+  isComplete: entry => Boolean(entry.id && entry.cwd && entry.title && entry.custom),
+};
+
+function createProcesses(claudeDir) {
   const processInfo = pid => (pid ? readJsonFile(path.join(claudeDir, 'sessions', `${pid}.json`)) : null);
-  const readUsage = cachedJsonFile(usageFile);
 
   async function conversationId(pid) {
     const info = await processInfo(pid);
@@ -87,16 +91,26 @@ export function createClaudeAgent({ home, dataDir }) {
     };
   }
 
-  async function transcriptFile(cwd, pid) {
+  return { conversationId, conversation };
+}
+
+function createTranscripts(projectsDir, conversationId) {
+  const projectDir = cwd => path.join(projectsDir, cwd.replace(/[^A-Za-z0-9]/g, '-'));
+  const topLevelJsonl = name => name.endsWith('.jsonl') && !name.includes(path.sep);
+
+  return async function transcriptFile(cwd, pid) {
     const id = await conversationId(pid);
     if (id) {
       const file = path.join(projectDir(cwd), `${id}.jsonl`);
       if (await fileExists(file)) return file;
     }
-    const topLevelJsonl = name => name.endsWith('.jsonl') && !name.includes(path.sep);
     const [newest] = await newestFiles(projectDir(cwd), topLevelJsonl, 1);
     return newest || null;
-  }
+  };
+}
+
+function createUsage(usageFile, conversationId, transcriptFile) {
+  const readUsage = cachedJsonFile(usageFile);
 
   async function liveUsage(cwd, pid) {
     const sessions = (await readUsage())?.sessions || {};
@@ -124,6 +138,16 @@ export function createClaudeAgent({ home, dataDir }) {
     return (await readUsage())?.sessions?.[id]?.model || null;
   }
 
+  return { sessionTokens, limits, liveModel };
+}
+
+export function createClaudeAgent({ home, dataDir }) {
+  const claudeDir = path.join(home, '.claude');
+  const projectsDir = path.join(claudeDir, 'projects');
+  const { conversationId, conversation } = createProcesses(claudeDir);
+  const transcriptFile = createTranscripts(projectsDir, conversationId);
+  const usage = createUsage(path.join(dataDir, 'claude-usage.json'), conversationId, transcriptFile);
+
   return {
     id: 'claude',
     name: 'Claude',
@@ -135,16 +159,8 @@ export function createClaudeAgent({ home, dataDir }) {
     chatEvents,
     message,
     model: record => record.type === 'assistant' && record.message?.model,
-    sessionTokens,
-    limits,
-    liveModel,
+    ...usage,
     resumeId: session => conversationId(session.agentPid),
-    history: {
-      dir: projectsDir,
-      accept: name => name.split(path.sep).length === 2 && validUuid(path.basename(name, '.jsonl')),
-      start: file => ({ id: path.basename(file, '.jsonl') }),
-      parse: parseHistory,
-      isComplete: entry => Boolean(entry.id && entry.cwd && entry.title && entry.custom),
-    },
+    history: { dir: projectsDir, ...HISTORY_SPEC },
   };
 }

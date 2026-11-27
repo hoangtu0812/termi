@@ -83,59 +83,54 @@ export function group(title, ic, rows) {
   g.append(h, ...rows);
   return g;
 }
+const LIMIT_AGENTS = ['claude', 'codex'];
+const GIB = 2 ** 30;
+const NO_CLAUDE_LIMITS =
+  'Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra có hạn mức này.';
+
+function planLimitRows(limits) {
+  const rows = [];
+  for (const agent of LIMIT_AGENTS) {
+    const limitsOfAgent = limitRows(agent, limits);
+    for (const [short, name, pct, resetAt] of limitsOfAgent) {
+      const ic = /d$/.test(short) ? 'calendar' : 'clock';
+      rows.push(meterRow(`${agentName(agent)} · ${name}`, pct, until(resetAt), ic, ICON_COLOR[agent]));
+    }
+    if (!limitsOfAgent.length && agent === 'claude') rows.push(el('div', 'uempty', NO_CLAUDE_LIMITS));
+  }
+  return rows;
+}
+
+export function contextPercent(session) {
+  if (session.pct != null) return Math.round(session.pct);
+  return session.window ? Math.round((session.context / session.window) * 100) : null;
+}
+
+function sessionGroup(session) {
+  const title = `Phiên ${session.name} · ${agentName(session.agent)}`;
+  if (session.context == null)
+    return group(title, 'term', [el('div', 'uempty', 'Chưa có số liệu token cho phiên này')]);
+  const total = session.window ? ' / ' + kTok(session.window) : '';
+  const detail = `${kTok(session.context)}${total} token${session.model ? ' · ' + session.model : ''}`;
+  return group(title, 'term', [meterRow('Ngữ cảnh', contextPercent(session), detail, 'layers', ICON_COLOR.ctx)]);
+}
+
+function machineGroup(m) {
+  const ram = m.memTotal ? `${Math.round(m.memTotal / GIB)} GB` : '';
+  const free = m.diskFree != null ? `còn trống ${(m.diskFree / GIB).toFixed(0)} GB` : '';
+  return group('Máy' + (st().m ? ' · ' + st().m : ''), 'monitor', [
+    meterRow('CPU (tải 1 phút)', m.cpu, '', 'cpu', ICON_COLOR.machine),
+    meterRow('RAM', m.mem, ram, 'ram', ICON_COLOR.machine),
+    meterRow('Ổ đĩa', m.disk, free, 'disk', ICON_COLOR.machine),
+  ]);
+}
+
 function renderUsageDialog() {
   const u = S.usage;
   if (!u) return;
-  const parts = [];
-  const lim = [];
-  for (const a of ['claude', 'codex']) {
-    const rows = limitRows(a, u.limits);
-    if (rows.length)
-      lim.push(
-        ...rows.map(([short, n, p, t]) =>
-          meterRow(`${agentName(a)} · ${n}`, p, until(t), /d$/.test(short) ? 'calendar' : 'clock', ICON_COLOR[a]),
-        ),
-      );
-    else if (a === 'claude')
-      lim.push(
-        el(
-          'div',
-          'uempty',
-          'Claude: chưa có số liệu. Cần cài statusline của termi (xem README); chỉ gói Pro/Max/Ultra ' +
-            'có hạn mức này.',
-        ),
-      );
-  }
-  parts.push(group('Hạn mức gói', 'gauge', lim));
-  const s = u.session;
-  if (s?.agent)
-    parts.push(
-      group(`Phiên ${s.name} · ${agentName(s.agent)}`, 'term', [
-        s.context != null
-          ? meterRow(
-              'Ngữ cảnh',
-              s.pct != null ? Math.round(s.pct) : s.window ? Math.round((s.context / s.window) * 100) : null,
-              `${kTok(s.context)}${s.window ? ' / ' + kTok(s.window) : ''} token${s.model ? ' · ' + s.model : ''}`,
-              'layers',
-              ICON_COLOR.ctx,
-            )
-          : el('div', 'uempty', 'Chưa có số liệu token cho phiên này'),
-      ]),
-    );
-  const m = u.machine;
-  parts.push(
-    group('Máy' + (st().m ? ' · ' + st().m : ''), 'monitor', [
-      meterRow('CPU (tải 1 phút)', m.cpu, '', 'cpu', ICON_COLOR.machine),
-      meterRow('RAM', m.mem, m.memTotal ? `${Math.round(m.memTotal / 2 ** 30)} GB` : '', 'ram', ICON_COLOR.machine),
-      meterRow(
-        'Ổ đĩa',
-        m.disk,
-        m.diskFree != null ? `còn trống ${(m.diskFree / 2 ** 30).toFixed(0)} GB` : '',
-        'disk',
-        ICON_COLOR.machine,
-      ),
-    ]),
-  );
+  const parts = [group('Hạn mức gói', 'gauge', planLimitRows(u.limits))];
+  if (u.session?.agent) parts.push(sessionGroup(u.session));
+  parts.push(machineGroup(u.machine));
   $('usage-body').replaceChildren(...parts);
 }
 async function loadUsage() {

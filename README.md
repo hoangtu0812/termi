@@ -118,6 +118,7 @@ curl -fsSL https://raw.githubusercontent.com/hoangtu0812/termi/main/scripts/get.
 - Choose which folders termi may access (default `~`): set `TERMI_ROOTS="$HOME:/Volumes/Data"` before the command. The previous value is kept on upgrade.
 - Install a specific version: `TERMI_VERSION=v0.6.0`.
 - Download and extract only, without installing services: `TERMI_NO_SERVICE=1`.
+- Install from a fork: `TERMI_REPO=<owner>/<repo>` (default `hoangtu0812/termi`).
 - The same command works on **Linux** and **Windows (WSL2)**; see below.
 
 The script prints an address like `https://<machine>.<tailnet>.ts.net`. Open it on your phone (with Tailscale on), then:

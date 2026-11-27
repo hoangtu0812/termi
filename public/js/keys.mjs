@@ -18,7 +18,6 @@ const KEYS = [
   ['PgDn', 'PageDown'],
   ['^D', 'C-d'],
 ];
-const copyBtn = el('button', 'fs', '📋 Chép');
 export function setupKeys() {
   $('keys').append(
     ...KEYS.map(([label, key]) => {
@@ -38,6 +37,7 @@ export function setupKeys() {
       return b;
     }),
   );
+  const copyBtn = el('button', 'fs', '📋 Chép');
   copyBtn.type = 'button';
   copyBtn.setAttribute('aria-label', 'Mở chữ trong phiên để chọn và sao chép');
   copyBtn.onclick = safely(async () => {

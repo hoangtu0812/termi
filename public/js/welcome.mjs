@@ -1,4 +1,4 @@
-import { api, base, safely, toast } from './api.mjs';
+import { api, safely, toast } from './api.mjs';
 import { ago, el, ltr, short } from './dom.mjs';
 import { agentAvatar, icon } from './icons.mjs';
 import { newSession } from './new-session.mjs';
@@ -46,68 +46,81 @@ export function renderRestore(box) {
   c.append(d, names, acts);
   box.prepend(c);
 }
-export async function welcome(box) {
-  if (box.querySelector('.welcome')) return;
-  const w = el('div', 'welcome'),
-    list = el('div', 'wl');
+const GREETINGS = [
+  [11, 'Chào buổi sáng'],
+  [14, 'Chào buổi trưa'],
+  [18, 'Chào buổi chiều'],
+  [24, 'Chào buổi tối'],
+];
+const RECENT_PROJECTS = 6;
+
+function greeting(hour = new Date().getHours()) {
+  return GREETINGS.find(([until]) => hour < until)[1];
+}
+
+function welcomeIntro() {
+  if (S.list.length) return 'Chọn một phiên bên trái, hoặc bắt đầu làm việc ở một project gần đây.';
+  return 'Chọn project và agent để bắt đầu. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫn còn nguyên.';
+}
+
+function welcomeShell(list) {
+  const w = el('div', 'welcome');
   w.innerHTML = '<img src="/icon.svg" alt="">';
-  const h = new Date().getHours(),
-    hi = h < 11 ? 'Chào buổi sáng' : h < 14 ? 'Chào buổi trưa' : h < 18 ? 'Chào buổi chiều' : 'Chào buổi tối';
-  w.append(
-    el('h2', null, hi),
-    el(
-      'p',
-      null,
-      S.list.length
-        ? 'Chọn một phiên bên trái, hoặc bắt đầu làm việc ở một project gần đây.'
-        : 'Chọn project và agent để bắt đầu. Phiên chạy trong tmux trên máy, đóng app hay mất mạng vẫ' +
-            'n còn nguyên.',
-    ),
-    el('div', 'wh', 'Project gần đây'),
-    list,
-  );
+  w.append(el('h2', null, greeting()), el('p', null, welcomeIntro()), el('div', 'wh', 'Project gần đây'), list);
   const more = el('button', 'btn');
   more.type = 'button';
   more.innerHTML = icon('folder') + 'Thư mục khác…';
   more.onclick = newSession;
   w.append(more);
-  box.replaceChildren(w);
+  return w;
+}
+
+function resumeButton(dir, last) {
+  const r = el('button', 'wr');
+  r.type = 'button';
+  r.title = 'Mở lại hội thoại này';
+  r.innerHTML = icon('refresh');
+  r.append(el('span', null, last.title), el('span', 'wt', ago(last.mtime)));
+  r.onclick = safely(() => quickStart(dir, last.agent, last.id));
+  return r;
+}
+
+function agentButtons(dir, agents) {
+  const a = el('div', 'wa');
+  for (const ag of agents) {
+    const b = el('button', 'wbtn');
+    b.type = 'button';
+    b.append(agentAvatar(ag.id, true), ag.name);
+    b.onclick = safely(() => quickStart(dir, ag.id));
+    a.append(b);
+  }
+  return a;
+}
+
+function projectCard(dir, project, agents) {
+  const c = el('div', 'wcard');
+  const d = el('div', 'wd');
+  const last = project?.conversations?.[0];
+  d.innerHTML = icon('folder');
+  d.append(el('b', null, dir.split('/').pop() || dir), el('small', null, ltr(short(dir))));
+  if (project?.last) d.append(el('span', 'wt', ago(project.last)));
+  c.append(d);
+  if (last && !S.list.some(x => x.convId === last.id)) c.append(resumeButton(dir, last));
+  c.append(agentButtons(dir, agents));
+  return c;
+}
+
+export async function welcome(box) {
+  if (box.querySelector('.welcome')) return;
+  const list = el('div', 'wl');
+  box.replaceChildren(welcomeShell(list));
   const [dirs, agents] = await Promise.all([
     api('/api/dirs').catch(() => ({ recent: [] })),
     api('/api/agents').catch(() => []),
   ]);
-  const proj = new Map((S.projects || []).map(p => [p.dir, p]));
-  list.replaceChildren(
-    ...dirs.recent.slice(0, 6).map(dir => {
-      const c = el('div', 'wcard'),
-        d = el('div', 'wd'),
-        a = el('div', 'wa'),
-        p = proj.get(dir),
-        last = p?.conversations?.[0];
-      d.innerHTML = icon('folder');
-      d.append(el('b', null, dir.split('/').pop() || dir), el('small', null, ltr(short(dir))));
-      if (p?.last) d.append(el('span', 'wt', ago(p.last)));
-      c.append(d);
-      if (last && !S.list.some(x => x.convId === last.id)) {
-        const r = el('button', 'wr');
-        r.type = 'button';
-        r.title = 'Mở lại hội thoại này';
-        r.innerHTML = icon('refresh');
-        r.append(el('span', null, last.title), el('span', 'wt', ago(last.mtime)));
-        r.onclick = safely(() => quickStart(dir, last.agent, last.id));
-        c.append(r);
-      }
-      for (const ag of agents) {
-        const b = el('button', 'wbtn');
-        b.type = 'button';
-        b.append(agentAvatar(ag.id, true), ag.name);
-        b.onclick = safely(() => quickStart(dir, ag.id));
-        a.append(b);
-      }
-      c.append(a);
-      return c;
-    }),
-  );
+  const projects = new Map((S.projects || []).map(p => [p.dir, p]));
+  const cards = dirs.recent.slice(0, RECENT_PROJECTS).map(dir => projectCard(dir, projects.get(dir), agents));
+  list.replaceChildren(...cards);
   if (!dirs.recent.length) list.replaceChildren(el('div', 'empty', 'Chưa có project nào, bấm "Thư mục khác…" để chọn'));
 }
 export async function quickStart(dir, agent, resume) {
