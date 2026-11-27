@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-27
+
 ### Added
 - Chat tool cards list the files the agent edited or created; tap one to open its diff (or the file when it is new).
 - Pipelines: tap a run to open it on the web, rerun it (only failed jobs on GitHub), cancel a running one, or read the log of the failed steps (GitHub and Azure DevOps).

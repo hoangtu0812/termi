@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.12.0] - 2026-11-27
+
 ### Thêm
 - Thẻ công cụ trong Chat liệt kê các file agent đã sửa hoặc tạo; bấm để mở diff (hoặc mở file nếu là file mới).
 - Pipelines: bấm một lần chạy để mở trên web, chạy lại (GitHub chỉ chạy lại job lỗi), huỷ lần đang chạy, hoặc xem log của bước lỗi (GitHub và Azure DevOps).
