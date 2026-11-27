@@ -68,9 +68,18 @@ const LANG = {
 export async function codeNode(text, file) {
   const name = file.split('/').pop(),
     lang = /^(makefile|gnumakefile)$/i.test(name) ? 'makefile' : LANG[name.split('.').pop().toLowerCase()];
-  if (!lang || text.length > 200_000) return el('pre', 'code', text);
+  if (!lang || text.length > 200_000) return withLineNumbers(text, el('pre', 'code', text));
   const hljs = await loadHljs();
   const pre = el('pre', 'code hljs');
   pre.innerHTML = hljs.highlight(text, { language: lang, ignoreIllegals: true }).value;
-  return pre;
+  return withLineNumbers(text, pre);
+}
+
+export const lineCount = text => text.replace(/\n$/, '').split('\n').length;
+
+function withLineNumbers(text, pre) {
+  const numbers = Array.from({ length: lineCount(text) }, (_, i) => i + 1).join('\n');
+  const wrap = el('div', 'lnw');
+  wrap.append(el('pre', 'ln', numbers), pre);
+  return wrap;
 }

@@ -1,0 +1,25 @@
+.si { position:relative; }
+.si .sip { color:var(--faint); }
+.si .sit .nm { flex:0 3 auto; min-width:5.5em; margin-right:auto; }
+.si .sit .state { flex:0 1 auto; min-width:0; overflow:hidden; text-overflow:ellipsis; }
+.sacts {
+  position:absolute; right:6px; top:6px; display:none; gap:2px; padding:2px; border-radius:8px;
+  background:var(--card); box-shadow:0 0 0 1px var(--line2), -12px 0 12px -4px var(--panel);
+}
+.sact { display:grid; place-items:center; width:26px; height:26px; border-radius:6px; color:var(--dim); }
+.sact svg.i { width:15px; height:15px; }
+@media (hover: hover) {
+  .si:not(.om):hover .sacts { display:flex; }
+  .sact:hover { background:var(--hover); color:var(--fg); }
+  .sact:last-child:hover { color:var(--del); }
+}
+.sfilt { display:flex; gap:6px; padding:0 12px 8px; overflow-x:auto; scrollbar-width:none; flex:none; }
+.fchip {
+  flex:none; display:inline-flex; align-items:center; gap:6px; height:28px; padding:0 10px; border-radius:99px;
+  border:1px solid var(--line); background:transparent; color:var(--dim); font-size:12.5px; font-weight:500;
+}
+.fchip span { font:600 11px var(--mono); color:var(--faint); }
+.fchip.on { background:var(--fg); border-color:var(--fg); color:var(--bg); }
+.fchip.on span { color:var(--bg); opacity:.7; }
+.fchip.waiting:not(.on) span { color:var(--warn); }
+.fchip.working:not(.on) span { color:var(--acc); }

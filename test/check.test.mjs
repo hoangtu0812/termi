@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import {
   findJsComments, findCssComments, findShellComments, findHtmlComments,
 } from '../scripts/check-comments.mjs';
-import { sourceViolations, docNameViolation, classify } from '../scripts/check.mjs';
+import { sourceViolations, docNameViolation, classify, isAppleDouble } from '../scripts/check.mjs';
+
+test('macOS AppleDouble files from exFAT drives are skipped', () => {
+  assert.equal(isAppleDouble('public/js/._main.mjs'), true);
+  assert.equal(isAppleDouble('._README.md'), true);
+  assert.equal(isAppleDouble('public/js/main.mjs'), false);
+  assert.equal(isAppleDouble('docs/a._b.md'), false);
+});
 
 test('js comments are found outside strings, templates and regexes', () => {
   const src = [

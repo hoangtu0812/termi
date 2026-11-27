@@ -8,7 +8,12 @@ const PAD = 12;
 const RH = 56;
 const MAX_LANES = 10;
 
+const DAY_ROW_HEIGHT = 28;
+const HUE_STEPS = 360;
+const HASH_MULTIPLIER = 31;
+
 const laneX = lane => PAD + lane * LW;
+const graphWidth = width => PAD * 2 + (Math.min(width, MAX_LANES) - 1) * LW;
 const ROW_Y = [0, RH / 2, RH];
 
 function segmentPath([a, ya, b, yb]) {
@@ -30,9 +35,30 @@ function commitDot(c, row, isHead) {
   return `<circle cx="${cx}" cy="${RH / 2}" r="${isHead ? 6 : 4.5}" fill="${color}"${isHead ? HEAD_RING : ''}/>`;
 }
 
+export function passingLanesSvg(row, width) {
+  const lanes = [...new Set(row.seg.filter(([, top]) => top === 0).map(([lane]) => lane))];
+  const lines = lanes.map(lane => {
+    const color = LANE_COLORS[lane % LANE_COLORS.length];
+    return `<path d="M${laneX(lane)} 0V${DAY_ROW_HEIGHT}" stroke="${color}" stroke-width="2"/>`;
+  });
+  return `<svg width="${graphWidth(width)}" height="${DAY_ROW_HEIGHT}" aria-hidden="true">${lines.join('')}</svg>`;
+}
+
+export function authorHue(name) {
+  let hash = 0;
+  for (const ch of name) hash = (hash * HASH_MULTIPLIER + ch.codePointAt(0)) >>> 0;
+  return hash % HUE_STEPS;
+}
+
+function authorAvatar(name) {
+  const a = el('span', 'aav', (name.trim()[0] || '?').toUpperCase());
+  a.style.background = `hsl(${authorHue(name)} 55% 45%)`;
+  a.title = name;
+  return a;
+}
+
 export function graphSvg(c, row, width) {
-  const lanes = Math.min(width, MAX_LANES);
-  const w = PAD * 2 + (lanes - 1) * LW;
+  const w = graphWidth(width);
   const isHead = c.refs.some(r => r.startsWith('HEAD'));
   const shapes = row.seg.map(segmentPath).join('') + commitDot(c, row, isHead);
   return `<svg width="${w}" height="${RH}" viewBox="0 0 ${w} ${RH}" aria-hidden="true">${shapes}</svg>`;
@@ -51,7 +77,7 @@ function commitMeta(c) {
     if (ref === 'HEAD' || name.endsWith('/HEAD')) continue;
     meta.append(el('span', 'pill ' + refKind(ref, name), name));
   }
-  meta.append(el('span', 'h', c.h.slice(0, 7)), `${c.a} · ${ago(c.t)}`);
+  meta.append(authorAvatar(c.a), el('span', 'h', c.h.slice(0, 7)), `${c.a} · ${ago(c.t)}`);
   return meta;
 }
 

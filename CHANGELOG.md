@@ -6,6 +6,20 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Session list: filter chips (All / Waiting / Working / Idle) with counts, and rename/close buttons that appear on hover.
+- Git history is grouped by day ("Hôm nay", "Hôm qua", then dates) and shows an author initial badge.
+- Two-column diffs highlight the changed part of each modified line.
+- Files tab: clickable breadcrumb path, search by file name across the folder (`GET /api/find`), line numbers when viewing code.
+- Phones: dialogs open as bottom sheets, swipe from the left edge to go back, pull down to refresh chat, files, git and the session list, light haptics on send, tab change and closing a session.
+
+### Changed
+- Long session names keep their distinguishing tail (`BSR-Digi…-3`) instead of being cut at the end.
+- The chat column stays 820px wide but the whole pane scrolls, not only the column.
+
+### Fixed
+- `npm run check` no longer fails on macOS AppleDouble (`._*`) files created on exFAT drives.
+
 ## [1.0.1] - 2026-11-27
 
 ### Fixed

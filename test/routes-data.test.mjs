@@ -153,3 +153,11 @@ test('quick actions and settings info', async () => {
   assert.equal(info.claudeUsage, false);
   assert.ok(Array.isArray(info.agents));
 });
+
+test('file search by name ranks name matches first and stays inside roots', async () => {
+  const found = (await app.get(`/api/find?dir=${q(repo)}&q=b`)).json();
+  assert.deepEqual(found.map(f => f.rel), ['blob.bin', 'src/b.txt']);
+  assert.equal(found[1].path, path.join(repo, 'src', 'b.txt'));
+  assert.deepEqual((await app.get(`/api/find?dir=${q(repo)}&q=`)).json(), []);
+  assert.equal((await app.get(`/api/find?dir=${q(os.tmpdir())}&q=a`)).status, 403);
+});

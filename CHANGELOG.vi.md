@@ -8,6 +8,20 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Danh sách phiên: hàng lọc (Tất cả / Chờ bạn / Đang chạy / Rảnh) kèm số lượng, nút đổi tên/đóng phiên hiện khi rê chuột.
+- Lịch sử git nhóm theo ngày ("Hôm nay", "Hôm qua", rồi ngày cụ thể) và có avatar chữ cái đầu của tác giả.
+- Diff hai cột tô đúng phần chữ đã đổi trong mỗi dòng sửa.
+- Tab File: đường dẫn bấm được, tìm file theo tên trong cả thư mục (`GET /api/find`), số dòng khi xem code.
+- Điện thoại: hộp thoại dạng sheet trượt từ dưới lên, vuốt từ mép trái để quay lại, kéo xuống để làm mới chat, file, git và danh sách phiên, rung nhẹ khi gửi, chuyển tab và đóng phiên.
+
+### Thay đổi
+- Tên phiên dài giữ phần đuôi phân biệt (`BSR-Digi…-3`) thay vì bị cắt ở cuối.
+- Cột chat vẫn rộng 820px nhưng cuộn được ở cả khung, không chỉ trong cột.
+
+### Sửa lỗi
+- `npm run check` không còn báo lỗi vì file AppleDouble (`._*`) của macOS sinh ra trên ổ exFAT.
+
 ## [1.0.1] - 2026-11-27
 
 ### Sửa lỗi

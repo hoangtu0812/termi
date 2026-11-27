@@ -5,6 +5,7 @@ import path from 'node:path';
 import { pipeline } from 'node:stream/promises';
 import { MAX_OUTPUT_CHARS, MAX_UPLOAD_BYTES } from '../config.mjs';
 import { fail } from '../errors.mjs';
+import { findFiles } from '../file-search.mjs';
 import { gitMarks } from '../git/marks.mjs';
 import { IMAGE_TYPES } from '../http/static.mjs';
 import { rawResponse, streamingBody } from '../http/router.mjs';
@@ -61,6 +62,11 @@ export function fileRoutes({ paths, uploadDir }) {
       for (const entry of listed) if (entry && marks.has(entry.name)) entry.git = marks.get(entry.name);
       const parent = await paths.inside(path.dirname(dir)) && path.dirname(dir);
       return { dir, parent, entries: listed.filter(Boolean).sort(byKindThenName) };
+    },
+
+    async 'GET /api/find'(query) {
+      const dir = await paths.need(query.get('dir'));
+      return findFiles(dir, (query.get('q') || '').trim());
     },
 
     async 'GET /api/file'(query) {

@@ -47,6 +47,7 @@ const TRUSTED_HTML = [
   /\.innerHTML = LOGO\[agent\]$/,
   /\.insertAdjacentHTML\('afterbegin', icon\(e\.dataset\.i\)\);$/,
   /\.insertAdjacentHTML\('afterbegin', graphSvg\(c, row, width\)\);$/,
+  /\.insertAdjacentHTML\('afterbegin', passingLanesSvg\(row, width\)\);$/,
   /t\.innerHTML = marked\.parse\(text, \{ gfm: true(, breaks: true)? \}\);$/,
   /\.innerHTML = hljs\.highlight\(/,
   /<body>\$\{t\.innerHTML\}/,

@@ -1,7 +1,9 @@
 import { api, safely, toast } from './api.mjs';
-import { $, wide } from './dom.mjs';
-import { poll } from './poll.mjs';
+import { $ } from './dom.mjs';
+import { killSession, renameSession } from './session-actions.mjs';
 import { S, go, st } from './state.mjs';
+
+const TAB_VIBRATION_MS = 6;
 
 export function openSessionMenu(name) {
   S.menuFor = name;
@@ -19,32 +21,22 @@ export function setupNavigation() {
   $('b-menu').onclick = () => openSessionMenu(st().s);
   $('d-menu').onclose = safely(async () => {
     const name = S.menuFor || st().s,
-      v = $('d-menu').returnValue,
-      isOpen = name === st().s;
-    if (v === 'rename') {
-      const to = prompt('Tên mới (chữ, số, - và _):', name);
-      if (!to || to === name) return;
-      await api('/api/sessions/rename', { name, to });
-      await poll();
-      if (isOpen) {
-        S.termName = null;
-        go({ s: to });
-      }
-    } else if (v === 'mute') {
+      v = $('d-menu').returnValue;
+    if (v === 'rename') await renameSession(name);
+    else if (v === 'mute') {
       const p = await api('/api/notify'),
         key = `${st().m || ''}/${name}`,
         muted = new Set(p.muted);
       muted.has(key) ? muted.delete(key) : muted.add(key);
       await api('/api/notify', { ...p, muted: [...muted] });
       toast(muted.has(key) ? `Đã tắt thông báo của ${name}` : `Đã bật lại thông báo của ${name}`);
-    } else if (v === 'kill') {
-      if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
-      await api('/api/sessions/kill', { name });
-      await poll();
-      if (isOpen) go({ s: null, t: wide() ? null : 'sessions' });
-    }
+    } else if (v === 'kill') await killSession(name);
   });
   $('b-back').onclick = () => go({ t: 'sessions', v: null });
-  for (const b of document.querySelectorAll('#tabbar button, #seg button'))
-    b.onclick = () => go({ t: b.dataset.t, v: null });
+  for (const b of document.querySelectorAll('#tabbar button, #seg button')) {
+    b.onclick = () => {
+      if (st().t !== b.dataset.t) navigator.vibrate?.(TAB_VIBRATION_MS);
+      go({ t: b.dataset.t, v: null });
+    };
+  }
 }
