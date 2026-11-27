@@ -114,7 +114,7 @@ dialog.palette { width:min(94vw, 620px); padding:0; margin-top:10vh; }
   min-width:0;
 }
 .qrow .qe { width:52px; text-align:center; } .qrow .qn { flex:1; } .qrow textarea { resize:vertical; }
-.qrow .qa { display:flex; align-items:center; gap:6px; font-size:13px; color:var(--dim); }
+.qrow .qa { display:flex; flex-direction:row; align-items:center; gap:6px; font-size:13px; color:var(--dim); }
 .nform { display:flex; flex-direction:column; gap:8px; font-size:14px; }
 .nform .chk2 { display:inline-flex; flex-direction:row; align-items:center; gap:8px; color:var(--fg); font-size:14px; }
 .qh { display:flex; align-items:center; gap:6px; flex-wrap:wrap; }
