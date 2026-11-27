@@ -16,6 +16,7 @@ import { loadNotifyPrefs } from './push/prefs.mjs';
 import { loadVapidKeys } from './push/vapid.mjs';
 import { createWatcher } from './push/watcher.mjs';
 import { createPusher } from './push/webpush.mjs';
+import { createLiveFeed } from './live.mjs';
 import { createLogRotator, launchdLogFiles } from './log-rotate.mjs';
 import { createRepoFinder } from './repos.mjs';
 import { fileRoutes } from './routes/files.mjs';
@@ -64,6 +65,7 @@ export async function init(config) {
     snapshots: createSnapshots({ store, sessions }),
     checkTtyd: createTtydWatchdog(config.ttydPort),
     rotateLogs: createLogRotator({ files: launchdLogFiles(process.platform, config.home) }),
+    live: createLiveFeed({ list: () => sessions.list() }),
   };
 }
 
@@ -104,6 +106,8 @@ export async function start(config) {
     server,
     close: () => {
       timers.forEach(clearTimeout);
+      context.live.stop();
+      server.closeAllConnections();
       return new Promise(resolve => server.close(resolve));
     },
   };

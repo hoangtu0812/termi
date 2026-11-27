@@ -6,7 +6,7 @@
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
-| Rationale | [NOTES-v1.7-implementation-notes.md](NOTES-v1.7-implementation-notes.md) |
+| Rationale | [NOTES-v1.8-implementation-notes.md](NOTES-v1.8-implementation-notes.md) |
 
 The module map of termi after the refactor in [PLAN-v1.8-architecture-refactor.md](../plan/PLAN-v1.8-architecture-refactor.md). Why individual parts work the way they do is in the implementation notes; this document only says where things live and how they connect.
 

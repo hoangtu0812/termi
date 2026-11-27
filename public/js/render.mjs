@@ -6,7 +6,7 @@ import { $, splitWide, wide } from './dom.mjs';
 import { loadFiles } from './files.mjs';
 import { loadGit } from './git.mjs';
 import { loadOtherMachines } from './machines.mjs';
-import { poll } from './poll.mjs';
+import { connectLive, poll } from './poll.mjs';
 import { markSeen } from './seen.mjs';
 import { loadProjects, renderSessions } from './sessions.mjs';
 import { S, cur, go, st } from './state.mjs';
@@ -35,6 +35,7 @@ function switchMachine(machine) {
   loadOtherMachines();
   loadRestore();
   $('machine').value = S.machine;
+  connectLive();
   poll();
 }
 

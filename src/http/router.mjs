@@ -3,10 +3,13 @@ import { fail } from '../errors.mjs';
 const MAX_BODY_CHARS = 64_000;
 const RAW = Symbol('raw response');
 const STREAMING = Symbol('streaming body');
+const OWNS_RESPONSE = Symbol('owns response');
 
 export const rawResponse = (headers, body) => ({ [RAW]: true, headers, body });
 
 export const streamingBody = handler => Object.assign(handler, { [STREAMING]: true });
+
+export const ownsResponse = handler => Object.assign(handler, { [OWNS_RESPONSE]: true });
 
 export async function readJsonBody(req) {
   let text = '';
@@ -43,6 +46,7 @@ export function createRouter(tables, buildId) {
   return async function dispatch(req, res, url) {
     const handler = routes[`${req.method} ${url.pathname}`];
     if (!handler) throw fail(404, 'Không tìm thấy');
+    if (handler[OWNS_RESPONSE]) return handler(url.searchParams, req, res);
     const body = req.method === 'POST' && !handler[STREAMING] ? await readJsonBody(req) : {};
     await send(res, await handler(url.searchParams, body, req));
   };

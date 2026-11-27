@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.7 |
+| Version | 1.8 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 
@@ -166,6 +166,7 @@ Rationale that used to live in code comments. Source files carry no comments (se
 - The screen wake lock is requested again whenever the page becomes visible; some browsers only grant it after a user gesture, so it is also requested on `pointerdown`. A refusal (battery saver) is ignored.
 - All API and terminal traffic goes through `/m/<machine>` when another machine is selected; the machine list, events, notification settings, quick actions and push always go to the local hub, which watches every machine.
 - A network failure shows the "connection lost" bar; the regular refresh loops retry by themselves.
+- Session state arrives over Server-Sent Events (`GET /api/stream`). The server checks the session list every 1.5 s only while at least one stream is open and sends it when the JSON changes, plus a comment line every 20 s so proxies keep the connection. While the stream delivers, the client polls `/api/sessions` every 15 s as a safety net instead of every 3 s. The stream is closed while the page is hidden (battery) and reopened when it becomes visible. A machine running an older termi answers 404, the browser stops retrying, and polling stays at 3 s. `tailscale serve` and the peer proxy pass the stream through without buffering.
 - A new UI build shows a "Tải lại" bar instead of reloading under the user. It reloads by itself only while the page is hidden and nothing is in progress (composer or commit text, attachments, an open dialog).
 - The header dot combines three signals: the browser's online state, whether the last API call reached the server, and the terminal state (connected, probing, disconnected). Its tooltip shows how long ago the terminal last received data.
 - Messages that fail to send because the network or the server is down go to an outbox in `localStorage` and are sent when the browser goes back online or the next API call succeeds. They are posted straight to `/m/<machine>/api/send` so a message reaches the machine it was written for even if another machine is selected later. A request that reached the server but whose response was lost can be sent twice; this is accepted over losing the message.
