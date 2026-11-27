@@ -1,0 +1,3 @@
+{"type":"session_meta","payload":{"id":"44444444-4444-4444-8444-444444444444","cwd":"/work/web"},"timestamp":"2026-11-26T10:00:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"<environment_context>x</environment_context>"}]},"timestamp":"2026-11-26T10:01:00Z"}
+{"type":"response_item","payload":{"type":"message","role":"user","content":[{"type":"input_text","text":"thêm dark mode"}]},"timestamp":"2026-11-26T10:02:00Z"}

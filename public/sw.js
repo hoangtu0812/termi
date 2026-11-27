@@ -1,31 +1,56 @@
-// Push không có payload: hỏi server nội dung cảnh báo mới nhất rồi hiện thông báo
-self.addEventListener('push', e => e.waitUntil((async () => {
-  let a = { title: 'termi', body: 'Có cập nhật từ agent', session: '' };
-  try { a = await (await fetch('/api/push/alert', { cache: 'no-store' })).json(); } catch {}
-  // iOS bắt buộc mỗi push phải hiện một thông báo
-  await self.registration.showNotification(a.title, { body: a.body, tag: `${a.machine || ''}/${a.session || 'termi'}`, icon: '/icon.svg', data: { s: a.session, m: a.machine } });
-})()));
+const OFFLINE_PAGE = '/offline.html';
+const OFFLINE_CACHE = 'termi-offline';
+const FALLBACK_ALERT = { title: 'termi', body: 'Có cập nhật từ agent', session: '' };
 
-self.addEventListener('notificationclick', e => {
-  e.notification.close();
-  const { s, m } = e.notification.data || {};
-  const url = s ? '/#' + new URLSearchParams({ s, t: 'term', ...(m ? { m } : {}) }) : '/';
-  e.waitUntil((async () => {
-    const wins = await clients.matchAll({ type: 'window', includeUncontrolled: true });
-    if (wins[0]) { await wins[0].focus(); return wins[0].navigate(url); }
-    return clients.openWindow(url);
-  })());
+async function latestAlert() {
+  try {
+    return await (await fetch('/api/push/alert', { cache: 'no-store' })).json();
+  } catch {
+    return FALLBACK_ALERT;
+  }
+}
+
+async function showAlert() {
+  const notice = await latestAlert();
+  await self.registration.showNotification(notice.title, {
+    body: notice.body,
+    tag: `${notice.machine || ''}/${notice.session || 'termi'}`,
+    icon: '/icon.svg',
+    data: { s: notice.session, m: notice.machine },
+  });
+}
+
+function sessionUrl({ s, m }) {
+  if (!s) return '/';
+  return '/#' + new URLSearchParams({ s, t: 'term', ...(m ? { m } : {}) });
+}
+
+async function openSession(url) {
+  const windows = await clients.matchAll({ type: 'window', includeUncontrolled: true });
+  if (!windows[0]) return clients.openWindow(url);
+  await windows[0].focus();
+  return windows[0].navigate(url);
+}
+
+async function offlineFallback() {
+  return (await caches.match(OFFLINE_PAGE)) || Response.error();
+}
+
+self.addEventListener('push', event => event.waitUntil(showAlert()));
+
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  event.waitUntil(openSession(sessionUrl(event.notification.data || {})));
 });
 
-// Không tới được máy chủ: trả trang "đang kết nối" đã lưu sẵn thay cho trang lỗi của trình duyệt.
-// Chỉ áp dụng cho việc mở trang; API, terminal… luôn đi thẳng mạng, không lưu đệm.
-const OFFLINE = '/offline.html';
-self.addEventListener('install', e => {
+self.addEventListener('install', event => {
   self.skipWaiting();
-  e.waitUntil(caches.open('termi-offline').then(c => c.add(OFFLINE)));
+  event.waitUntil(caches.open(OFFLINE_CACHE).then(cache => cache.add(OFFLINE_PAGE)));
 });
-self.addEventListener('fetch', e => {
-  if (e.request.mode !== 'navigate') return;
-  e.respondWith(fetch(e.request).catch(async () => (await caches.match(OFFLINE)) || Response.error()));
+
+self.addEventListener('fetch', event => {
+  if (event.request.mode !== 'navigate') return;
+  event.respondWith(fetch(event.request).catch(offlineFallback));
 });
-self.addEventListener('activate', e => e.waitUntil(clients.claim()));
+
+self.addEventListener('activate', event => event.waitUntil(clients.claim()));

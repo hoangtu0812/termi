@@ -1,12 +1,14 @@
 {
   "name": "termi",
-  "version": "0.12.0",
+  "version": "1.0.0",
   "description": "Điều khiển Claude Code, tmux và git trên Mac mini từ điện thoại",
   "private": true,
   "type": "module",
   "scripts": {
     "start": "node src/server.mjs",
-    "test": "node --test test/",
+    "test": "node --test",
+    "check": "node scripts/check.mjs",
+    "verify": "npm run check && npm test",
     "service:install": "scripts/install.sh",
     "service:uninstall": "scripts/install.sh uninstall",
     "claude-usage": "node scripts/claude-statusline.mjs install",
