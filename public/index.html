@@ -25,6 +25,7 @@
 <link rel="stylesheet" href="css/dialogs.css">
 <link rel="stylesheet" href="css/session-tools.css">
 <link rel="stylesheet" href="css/explore.css">
+<link rel="stylesheet" href="css/pipelines.css">
 <link rel="stylesheet" href="css/mobile.css">
 </head>
 <body data-tab="sessions">
@@ -100,6 +101,11 @@
             <select class="sel" id="g-repo" aria-label="Repo" style="flex:1"></select>
             <button class="ibtn" id="g-reload" aria-label="Tải lại" data-i="refresh"></button>
           </div>
+          <div class="gmode" id="g-mode">
+            <button type="button" data-mode="git"><span data-i="git"></span>Git</button>
+            <button type="button" data-mode="ci"><span data-i="zap"></span>Pipelines</button>
+          </div>
+          <div id="g-main">
           <div class="toolbar">
             <select class="sel" id="g-branch" aria-label="Branch" style="flex:1"></select>
             <span class="chip" id="g-track"></span>
@@ -115,6 +121,8 @@
           </div>
           <div class="grp"><span>Lịch sử</span><button class="btn sm" id="g-all">Xem toàn bộ thay đổi</button></div>
           <div class="log" id="g-log"></div>
+          </div>
+          <div class="cipanel" id="g-ci" hidden></div>
         </div>
       </div>
 

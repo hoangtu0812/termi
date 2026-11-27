@@ -49,4 +49,7 @@ export const EN_SERVER = {
   'Đọc': 'Read',
   'Đọc web': 'Read web page',
   'Sửa': 'Edit',
+  'Cần cài GitHub CLI và đăng nhập: gh auth login': 'Install GitHub CLI and sign in: gh auth login',
+  'Cần Azure CLI có extension azure-devops và đăng nhập: az login':
+    'Install Azure CLI with the azure-devops extension and sign in: az login',
 };
