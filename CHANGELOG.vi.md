@@ -8,6 +8,13 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Tìm trong lịch sử: gõ vào hộp Lịch sử hội thoại để tìm hội thoại cũ theo nội dung đã trao đổi, kèm dòng khớp hiện dưới mỗi tiêu đề.
+- Nút "Tiếp tục hội thoại này" trong trình xem hội thoại mở lại hội thoại đó ở một phiên mới.
+
+### Sửa
+- Nút "Xem" trong hộp Lịch sử không còn che tiêu đề dài.
+
 ## [1.13.0] - 2026-11-27
 
 ### Thêm

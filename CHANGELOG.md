@@ -6,6 +6,13 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- History search: type in the conversation history dialog to find past conversations by what was said in them, with the matching line shown under each title.
+- A "Continue this conversation" button in the conversation viewer opens the conversation in a new session.
+
+### Fixed
+- The "View" button in the history dialog no longer covers long titles.
+
 ## [1.13.0] - 2026-11-27
 
 ### Added

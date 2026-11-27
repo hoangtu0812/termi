@@ -8,6 +8,8 @@ const CONVERSATIONS_PER_PROJECT = 20;
 const SECOND_MS = 1000;
 const CONVERSATION_TAIL_BYTES = 4 * 1024 * 1024;
 const CONVERSATION_ITEMS = 200;
+const MIN_QUERY_CHARS = 2;
+const MAX_QUERY_CHARS = 100;
 
 function groupByDir(sessions, conversations) {
   const projects = new Map();
@@ -43,6 +45,16 @@ export function projectRoutes({ sessions, history, repos, paths, agents }) {
     },
 
     'GET /api/history': query => history(query.get('dir') || undefined),
+
+    async 'GET /api/history/search'(query) {
+      const text = (query.get('q') || '').trim();
+      if (text.length < MIN_QUERY_CHARS || text.length > MAX_QUERY_CHARS) {
+        throw fail(400, 'Từ khoá tìm kiếm phải từ 2 đến 100 ký tự');
+      }
+      const found = await history.search(text, query.get('dir') || undefined);
+      const visible = await Promise.all(found.map(async item => (await paths.inside(item.cwd)) && item));
+      return visible.filter(Boolean);
+    },
 
     async 'GET /api/conversation'(query) {
       const id = query.get('id');

@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { startTestServer } from './helpers/server.mjs';
+import { snippetAround } from '../src/agents/history.mjs';
 
 const ID = '11111111-2222-3333-4444-555555555555';
 let app;
@@ -35,4 +36,25 @@ test('an old conversation can be read back without opening a session', async () 
 test('conversation ids are validated and unknown ones are 404', async () => {
   assert.equal((await app.get('/api/conversation?id=../../etc')).status, 400);
   assert.equal((await app.get('/api/conversation?id=99999999-2222-3333-4444-555555555555')).status, 404);
+});
+
+test('old conversations can be found by what was said in them', async () => {
+  const search = q => app.get(`/api/history/search?q=${encodeURIComponent(q)}`);
+  const found = (await search('XEM')).json();
+  assert.deepEqual(found.map(item => [item.id, item.snippet]), [[ID, 'Để tôi xem.']]);
+  assert.equal((await search('Đăng nhập')).json()[0].snippet, 'sửa lỗi đăng nhập');
+  assert.deepEqual((await search('tool_use')).json(), []);
+  const elsewhere = `/api/history/search?q=xem&dir=${encodeURIComponent(path.join(app.work, 'x'))}`;
+  assert.deepEqual((await app.get(elsewhere)).json(), []);
+  assert.equal((await search('x')).status, 400);
+  assert.equal((await search('y'.repeat(101))).status, 400);
+});
+
+test('search snippets are short, flat and cut around the match', () => {
+  const text = `${'a '.repeat(60)}\n\nfound it${' b'.repeat(120)}`;
+  const snippet = snippetAround(text, 'found');
+  assert.match(snippet, /^…a a .* found it b b .*…$/);
+  assert.ok(snippet.length <= 162);
+  assert.equal(snippetAround('short one', 'one'), 'short one');
+  assert.equal(snippetAround('nothing', 'zzz'), null);
 });

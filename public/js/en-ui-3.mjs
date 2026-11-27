@@ -88,4 +88,8 @@ export const EN_UI_3 = {
   'Dùng chung': 'Shared',
   'Xoá danh sách riêng': 'Remove project list',
   'Pipeline của các project đang mở chạy xong hoặc lỗi': 'Pipelines of open projects succeed or fail',
+  'Tiếp tục hội thoại này': 'Continue this conversation',
+  'Tìm theo nội dung hội thoại…': 'Search conversation text…',
+  'Tìm theo nội dung hội thoại': 'Search conversation text',
+  'Không tìm thấy hội thoại nào có "{0}"': 'No conversation mentions "{0}"',
 };

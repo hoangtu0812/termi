@@ -29,6 +29,7 @@ export const EN_SERVER = {
   'Lỗi máy chủ': 'Server error',
   'Mã commit không hợp lệ': 'Invalid commit id',
   'Mã hội thoại không hợp lệ': 'Invalid conversation id',
+  'Từ khoá tìm kiếm phải từ 2 đến 100 ký tự': 'Search text must be 2 to 100 characters',
   'Origin không hợp lệ': 'Invalid origin',
   'Phiên không hợp lệ': 'Invalid session',
   'Phiên đã tồn tại': 'Session already exists',
