@@ -11,6 +11,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 ### Thêm
 - `scripts/vscode-proxy.mjs` nén dữ liệu của VS Code web (lần đầu từ khoảng 25 MB còn 6 MB) để mở nhanh khi Tailscale phải đi qua máy trung chuyển; xem `docs/GUIDE-v1.1-vscode-web.md`.
 
+### Sửa
+- Nhãn trạng thái phiên ("Rảnh", "Đang chạy · 2 phút") không còn bị cắt khi tên phiên dài; tên phiên được rút gọn thay vào đó.
+
 ## [1.14.1] - 2026-11-27
 
 ### Sửa

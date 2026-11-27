@@ -9,6 +9,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - `scripts/vscode-proxy.mjs` compresses VS Code web traffic (about 25 MB down to 6 MB on first load) so it opens quickly over a relayed Tailscale connection; see `docs/GUIDE-v1.1-vscode-web.md`.
 
+### Fixed
+- Session status labels ("Idle", "Working · 2 min") are no longer cut off next to long session names; the name is shortened instead.
+
 ## [1.14.1] - 2026-11-27
 
 ### Fixed
