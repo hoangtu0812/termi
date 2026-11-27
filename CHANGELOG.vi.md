@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-27
+
 ### Thêm
 - Panel bên trên máy tính kéo mép để đổi độ rộng (bấm đúp để về mặc định), thu lại bằng Ctrl/Cmd+B hoặc bấm lại icon đang chọn; nhớ trên từng máy.
 - Thanh trạng thái trên máy tính: kết nối, máy, nhánh, số file chưa commit, trạng thái pipeline, hạn mức hoặc ngữ cảnh và phiên bản. Chấm kết nối và chip usage rời khỏi header.
@@ -320,7 +322,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/hoangtu0812/termi/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/hoangtu0812/termi/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0

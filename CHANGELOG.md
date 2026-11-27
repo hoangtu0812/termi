@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.11.0] - 2026-11-27
+
 ### Added
 - The desktop side panel can be resized by dragging its edge (double-click resets) and collapsed with Ctrl/Cmd+B or by clicking the active activity icon; both are remembered per device.
 - Desktop status bar: connection, machine, branch, uncommitted files, pipeline state, plan or context usage and version. The connection dot and usage chip leave the header.
@@ -318,7 +320,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.10.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.11.0...HEAD
+[1.11.0]: https://github.com/hoangtu0812/termi/compare/v1.10.0...v1.11.0
 [1.10.0]: https://github.com/hoangtu0812/termi/compare/v1.9.0...v1.10.0
 [1.9.0]: https://github.com/hoangtu0812/termi/compare/v1.8.0...v1.9.0
 [1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
