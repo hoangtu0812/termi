@@ -8,6 +8,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ### Added
 - WSL: the installer keeps the Linux distribution running at Windows logon, so the machine no longer disappears from the list when the Ubuntu window is closed.
+- macOS: the server rotates `~/Library/Logs/termi.*.log` above 5 MB.
 
 ### Changed
 - Implementation notes renamed to `docs/NOTES-v1.7-implementation-notes.md` with the rationale for this release.

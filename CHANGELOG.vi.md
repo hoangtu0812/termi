@@ -10,6 +10,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ### Thêm
 - WSL: script cài giữ bản Linux luôn chạy khi đăng nhập Windows, nên máy không còn biến mất khỏi danh sách khi đóng cửa sổ Ubuntu.
+- macOS: máy chủ tự xoay vòng `~/Library/Logs/termi.*.log` khi quá 5 MB.
 
 ### Thay đổi
 - Ghi chú cài đặt đổi tên thành `docs/NOTES-v1.7-implementation-notes.md`, thêm lý do của các thay đổi trong bản này.

@@ -16,6 +16,7 @@ import { loadNotifyPrefs } from './push/prefs.mjs';
 import { loadVapidKeys } from './push/vapid.mjs';
 import { createWatcher } from './push/watcher.mjs';
 import { createPusher } from './push/webpush.mjs';
+import { createLogRotator, launchdLogFiles } from './log-rotate.mjs';
 import { createRepoFinder } from './repos.mjs';
 import { fileRoutes } from './routes/files.mjs';
 import { gitRoutes } from './routes/git.mjs';
@@ -35,6 +36,7 @@ const WATCH_MS = 3000;
 const SNAPSHOT_MS = 30_000;
 const FIRST_SNAPSHOT_MS = 5000;
 const WATCHDOG_MS = 120_000;
+const LOG_ROTATE_MS = 3_600_000;
 
 async function prepareDataDir(dataDir) {
   const uploadDir = path.join(dataDir, 'uploads');
@@ -61,6 +63,7 @@ export async function init(config) {
     repos: createRepoFinder(paths.roots),
     snapshots: createSnapshots({ store, sessions }),
     checkTtyd: createTtydWatchdog(config.ttydPort),
+    rotateLogs: createLogRotator({ files: launchdLogFiles(process.platform, config.home) }),
   };
 }
 
@@ -80,8 +83,10 @@ function createServer(context) {
 
 const logged = (name, task) => () => task().catch(error => console.error(name, error.message));
 
-function startTimers({ watcher, snapshots, checkTtyd }) {
+function startTimers({ watcher, snapshots, checkTtyd, rotateLogs }) {
   return [
+    setInterval(logged('log', rotateLogs), LOG_ROTATE_MS),
+    setTimeout(logged('log', rotateLogs), FIRST_SNAPSHOT_MS),
     setInterval(logged('watch', watcher.tick), WATCH_MS),
     setInterval(logged('snapshot', snapshots.save), SNAPSHOT_MS),
     setInterval(logged('watchdog', checkTtyd), WATCHDOG_MS),
