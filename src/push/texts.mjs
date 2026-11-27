@@ -14,6 +14,8 @@ const TEXTS = {
     crashedBody: 'Máy chủ termi dừng bất thường và vừa được chạy lại.',
     ttyd: 'Terminal được khởi động lại',
     ttydBody: 'ttyd bị kẹt {0} kết nối nên đã chạy lại.',
+    cifail: '❌ {0} lỗi',
+    cidone: '✅ {0} chạy xong',
   },
   en: {
     waiting: 'needs your confirmation',
@@ -30,6 +32,8 @@ const TEXTS = {
     crashedBody: 'The termi server stopped unexpectedly and was started again.',
     ttyd: 'Terminal restarted',
     ttydBody: 'ttyd had {0} stuck connections and was restarted.',
+    cifail: '❌ {0} failed',
+    cidone: '✅ {0} succeeded',
   },
 };
 

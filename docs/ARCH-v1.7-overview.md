@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.6 |
+| Version | 1.7 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
@@ -93,7 +93,7 @@ Each file returns a table of handlers built from the shared context.
 |---|---|
 | `src/tmux/` | `client.mjs` (run tmux, exact session targets), `screen.mjs` (agent state, menus and previews read from the screen). |
 | `src/git/` | `run.mjs` (git runner), `ops.mjs` (stage, commit, push…), `parse.mjs` (status, numstat, log), `graph.mjs` (commit graph lanes), `marks.mjs` (file tab marks). |
-| `src/push/` | `vapid.mjs` (keys and signatures), `webpush.mjs` (delivery and subscriptions), `prefs.mjs` (notification settings), `watcher.mjs` (state changes → inbox and push), `incidents.mjs` (machine offline, disk, crash and ttyd alerts), `texts.mjs` (push texts in Vietnamese and English). |
+| `src/push/` | `vapid.mjs` (keys and signatures), `webpush.mjs` (delivery and subscriptions), `prefs.mjs` (notification settings), `watcher.mjs` (state changes → inbox and push), `incidents.mjs` (machine offline, disk, crash and ttyd alerts), `ci-watch.mjs` (pipeline runs of open projects that finish → inbox and push), `texts.mjs` (push texts in Vietnamese and English). |
 | `src/ci/` | `remote.mjs` (recognize GitHub and Azure DevOps remotes), `normalize.mjs` (one run shape for both), `providers.mjs` (read runs through the `gh` and `az` CLIs), `actions.mjs` (failed-step logs, rerun and cancel), `index.mjs` (per-repository cache). |
 
 ## 3. Client (`public/`)
@@ -125,11 +125,11 @@ Each file returns a table of handlers built from the shared context.
 | `install.sh`, `install-linux.sh` | Set up the services (launchd or systemd) and `tailscale serve`. |
 | `attach.sh` | Run by ttyd for each terminal: attach to an existing tmux session. |
 | `claude-statusline.mjs` | Claude Code statusline that records plan limits and context usage. |
-| `check.mjs`, `check-comments.mjs` | Repository rule checks (`npm run check`). |
+| `check.mjs`, `check-comments.mjs`, `check-css.mjs` | Repository rule checks (`npm run check`). |
 
 ## 5. Quality gates
 
 - `npm run verify` runs the rule checks and every test. CI runs it on Ubuntu and macOS.
-- `npm run check` fails on any comment, any file over 300 lines, any line over 120 characters, a syntax error or a misnamed document. The allowlist (`scripts/check-allowlist.json`) is empty and must stay empty.
+- `npm run check` fails on any comment, any file over 300 lines, any line over 120 characters, a syntax error, a misnamed document or a CSS class collision: a class may have its base rule (`.x`, `.x:hover`, in a single-selector rule) in one stylesheet only, and a class defined only in the responsive sheets (`layout.css`, `mobile.css`) must not be styled by any other sheet. The allowlist (`scripts/check-allowlist.json`) is empty and must stay empty.
 - Function length (40 lines) is not checked automatically, because the checker has no JavaScript parser; reviewers check it.
 - Tests use temporary directories, a private tmux server and a fake or real ttyd; they never touch the user's home, tmux, git remotes or the network. Client modules can be imported by Node, so their pure helpers have unit tests; `test/client.test.mjs` checks module wiring and the use of `innerHTML`.

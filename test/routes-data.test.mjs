@@ -112,12 +112,12 @@ test('git operations', async () => {
 
 test('notification settings', async () => {
   const quiet = { on: false, from: '23:00', to: '07:00' };
-  const defaults = { waiting: true, done: true, system: true, lang: 'vi', quiet, muted: [] };
+  const defaults = { waiting: true, done: true, system: true, ci: true, lang: 'vi', quiet, muted: [] };
   assert.deepEqual((await app.get('/api/notify')).json(), defaults);
   assert.equal((await app.post('/api/notify', { quiet: { from: '25:00' } })).status, 400);
   const change = { waiting: 1, quiet: { on: true, to: '06:30' }, muted: ['/a', 3] };
   const saved = (await app.post('/api/notify', change)).json();
-  const expected = { waiting: true, done: false, system: true, lang: 'vi',
+  const expected = { waiting: true, done: false, system: true, ci: true, lang: 'vi',
     quiet: { on: true, from: '23:00', to: '06:30' }, muted: ['/a'] };
   assert.deepEqual(saved, expected);
   assert.deepEqual((await app.get('/api/notify')).json(), expected);

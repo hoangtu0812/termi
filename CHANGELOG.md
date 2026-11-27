@@ -6,6 +6,13 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Push notifications when a pipeline of a project with an open session succeeds or fails (GitHub and Azure DevOps). Toggle in Settings › Notify when.
+- `npm run check` reports CSS class collisions: a class styled as its own component in two stylesheets, or a desktop/mobile-only class that another stylesheet also styles.
+
+### Documentation
+- Architecture overview is now `docs/ARCH-v1.7-overview.md` with the pipeline watcher and the CSS class check.
+
 ## [1.12.1] - 2026-11-27
 
 ### Fixed

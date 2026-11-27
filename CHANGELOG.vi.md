@@ -8,6 +8,13 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Thông báo đẩy khi pipeline của project đang có phiên chạy xong hoặc lỗi (GitHub và Azure DevOps). Bật tắt trong Cài đặt › Báo khi.
+- `npm run check` báo trùng class CSS: một class được định nghĩa như thành phần riêng ở hai file CSS, hoặc class chỉ dành cho máy tính/điện thoại nhưng bị file khác style lại.
+
+### Tài liệu
+- Tổng quan kiến trúc nay là `docs/ARCH-v1.7-overview.md`, thêm bộ theo dõi pipeline và kiểm tra class CSS.
+
 ## [1.12.1] - 2026-11-27
 
 ### Sửa
