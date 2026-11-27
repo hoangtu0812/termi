@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-27
+
 ### Added
 - `scripts/vscode-proxy.mjs` compresses VS Code web traffic (about 25 MB down to 6 MB on first load) so it opens quickly over a relayed Tailscale connection; see `docs/GUIDE-v1.1-vscode-web.md`.
 

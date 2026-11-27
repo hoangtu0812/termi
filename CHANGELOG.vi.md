@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.15.0] - 2026-11-27
+
 ### Thêm
 - `scripts/vscode-proxy.mjs` nén dữ liệu của VS Code web (lần đầu từ khoảng 25 MB còn 6 MB) để mở nhanh khi Tailscale phải đi qua máy trung chuyển; xem `docs/GUIDE-v1.1-vscode-web.md`.
 
