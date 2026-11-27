@@ -9,7 +9,7 @@ export function openSessionMenu(name) {
   S.menuFor = name;
   $('m-title').textContent = name;
   $('d-menu').showModal();
-  api('/api/notify')
+  api('api/notify')
     .then(p => {
       $('m-mute').lastChild.textContent = p.muted.includes(`${st().m || ''}/${name}`)
         ? 'Bật lại thông báo phiên này'
@@ -24,11 +24,11 @@ export function setupNavigation() {
       v = $('d-menu').returnValue;
     if (v === 'rename') await renameSession(name);
     else if (v === 'mute') {
-      const p = await api('/api/notify'),
+      const p = await api('api/notify'),
         key = `${st().m || ''}/${name}`,
         muted = new Set(p.muted);
       muted.has(key) ? muted.delete(key) : muted.add(key);
-      await api('/api/notify', { ...p, muted: [...muted] });
+      await api('api/notify', { ...p, muted: [...muted] });
       toast(muted.has(key) ? `Đã tắt thông báo của ${name}` : `Đã bật lại thông báo của ${name}`);
     } else if (v === 'kill') await killSession(name);
   });

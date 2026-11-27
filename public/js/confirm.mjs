@@ -16,7 +16,7 @@ function renderMulti(x, box, sig) {
     b.onclick = safely(async () => {
       b.classList.toggle('on');
       b.firstChild.textContent = b.classList.contains('on') ? '✓' : '';
-      await api('/api/send', { session: x.name, key: String(o.n) });
+      await api('api/send', { session: x.name, key: String(o.n) });
     });
     return b;
   });
@@ -26,13 +26,13 @@ function renderMulti(x, box, sig) {
   go2.type = esc.type = 'button';
   go2.onclick = safely(async () => {
     go2.disabled = true;
-    await api('/api/menu-submit', { session: x.name });
+    await api('api/menu-submit', { session: x.name });
     box.hidden = true;
     box.dataset.sig = '';
     setTimeout(poll, 600);
   });
   esc.onclick = safely(async () => {
-    await api('/api/send', { session: x.name, key: 'Escape' });
+    await api('api/send', { session: x.name, key: 'Escape' });
     box.hidden = true;
     box.dataset.sig = '';
     setTimeout(poll, 600);
@@ -65,7 +65,7 @@ export function renderConfirm() {
       const b = el('button', 'btn' + (c.n === 1 ? ' pri' : ''), `${c.n}. ${c.label}`);
       b.type = 'button';
       b.onclick = safely(async () => {
-        await api('/api/send', { session: x.name, key: String(c.n) });
+        await api('api/send', { session: x.name, key: String(c.n) });
         navigator.vibrate?.(15);
         box.hidden = true;
         box.dataset.sig = '';

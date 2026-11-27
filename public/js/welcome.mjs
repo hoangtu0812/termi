@@ -7,7 +7,7 @@ import { loadProjects, renderSessions } from './sessions.mjs';
 import { S, go } from './state.mjs';
 
 export async function loadRestore() {
-  S.restore = await api('/api/restore').catch(() => []);
+  S.restore = await api('api/restore').catch(() => []);
   renderSessions();
 }
 export function renderRestore(box) {
@@ -29,7 +29,7 @@ export function renderRestore(box) {
   ok.type = no.type = 'button';
   ok.onclick = safely(async () => {
     ok.disabled = true;
-    const r = await api('/api/restore', {});
+    const r = await api('api/restore', {});
     toast(
       `Đã khôi phục ${r.done.length} phiên` + (r.failed.length ? ` · lỗi: ${r.failed.join('; ')}` : ''),
       !!r.failed.length,
@@ -38,7 +38,7 @@ export function renderRestore(box) {
     await poll();
   });
   no.onclick = safely(async () => {
-    await api('/api/restore/dismiss', {});
+    await api('api/restore/dismiss', {});
     S.restore = [];
     renderSessions();
   });
@@ -65,7 +65,7 @@ function welcomeIntro() {
 
 function welcomeShell(list) {
   const w = el('div', 'welcome');
-  w.innerHTML = '<img src="/icon.svg" alt="">';
+  w.innerHTML = '<img src="icon.svg" alt="">';
   w.append(el('h2', null, greeting()), el('p', null, welcomeIntro()), el('div', 'wh', 'Project gần đây'), list);
   const more = el('button', 'btn');
   more.type = 'button';
@@ -115,8 +115,8 @@ export async function welcome(box) {
   const list = el('div', 'wl');
   box.replaceChildren(welcomeShell(list));
   const [dirs, agents] = await Promise.all([
-    api('/api/dirs').catch(() => ({ recent: [] })),
-    api('/api/agents').catch(() => []),
+    api('api/dirs').catch(() => ({ recent: [] })),
+    api('api/agents').catch(() => []),
   ]);
   const projects = new Map((S.projects || []).map(p => [p.dir, p]));
   const cards = dirs.recent.slice(0, RECENT_PROJECTS).map(dir => projectCard(dir, projects.get(dir), agents));
@@ -132,7 +132,7 @@ export async function quickStart(dir, agent, resume) {
   for (let i = 1; i < 10; i++) {
     const name = i === 1 ? base : `${base}-${i}`;
     try {
-      await api('/api/sessions', { name, dir, agent, ...(resume ? { resume } : {}) });
+      await api('api/sessions', { name, dir, agent, ...(resume ? { resume } : {}) });
       loadProjects();
       await poll();
       return go({ s: name, t: 'term', d: null, g: null, v: null });

@@ -9,7 +9,7 @@ export async function loadOtherMachines() {
   S.others = (
     await Promise.all(
       others.map(async m => {
-        const r = await fetch(m.id ? `/m/${encodeURIComponent(m.id)}/api/sessions` : '/api/sessions').then(
+        const r = await fetch(m.id ? `m/${encodeURIComponent(m.id)}/api/sessions` : 'api/sessions').then(
           x => (x.ok ? x.json() : []),
           () => [],
         );
@@ -42,7 +42,7 @@ export function renderOthers(box) {
   }
 }
 export async function loadMachines() {
-  const list = await api('/api/machines').catch(() => []);
+  const list = await api('api/machines').catch(() => []);
   S.machines = list;
   loadOtherMachines();
   $('machines').hidden = list.length < 2;

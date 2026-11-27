@@ -13,9 +13,9 @@ export async function poll() {
     if (!S.dirs || S.dirsFor !== (st().m || '') || Date.now() - S.dirsAt > 60_000) {
       S.dirsFor = st().m || '';
       S.dirsAt = Date.now();
-      S.dirs = await api('/api/dirs').catch(() => null);
+      S.dirs = await api('api/dirs').catch(() => null);
     }
-    const list = await api('/api/sessions');
+    const list = await api('api/sessions');
     loadEvents();
     S.list = list;
     S.loaded = true;
@@ -27,7 +27,7 @@ export async function poll() {
   } catch {}
 }
 export async function loadRepos(select, selected, fresh) {
-  if (fresh || !S.dirs) S.dirs = await api('/api/dirs').catch(() => ({ roots: [], recent: [] }));
+  if (fresh || !S.dirs) S.dirs = await api('api/dirs').catch(() => ({ roots: [], recent: [] }));
   const opts = [...new Set([selected, ...S.dirs.recent].filter(Boolean))];
   select.replaceChildren(
     ...opts.map(d => {

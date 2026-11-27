@@ -107,7 +107,7 @@ export const loadGit = safely(async dir => {
   }
   let g;
   try {
-    g = await api('/api/git?dir=' + encodeURIComponent(dir));
+    g = await api('api/git?dir=' + encodeURIComponent(dir));
   } catch (e) {
     return showGitError(e.message);
   }
@@ -118,7 +118,7 @@ const gitOp = safely(async (op, extra = {}) => {
   btns.forEach(b => (b.disabled = true));
   try {
     if (['fetch', 'pull', 'push'].includes(op)) toast(`Đang ${op}…`);
-    const r = await api('/api/git/op', { dir: S.git.dir, op, ...extra });
+    const r = await api('api/git/op', { dir: S.git.dir, op, ...extra });
     if (r.output && op !== 'stage' && op !== 'unstage') toast(r.output.split('\n').slice(-3).join('\n'));
     if (op === 'commit') $('g-msg').value = '';
   } finally {

@@ -23,7 +23,7 @@ export function setupKeys() {
     ...KEYS.map(([label, key]) => {
       const b = el('button', null, label);
       b.type = 'button';
-      b.onclick = safely(() => api('/api/send', { session: st().s, key }));
+      b.onclick = safely(() => api('api/send', { session: st().s, key }));
       return b;
     }),
     ...[
@@ -41,7 +41,7 @@ export function setupKeys() {
   copyBtn.type = 'button';
   copyBtn.setAttribute('aria-label', 'Mở chữ trong phiên để chọn và sao chép');
   copyBtn.onclick = safely(async () => {
-    const { text } = await api(`/api/capture?session=${encodeURIComponent(st().s)}&lines=2000`);
+    const { text } = await api(`api/capture?session=${encodeURIComponent(st().s)}&lines=2000`);
     openViewer(`Chữ trong phiên ${st().s}`, el('pre', 'copytext', text || '(trống)'));
     requestAnimationFrame(() => {
       $('v-body').scrollTop = $('v-body').scrollHeight;

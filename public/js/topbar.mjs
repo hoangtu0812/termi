@@ -42,7 +42,7 @@ function renderDoing() {
   stop.append(el('i'));
   box.title = `${d ? d.verb + ' ' + (d.detail || '') : 'Đang làm'} · ${dur(x.since)}`;
   stop.onclick = safely(async () => {
-    await api('/api/send', { session: x.name, key: 'Escape' });
+    await api('api/send', { session: x.name, key: 'Escape' });
     navigator.vibrate?.(15);
     setTimeout(poll, 500);
   });

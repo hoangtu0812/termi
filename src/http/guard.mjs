@@ -1,3 +1,4 @@
+import { createHash, timingSafeEqual } from 'node:crypto';
 import { fail } from '../errors.mjs';
 import { validHost } from '../validate.mjs';
 
@@ -9,16 +10,22 @@ export function isAllowed(headers, allowed) {
   return allowed.includes(String(login).toLowerCase());
 }
 
+const digest = value => createHash('sha256').update(String(value)).digest();
+
+export const hasToken = (headers, token) => timingSafeEqual(digest(headers['x-termi-token'] ?? ''), digest(token));
+
 export const sameOrigin = headers => !headers.origin
   || headers.origin === `https://${headers.host}`
   || headers.origin === `http://${headers.host}`;
 
 export const hasCsrfHeader = req => req.method !== 'POST' || req.headers['x-termi'] === '1';
 
-export function createGuard(allowedUsers) {
+export function createGuard(allowedUsers, token = null) {
+  const allowed = async headers => (token ? hasToken(headers, token) : isAllowed(headers, await allowedUsers()));
+
   async function checkRequest(req) {
     if (!validHost(req.headers.host)) throw fail(421, 'Host không hợp lệ');
-    if (!isAllowed(req.headers, await allowedUsers())) {
+    if (!(await allowed(req.headers))) {
       throw fail(403, 'Tài khoản Tailscale này không được phép dùng termi trên máy này');
     }
     if (!sameOrigin(req.headers)) throw fail(403, 'Origin không hợp lệ');
@@ -29,7 +36,7 @@ export function createGuard(allowedUsers) {
   }
 
   async function allowsUpgrade(req) {
-    return validHost(req.headers.host) && sameOrigin(req.headers) && isAllowed(req.headers, await allowedUsers());
+    return validHost(req.headers.host) && sameOrigin(req.headers) && (await allowed(req.headers));
   }
 
   return { checkRequest, checkCsrf, allowsUpgrade };

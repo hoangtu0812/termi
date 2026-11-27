@@ -46,10 +46,10 @@ function mutedSessions(prefs, save) {
 }
 
 export async function notifyForm() {
-  const prefs = await api('/api/notify');
+  const prefs = await api('api/notify');
   const box = el('div', 'nform');
   const save = safely(async () => {
-    Object.assign(prefs, await api('/api/notify', prefs));
+    Object.assign(prefs, await api('api/notify', prefs));
     toast('Đã lưu cài đặt thông báo');
   });
   box.append(

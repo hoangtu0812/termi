@@ -13,7 +13,7 @@ const getSeen = () => {
   }
 };
 export async function loadEvents() {
-  const ev = await api('/api/events').catch(() => null);
+  const ev = await api('api/events').catch(() => null);
   if (!ev) return;
   if (S.events)
     for (const e of ev.filter(e => e.t > S.events[0]?.t || !S.events.length).reverse()) {

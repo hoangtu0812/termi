@@ -33,7 +33,7 @@ test('index.html is markup that loads existing styles and the entry module', asy
   const html = await fs.readFile(path.join(PUBLIC, 'index.html'), 'utf8');
   assert.equal(/<style[\s>]/.test(html), false);
   assert.equal(/<script>/.test(html), false);
-  const assets = [...html.matchAll(/(?:href|src)="\/((?:css|js)\/[a-z0-9-]+\.(?:css|m?js))"/g)].map(match => match[1]);
+  const assets = [...html.matchAll(/(?:href|src)="((?:css|js)\/[a-z0-9-]+\.(?:css|m?js))"/g)].map(match => match[1]);
   assert.ok(assets.includes('js/main.mjs'));
   assert.ok(assets.filter(asset => asset.endsWith('.css')).length > 0);
   for (const asset of assets) await fs.access(path.join(PUBLIC, asset));
@@ -43,7 +43,7 @@ const TRUSTED_HTML = [
   /\.innerHTML = icon\(/,
   /\.innerHTML = icon\('chevron'\) \+ icon\('folder'\);$/,
   /\.innerHTML = icon\('folder'\) \+ 'Thư mục khác…';$/,
-  /\.innerHTML = '<img src="\/icon\.svg" alt="">';$/,
+  /\.innerHTML = '<img src="icon\.svg" alt="">';$/,
   /\.innerHTML = LOGO\[agent\]$/,
   /\.insertAdjacentHTML\('afterbegin', icon\(e\.dataset\.i\)\);$/,
   /\.insertAdjacentHTML\('afterbegin', graphSvg\(c, row, width\)\);$/,

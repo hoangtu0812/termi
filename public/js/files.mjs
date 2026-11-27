@@ -17,7 +17,7 @@ export function fileIcon(f) {
 }
 export const loadFiles = safely(async dir => {
   if (S.filesDir !== dir) $('f-list').replaceChildren(...skel(7));
-  const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
+  const r = await api('api/ls?dir=' + encodeURIComponent(dir));
   S.filesDir = r.dir;
   renderCrumb(r.dir);
   $('f-up').disabled = !r.parent;

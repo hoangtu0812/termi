@@ -26,7 +26,7 @@ const search = safely(async () => {
   const term = $('f-q').value.trim();
   if (!term) return loadFiles(S.filesDir);
   const query = `dir=${encodeURIComponent(S.filesDir)}&q=${encodeURIComponent(term)}`;
-  const found = await api(`/api/find?${query}`);
+  const found = await api(`api/find?${query}`);
   if ($('f-q').value.trim() !== term) return;
   const empty = el('div', 'empty', `Không có file nào tên chứa "${term}"`);
   $('f-list').replaceChildren(...(found.length ? found.map(resultRow) : [empty]));

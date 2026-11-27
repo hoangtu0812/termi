@@ -10,7 +10,7 @@ async function addFiles(files) {
       S.atts.push(a);
       renderAtts();
       try {
-        const r = await fetch(base() + '/api/upload', {
+        const r = await fetch(base() + 'api/upload', {
           method: 'POST',
           headers: { 'x-termi': '1', 'x-filename': encodeURIComponent(f.name) },
           body: f,

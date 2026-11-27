@@ -98,7 +98,7 @@ export const loadChat = safely(async first => {
     box.replaceChildren(...skel(4, 'sk tall'));
     chatKey = '';
   }
-  const r = await api('/api/chat?session=' + encodeURIComponent(name));
+  const r = await api('api/chat?session=' + encodeURIComponent(name));
   if (st().s !== name) return;
   const last = r.items.at(-1);
   const key =

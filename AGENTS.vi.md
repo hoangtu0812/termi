@@ -10,7 +10,8 @@ Mọi người và mọi AI agent khi sửa repo này đều phải tuân theo c
 
 - termi là server Node.js (≥ 24) không dependency cộng với PWA tĩnh không cần build. Không thêm dependency khi chạy, bundler, transpiler hay framework.
 - Server chỉ dùng module có sẵn của Node (`node:*`). Client chỉ dùng API gốc của trình duyệt và ES module.
-- Server chỉ nghe trên `127.0.0.1`. Đường vào duy nhất từ bên ngoài là `tailscale serve`.
+- Server chỉ nghe trên `127.0.0.1`. Đường vào duy nhất từ bên ngoài là `tailscale serve`. Ngoại lệ duy nhất là chế độ nhúng (`TERMI_TOKEN`, `docs/EMBEDDED.md`): một reverse proxy tin cậy là đường vào và mọi request phải mang token.
+- URL phía client là tương đối (`api/...`, không phải `/api/...`) để app chạy được dưới mọi tiền tố đường dẫn.
 - Nền tảng hỗ trợ: macOS, Linux, Windows qua WSL2. Mọi nhánh code riêng theo hệ điều hành phải xử lý cả ba.
 
 ## 2. Không comment trong code

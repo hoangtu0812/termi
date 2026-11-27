@@ -21,6 +21,7 @@ export function loadConfig(env = process.env, home = os.homedir()) {
     dataDir: env.TERMI_DATA ? path.resolve(env.TERMI_DATA) : path.join(home, '.termi'),
     roots: env.TERMI_ROOTS ? splitList(env.TERMI_ROOTS, ':') : [home],
     tailscale: env.TERMI_TAILSCALE || 'tailscale',
+    token: env.TERMI_TOKEN || null,
     allowedUsers: env.TERMI_ALLOWED_USERS ? splitList(env.TERMI_ALLOWED_USERS.toLowerCase(), ',') : null,
     publicDir: PUBLIC_DIR,
   };

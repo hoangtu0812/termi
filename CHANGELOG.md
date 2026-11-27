@@ -6,6 +6,12 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Embedded mode: with `TERMI_TOKEN` set, termi accepts requests that carry the token in `X-Termi-Token` instead of a Tailscale identity, so it can run behind another app's reverse proxy (for example one sandbox container per user). See `docs/EMBEDDED.md`.
+
+### Changed
+- The web app uses relative URLs, so it works when served under a path prefix such as `/sandbox/ui/`.
+
 ## [1.3.0] - 2026-11-27
 
 ### Added
