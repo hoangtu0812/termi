@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-27
+
 ### Added
 - Incident alerts (push and inbox): a machine that stops answering for 5 minutes and when it returns, the disk under the home folder above 95 % or below 5 GB free (at most once a day), termi restarting after a crash, and ttyd being restarted by the watchdog. A new "Sự cố…" switch in the notification settings turns them off.
 
@@ -277,7 +279,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0

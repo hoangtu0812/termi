@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.6.0] - 2026-11-27
+
 ### Thêm
 - Thông báo sự cố (đẩy lên điện thoại và hiện trong hộp thông báo): máy không trả lời quá 5 phút và khi có lại, ổ chứa thư mục nhà dùng trên 95 % hoặc còn dưới 5 GB (tối đa một lần mỗi ngày), termi tự chạy lại sau khi dừng bất thường, ttyd bị watchdog khởi động lại. Có ô "Sự cố…" mới trong cài đặt thông báo để tắt.
 
@@ -279,7 +281,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.5.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.6.0...HEAD
+[1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
 [1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
