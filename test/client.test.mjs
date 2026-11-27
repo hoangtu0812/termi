@@ -60,3 +60,11 @@ test('HTML is only built from trusted markup', async () => {
     }
   }
 });
+
+test('client code uses relative URLs so it works under a path prefix', async () => {
+  const absolute = /['"`]\/(?:api|term|m|fonts|css|js)\//;
+  for (const [name, text] of await modules()) {
+    const hits = text.split('\n').filter(line => absolute.test(line));
+    assert.deepEqual(hits, [], `${name} has absolute paths`);
+  }
+});

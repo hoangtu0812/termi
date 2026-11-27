@@ -12,7 +12,7 @@ export function stopLive() {
 export function startLive(onList) {
   stopLive();
   if (typeof EventSource !== 'function') return;
-  source = new EventSource(base() + '/api/stream');
+  source = new EventSource(base() + 'api/stream');
   source.addEventListener('sessions', event => {
     S.live = true;
     onList(JSON.parse(event.data));
