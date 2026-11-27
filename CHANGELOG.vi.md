@@ -8,6 +8,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-27
+
 ### Thêm
 - Pipelines trong tab Git (nút chuyển Git / Pipelines): các lần chạy GitHub Actions và Azure Pipelines của repo đang chọn, đọc bằng `gh` và `az` đã đăng nhập sẵn trên máy (`GET /api/ci`). Lọc theo pipeline (kèm 3 kết quả gần nhất) và theo nhánh hiện tại, chia nhóm đang chờ / đang chạy / đã xong, có lý do chạy, người chạy, nhánh, commit, thời điểm và thời lượng; bấm một lần chạy để mở trên web. Tự làm mới mỗi 15 giây khi đang xem.
 
@@ -292,7 +294,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0

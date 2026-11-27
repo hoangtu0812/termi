@@ -6,6 +6,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+## [1.8.0] - 2026-11-27
+
 ### Added
 - Pipelines in the Git tab (Git / Pipelines switch): GitHub Actions and Azure Pipelines runs of the selected repository, read with the `gh` and `az` CLIs already signed in on the machine (`GET /api/ci`). Filter by pipeline (with its last three results) and by the current branch, runs grouped as queued, running and completed with trigger, author, branch, commit, age and duration; a run opens on the web. Refreshes every 15 s while shown.
 
@@ -290,7 +292,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.7.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.8.0...HEAD
+[1.8.0]: https://github.com/hoangtu0812/termi/compare/v1.7.0...v1.8.0
 [1.7.0]: https://github.com/hoangtu0812/termi/compare/v1.6.0...v1.7.0
 [1.6.0]: https://github.com/hoangtu0812/termi/compare/v1.5.0...v1.6.0
 [1.5.0]: https://github.com/hoangtu0812/termi/compare/v1.4.0...v1.5.0
