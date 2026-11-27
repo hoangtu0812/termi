@@ -8,6 +8,9 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- `scripts/vscode-proxy.mjs` nén dữ liệu của VS Code web (lần đầu từ khoảng 25 MB còn 6 MB) để mở nhanh khi Tailscale phải đi qua máy trung chuyển; xem `docs/GUIDE-v1.1-vscode-web.md`.
+
 ## [1.14.1] - 2026-11-27
 
 ### Sửa
@@ -18,7 +21,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 ### Thêm
 - Tìm trong lịch sử: gõ vào hộp Lịch sử hội thoại để tìm hội thoại cũ theo nội dung đã trao đổi, kèm dòng khớp hiện dưới mỗi tiêu đề.
 - Nút "Tiếp tục hội thoại này" trong trình xem hội thoại mở lại hội thoại đó ở một phiên mới.
-- Mở trong VS Code: điền địa chỉ VS Code web trong Cài đặt, panel Files sẽ có nút mở thư mục đang xem ở đó. `docs/GUIDE-v1.0-vscode-web.md` hướng dẫn chạy `code serve-web` trong tailnet.
+- Mở trong VS Code: điền địa chỉ VS Code web trong Cài đặt, panel Files sẽ có nút mở thư mục đang xem ở đó. `docs/GUIDE-v1.1-vscode-web.md` hướng dẫn chạy `code serve-web` trong tailnet.
 
 ### Sửa
 - Nút "Xem" trong hộp Lịch sử không còn che tiêu đề dài.

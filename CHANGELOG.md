@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- `scripts/vscode-proxy.mjs` compresses VS Code web traffic (about 25 MB down to 6 MB on first load) so it opens quickly over a relayed Tailscale connection; see `docs/GUIDE-v1.1-vscode-web.md`.
+
 ## [1.14.1] - 2026-11-27
 
 ### Fixed
@@ -16,7 +19,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - History search: type in the conversation history dialog to find past conversations by what was said in them, with the matching line shown under each title.
 - A "Continue this conversation" button in the conversation viewer opens the conversation in a new session.
-- Open in VS Code: set a VS Code web address in Settings and the Files panel gets a button that opens the current folder there. `docs/GUIDE-v1.0-vscode-web.md` shows how to run `code serve-web` on the tailnet.
+- Open in VS Code: set a VS Code web address in Settings and the Files panel gets a button that opens the current folder there. `docs/GUIDE-v1.1-vscode-web.md` shows how to run `code serve-web` on the tailnet.
 
 ### Fixed
 - The "View" button in the history dialog no longer covers long titles.
