@@ -9,7 +9,8 @@ import { renderFilter } from './session-filter.mjs';
 import { matchesFilter, sessionLabel } from './session-label.mjs';
 import { S, go, st } from './state.mjs';
 import { store } from './storage.mjs';
-import { quickStart, renderRestore, welcome } from './welcome.mjs';
+import { welcome } from './home.mjs';
+import { quickStart, renderRestore } from './welcome.mjs';
 import { t } from './i18n.mjs';
 import { sessionTab } from './tab-memory.mjs';
 

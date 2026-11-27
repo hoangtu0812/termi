@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Version | 1.4 |
+| Version | 1.5 |
 | Status | Active |
 | Last updated | 2026-11-27 |
 | Rules | [AGENTS.md](../AGENTS.md) |
@@ -106,10 +106,10 @@ Each file returns a table of handlers built from the shared context.
 
 | Area | Modules |
 |---|---|
-| Foundations | `dom.mjs`, `storage.mjs`, `state.mjs` (URL hash state and the shared `S` object), `api.mjs` (fetch, errors, update bar), `i18n.mjs`, `icons.mjs`, `theme.mjs`, `wake.mjs` |
-| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs` (swipe between sessions), `navigation.mjs` (tabs and panels, Alt+1…5), `layout.mjs` (desktop side panel), `tab-memory.mjs` (last tab per session, last Code tab), `tab-badges.mjs`, `gestures.mjs` (edge swipe, pull to refresh) |
+| Foundations | `dom.mjs`, `storage.mjs`, `state.mjs` (URL hash state and the shared `S` object), `api.mjs` (fetch, errors, update bar), `i18n.mjs`, `icons.mjs`, `theme.mjs` (auto, light, dark, slate; accent color), `wake.mjs` |
+| Layout | `render.mjs` (show the right panes for the URL), `topbar.mjs`, `switcher.mjs` (swipe between sessions), `navigation.mjs` (tabs and panels, Alt+1…5), `layout.mjs` (desktop side panel), `side-panel.mjs` (resize, collapse with Ctrl/Cmd+B), `status.mjs` (desktop status bar), `tab-memory.mjs` (last tab per session, last Code tab), `tab-badges.mjs`, `gestures.mjs` (edge swipe, pull to refresh) |
 | Live data | `poll.mjs` (fallback polling), `live.mjs` (event stream), `conn.mjs` (connection dot), `outbox.mjs` (messages sent while offline) |
-| Sessions | `sessions.mjs` (project tree), `session-label.mjs`, `session-filter.mjs`, `session-actions.mjs`, `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
+| Sessions | `home.mjs` (start page), `tips.mjs` (first-run checklist), `sessions.mjs` (project tree), `session-label.mjs`, `session-filter.mjs`, `session-actions.mjs`, `welcome.mjs`, `new-session.mjs`, `history.mjs`, `seen.mjs`, `machines.mjs` |
 | Terminal | `terminal.mjs` (ttyd iframes), `term-pool.mjs` (up to four live frames), `reconnect.mjs` (touch scroll, reconnect, stale detection), `keys.mjs` |
 | Composer and chat | `composer.mjs`, `attachments.mjs`, `voice.mjs`, `quick.mjs`, `confirm.mjs`, `chat.mjs`, `sanitize.mjs` |
 | Files and git | `files.mjs`, `file-crumb.mjs`, `file-find.mjs`, `viewer.mjs`, `markdown.mjs`, `highlight.mjs`, `diff.mjs`, `git.mjs`, `git-graph.mjs`, `git-log.mjs`, `pipelines.mjs`, `pipelines-view.mjs` |

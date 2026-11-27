@@ -8,6 +8,7 @@ import { activeEntry, allTerms, isActive, poolKey, pruneFrames, showFrame } from
 import { termTheme } from './theme.mjs';
 import { t } from './i18n.mjs';
 import { tabKey } from './navigation.mjs';
+import { panelKey } from './side-panel.mjs';
 
 const termSrc = name => `${base()}term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 
@@ -164,6 +165,7 @@ function attachTerminal(w, t, entry) {
   w.document.addEventListener('keydown', fitTmux, true);
   w.document.addEventListener('keydown', paletteKey, true);
   w.document.addEventListener('keydown', tabKey, true);
+  w.document.addEventListener('keydown', panelKey, true);
 }
 
 function waitForTerminal(w, entry) {

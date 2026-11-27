@@ -55,6 +55,7 @@ function renderUsageChip() {
   b.className = 'uchip ' + level(pct);
   b.replaceChildren(el('i'), `${label} ${text ?? pct + '%'}`);
   b.title = t('Usage: hạn mức, token, tài nguyên máy');
+  S.onUsage?.();
   b.hidden = false;
 }
 const ICON_COLOR = { claude: 'var(--acc)', codex: 'var(--blue)', ctx: '#a78bfa', machine: 'var(--ok)' };
