@@ -1,5 +1,6 @@
 import { api, safely } from './api.mjs';
-import { $, ago, el, ltr, short, size, skel } from './dom.mjs';
+import { $, ago, el, size, skel } from './dom.mjs';
+import { renderCrumb } from './file-crumb.mjs';
 import { icon } from './icons.mjs';
 import { S, go } from './state.mjs';
 import { openFile } from './viewer.mjs';
@@ -9,7 +10,7 @@ const ft = (exts, ic, color) =>
   exts.split(' ').forEach(e => {
     FT[e] = [ic, color];
   });
-function fileIcon(f) {
+export function fileIcon(f) {
   if (f.dir) return ['folder', f.name.startsWith('.') ? 'var(--faint)' : 'var(--blue)'];
   const ext = f.name.includes('.') ? f.name.split('.').pop().toLowerCase() : '';
   return FT[ext] || ['file', 'var(--dim)'];
@@ -18,7 +19,7 @@ export const loadFiles = safely(async dir => {
   if (S.filesDir !== dir) $('f-list').replaceChildren(...skel(7));
   const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
   S.filesDir = r.dir;
-  $('f-crumb').textContent = ltr(short(r.dir));
+  renderCrumb(r.dir);
   $('f-up').disabled = !r.parent;
   $('f-up').onclick = () => go({ d: r.parent });
   $('f-list').replaceChildren(

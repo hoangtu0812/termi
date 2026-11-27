@@ -104,6 +104,24 @@ export function splitDiffRows(text) {
   return rows;
 }
 
+const MIN_SHARED = 3;
+const MIN_LENGTH_FOR_MARK = 6;
+
+export function changedRange(a, b) {
+  let head = 0;
+  while (head < a.length && head < b.length && a[head] === b[head]) head++;
+  let tail = 0;
+  const room = Math.min(a.length, b.length) - head;
+  while (tail < room && a[a.length - 1 - tail] === b[b.length - 1 - tail]) tail++;
+  if (head + tail < MIN_SHARED && Math.min(a.length, b.length) > MIN_LENGTH_FOR_MARK) return null;
+  return { head, tail };
+}
+
+function markRange(cell, text, { head, tail }) {
+  const middle = el('mark', null, text.slice(head, text.length - tail));
+  cell.replaceChildren(text.slice(0, head), middle, text.slice(text.length - tail));
+}
+
 function splitRowNode([kind, a, b]) {
   if (kind === 'file') {
     const d = el('div', 'ds-file', a);
@@ -116,7 +134,14 @@ function splitRowNode([kind, a, b]) {
     const changed = kind === 'chg' ? ' ' + cls : '';
     return el('div', 'ds-cell' + (value === null ? ' empty' : changed), value ?? '');
   };
-  row.append(cell(a, 'd'), cell(b, 'a'));
+  const left = cell(a, 'd');
+  const right = cell(b, 'a');
+  const range = kind === 'chg' && a !== null && b !== null ? changedRange(a, b) : null;
+  if (range) {
+    markRange(left, a, range);
+    markRange(right, b, range);
+  }
+  row.append(left, right);
   return row;
 }
 

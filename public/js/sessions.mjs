@@ -4,6 +4,9 @@ import { agentAvatar, icon } from './icons.mjs';
 import { renderOthers } from './machines.mjs';
 import { openSessionMenu } from './navigation.mjs';
 import { seenKeyOf, seenMap } from './seen.mjs';
+import { sessionActions } from './session-actions.mjs';
+import { renderFilter } from './session-filter.mjs';
+import { matchesFilter, sessionLabel } from './session-label.mjs';
 import { S, go, st } from './state.mjs';
 import { store } from './storage.mjs';
 import { quickStart, renderRestore, welcome } from './welcome.mjs';
@@ -56,7 +59,9 @@ function onSwipeLeft(target, action) {
 
 function sessionSummary(x) {
   const top = el('div', 'sit');
-  top.append(el('span', 'nm', x.title || x.name), stateEl(x.state, null, x.since));
+  const name = el('span', 'nm', sessionLabel(x));
+  name.title = x.title || x.name;
+  top.append(name, stateEl(x.state, null, x.since));
   if (x.changes) {
     const c = el('span', 'chgs');
     c.innerHTML = icon('git');
@@ -79,7 +84,7 @@ function sessionRow(x, selected) {
   const b = el('button', 'si' + (x.name === selected ? ' cur' : '') + (unread ? ' unread' : ''));
   b.type = 'button';
   if (unread) b.title = 'Có câu trả lời mới chưa xem';
-  b.append(agentAvatar(x.agent, true), sessionSummary(x));
+  b.append(agentAvatar(x.agent, true), sessionSummary(x), sessionActions(x.name));
   b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
   b.oncontextmenu = e => {
     e.preventDefault();
@@ -167,10 +172,10 @@ function conversationNodes(dir, conversations) {
   return nodes;
 }
 
-function sessionsView() {
-  const projects = S.projects || [];
+function sessionsView(filter) {
+  const projects = filter === 'all' ? S.projects || [] : [];
   const byDir = new Map();
-  for (const x of S.list) byDir.set(x.dir, [...(byDir.get(x.dir) || []), x]);
+  for (const x of S.list.filter(s => matchesFilter(s, filter))) byDir.set(x.dir, [...(byDir.get(x.dir) || []), x]);
   const pinned = new Set(JSON.parse(store.get('termi-pinned') || '[]'));
   const dirs = [...new Set([...byDir.keys(), ...projects.map(p => p.dir)])].sort(
     (a, b) => pinned.has(b) - pinned.has(a),
@@ -217,11 +222,12 @@ export function renderSessions() {
   const projects = S.projects || [];
   if (!S.list.length && !projects.length) {
     $('sfind').hidden = true;
+    $('sfilt').hidden = true;
     welcome(box);
     return renderRestore(box);
   }
   $('sfind').hidden = S.list.length + projects.length < 4;
-  const view = sessionsView();
+  const view = sessionsView(renderFilter(renderSessions));
   const nodes = view.dirs
     .map(dir => describeProject(view, dir))
     .filter(Boolean)

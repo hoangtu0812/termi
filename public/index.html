@@ -23,6 +23,8 @@
 <link rel="stylesheet" href="/css/chat.css">
 <link rel="stylesheet" href="/css/widgets.css">
 <link rel="stylesheet" href="/css/dialogs.css">
+<link rel="stylesheet" href="/css/session-tools.css">
+<link rel="stylesheet" href="/css/explore.css">
 <link rel="stylesheet" href="/css/mobile.css">
 </head>
 <body data-tab="sessions">
@@ -40,6 +42,7 @@
     <div class="machines" id="machines" hidden><select class="sel" id="machine" aria-label="Chọn máy"></select></div>
     <div class="sfind" id="sfind" hidden><input id="sq" type="search" placeholder="Tìm phiên…" aria-label="Tìm phiên"
       autocapitalize="off" autocomplete="off"></div>
+    <div class="sfilt" id="sfilt" hidden></div>
     <div id="sessions"></div>
     <div class="side-foot"><button class="btn pri" id="b-new"><span data-i="plus"></span>Phiên mới</button></div>
   </aside>
@@ -79,8 +82,13 @@
         <div class="toolbar">
           <button class="ibtn" id="f-up" aria-label="Lên thư mục cha" data-i="up"></button>
           <button class="ibtn" id="f-home" aria-label="Về thư mục phiên" data-i="home"></button>
-          <div class="crumb" id="f-crumb"></div>
+          <div class="crumb bc" id="f-crumb"></div>
+          <button class="ibtn" id="f-find" aria-label="Tìm file theo tên" data-i="search"></button>
           <button class="ibtn" id="f-reload" aria-label="Tải lại" data-i="refresh"></button>
+        </div>
+        <div class="ffind" id="f-findbox" hidden>
+          <input id="f-q" type="search" placeholder="Tìm file theo tên trong thư mục này…"
+            autocapitalize="off" autocomplete="off" spellcheck="false">
         </div>
         <div class="scroll" id="f-list"></div>
       </div>

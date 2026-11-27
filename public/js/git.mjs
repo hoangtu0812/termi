@@ -1,7 +1,7 @@
 import { api, autosize, safely, toast } from './api.mjs';
 import { openDiff } from './diff.mjs';
 import { $, el, ltr, skel } from './dom.mjs';
-import { commitRow } from './git-graph.mjs';
+import { logRows } from './git-log.mjs';
 import { icon } from './icons.mjs';
 import { loadRepos } from './poll.mjs';
 import { S, go } from './state.mjs';
@@ -94,7 +94,7 @@ function showGit(g) {
   showTracking(track);
   showBranches(branch, g.branches);
   showChanges(g);
-  $('g-log').replaceChildren(...g.commits.map((c, i) => commitRow(c, g.graph.rows[i], g.graph.width, g.dir)));
+  $('g-log').replaceChildren(...logRows(g));
 }
 
 export const loadGit = safely(async dir => {
