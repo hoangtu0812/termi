@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Fixed
+- Settings → "Báo khi": checkboxes sat above their labels and the quiet-hours time fields took a full line each; they now line up, and on phones the time range wraps as one block.
+
 ## [1.0.0] - 2026-11-27
 
 ### Added

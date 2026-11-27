@@ -23,12 +23,9 @@ function timeInput(owner, key, save) {
 
 function quietHours(prefs, save) {
   const quiet = el('div', 'qh');
-  quiet.append(
-    checkbox('Giờ yên lặng từ', () => prefs.quiet, 'on', save),
-    timeInput(() => prefs.quiet, 'from', save),
-    ' đến ',
-    timeInput(() => prefs.quiet, 'to', save),
-  );
+  const range = el('span', 'qr');
+  range.append(timeInput(() => prefs.quiet, 'from', save), ' đến ', timeInput(() => prefs.quiet, 'to', save));
+  quiet.append(checkbox('Giờ yên lặng từ', () => prefs.quiet, 'on', save), range);
   return quiet;
 }
 
