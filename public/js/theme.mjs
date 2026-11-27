@@ -1,4 +1,4 @@
-import { termWin } from './terminal.mjs';
+import { allTerms } from './term-pool.mjs';
 
 export const THEMES = { auto: ['Tự động', 'contrast'], light: ['Sáng', 'sun'], dark: ['Tối', 'moon'] };
 let colorScheme = null;
@@ -68,11 +68,11 @@ const TERM_THEMES = {
   },
 };
 export function termTheme() {
-  const w = termWin(),
-    t = w?.term;
-  if (!t) return;
-  t.options.theme = TERM_THEMES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
-  w.document.body.style.background = t.options.theme.background;
+  const theme = TERM_THEMES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
+  for (const t of allTerms()) {
+    t.options.theme = theme;
+    t.element.ownerDocument.body.style.background = theme.background;
+  }
 }
 export function setTheme(pref) {
   try {

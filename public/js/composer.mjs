@@ -1,19 +1,22 @@
 import { api, autosize, safely } from './api.mjs';
 import { renderAtts } from './attachments.mjs';
+import { queueMessage } from './outbox.mjs';
 import { $, el, wide } from './dom.mjs';
 import { S, cur, st } from './state.mjs';
 import { store } from './storage.mjs';
 import { fitTmux } from './terminal.mjs';
-
-const SEND_VIBRATION_MS = 10;
 
 const send = safely(async () => {
   const t = $('text');
   if (S.atts.some(a => !a.path)) throw new Error('Đợi tải lên xong đã');
   const text = [t.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
   if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
-  await api('/api/send', { session: st().s, text, enter: true });
-  navigator.vibrate?.(SEND_VIBRATION_MS);
+  try {
+    await api('/api/send', { session: st().s, text, enter: true });
+  } catch (e) {
+    if (!e.offline) throw e;
+    queueMessage(st().m || '', st().s, text);
+  }
   if (t.value.trim()) rememberSent(t.value.trim());
   t.value = '';
   autosize(t);

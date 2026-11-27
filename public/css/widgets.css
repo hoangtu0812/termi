@@ -136,3 +136,15 @@ dialog.palette { width:min(94vw, 620px); padding:0; margin-top:10vh; }
   display:block;
 }
 .diff .f { color:var(--blue); font-weight:600; } .diff .hk { color:var(--faint); }
+#updbar {
+  position:fixed; left:50%; top:calc(env(safe-area-inset-top) + 56px); transform:translateX(-50%); z-index:35;
+  display:flex; align-items:center; gap:12px; padding:6px 6px 6px 14px; border-radius:99px; white-space:nowrap;
+  background:var(--card); border:1px solid var(--line2); box-shadow:var(--shadow); font-size:13px;
+}
+#updbar button { height:28px; padding:0 12px; border:0; border-radius:99px; background:var(--acc); color:#fff; }
+.outbox {
+  display:flex; align-items:center; gap:8px; margin:8px 8px 0; padding:6px 6px 6px 12px; border-radius:12px;
+  background:var(--warn-soft); border:1px solid color-mix(in srgb, var(--warn) 40%, transparent); font-size:13px;
+}
+.outbox .ob-t { flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+.outbox .ob-dot { flex:none; width:8px; height:8px; border-radius:50%; background:var(--warn); }

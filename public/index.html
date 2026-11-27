@@ -29,6 +29,7 @@
 </head>
 <body data-tab="sessions">
 <div id="netbar" role="status" hidden>Mất kết nối tới máy chủ · đang thử lại…</div>
+<div id="updbar" role="status" hidden>Có bản termi mới<button type="button" id="b-update">Tải lại</button></div>
 <div id="app">
   <aside id="side">
     <div class="bar">
@@ -50,6 +51,7 @@
   <section id="main">
     <div class="bar" id="top">
       <button class="ibtn only-mobile" id="b-back" aria-label="Danh sách phiên" data-i="back"></button>
+      <button class="conn ok" id="conn" type="button" aria-label="Đã kết nối"></button>
       <div class="title"><b id="t-name">termi</b><span id="t-state" class="state"></span></div>
       <div class="doing" id="doing" hidden></div>
       <div class="seg" id="seg">
@@ -68,7 +70,6 @@
 
       <div class="pane" id="p-term" hidden>
         <div class="term-wrap">
-          <iframe id="frame" title="Terminal"></iframe>
           <button class="t-down" id="t-down" type="button" hidden><span data-i="refresh"></span>Mất kết nối<small
             id="t-down-note">Chạm để kết nối lại</small></button>
         </div>
@@ -128,6 +129,7 @@
       </div>
     </div>
     <div id="composer" hidden>
+      <div class="outbox" id="outbox" hidden></div>
       <div class="confirm" id="confirm" hidden></div>
       <div class="atts" id="atts" hidden></div>
       <div class="suggest" id="suggest" hidden></div>

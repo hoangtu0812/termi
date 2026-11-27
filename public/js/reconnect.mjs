@@ -1,4 +1,5 @@
 import { api } from './api.mjs';
+import { setTerm } from './conn.mjs';
 import { $, wide } from './dom.mjs';
 import { S, cur, st } from './state.mjs';
 import { ensureTerm, fontSize } from './terminal.mjs';
@@ -60,12 +61,12 @@ export function touchScroll(w, t) {
   w.document.addEventListener('touchmove', scroller.move, options);
   w.document.addEventListener('touchend', scroller.end, options);
 }
-export function watchDisconnect(t) {
+export function watchDisconnect(t, onChange) {
   const check = () => {
     const down = [...t.element.children].some(
       n => n.style?.borderRadius === '15px' && /to Reconnect|Connection Closed/.test(n.textContent),
     );
-    markDown(down);
+    onChange(down);
   };
   new t.element.ownerDocument.defaultView.MutationObserver(check).observe(t.element, { childList: true });
 }
@@ -76,6 +77,7 @@ export function resetRetryDelay() {
 }
 export function markDown(down) {
   $('t-down').hidden = !down;
+  setTerm(down ? 'down' : 'ok');
   if (down) autoReconnect();
 }
 function autoReconnect() {
@@ -100,14 +102,16 @@ let probing = false,
 function probeTerm() {
   if (probing || !S.termName) return;
   probing = true;
+  setTerm('probe');
   const name = S.termName,
     at = Date.now();
   api('/api/refresh', { session: name }).catch(() => {});
   setTimeout(() => {
     probing = false;
     if (S.termName !== name) return;
-    if (S.lastData < at) reconnectNow();
-    else probeOk = Date.now();
+    if (S.lastData < at) return reconnectNow();
+    probeOk = Date.now();
+    setTerm('ok');
   }, 4000);
 }
 export function checkStale() {

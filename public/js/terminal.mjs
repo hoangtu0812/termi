@@ -1,19 +1,49 @@
 import { api, base, toast } from './api.mjs';
+import { setTerm } from './conn.mjs';
 import { $, wide } from './dom.mjs';
 import { paletteKey } from './palette.mjs';
 import { markDown, resetRetryDelay, touchScroll, watchDisconnect } from './reconnect.mjs';
 import { S, st } from './state.mjs';
+import { activeEntry, allTerms, isActive, poolKey, pruneFrames, showFrame } from './term-pool.mjs';
 import { termTheme } from './theme.mjs';
 
-export function ensureTerm(name, force) {
-  if (S.termName === name && !force) return;
-  S.termName = name;
-  $('t-down').hidden = true;
-  $('frame').src = `${base()}/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
+const termSrc = name => `${base()}/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
+
+function revealTerminal(entry) {
+  S.lastData = entry.lastData;
+  markDown(entry.down);
+  if (!entry.term) return;
+  entry.term.options.fontSize = fontSize;
+  termTheme();
+  entry.term.fit();
+  fitTmux();
 }
+
+export function ensureTerm(name, force) {
+  const key = poolKey(st().m || '', name);
+  if (S.termKey === key && !force) return;
+  S.termName = name;
+  S.termKey = key;
+  const { entry, created } = showFrame({ container: $('p-term').querySelector('.term-wrap'), key,
+    src: termSrc(name), onLoad: onFrameLoad });
+  if (created) return markDown(false);
+  if (force || entry.down) {
+    entry.down = false;
+    entry.term = null;
+    entry.frame.src = termSrc(name);
+    return markDown(false);
+  }
+  revealTerminal(entry);
+}
+
+export function pruneTerms() {
+  pruneFrames(st().m || '', S.list.map(x => x.name));
+  if (!activeEntry()) S.termKey = null;
+}
+
 export const termWin = () => {
   try {
-    return $('frame').contentWindow;
+    return activeEntry()?.frame.contentWindow ?? null;
   } catch {
     return null;
   }
@@ -51,8 +81,7 @@ export function setFont(n) {
   try {
     localStorage.setItem(FONT_KEY, fontSize);
   } catch {}
-  const t = termWin()?.term;
-  if (t) {
+  for (const t of allTerms()) {
     t.options.fontSize = fontSize;
     t.fit();
   }
@@ -102,34 +131,46 @@ function copyFromTmux(data) {
   return true;
 }
 
-function attachTerminal(w, t) {
+function trackData(entry) {
+  entry.lastData = Date.now();
+  if (isActive(entry)) S.lastData = entry.lastData;
+}
+
+function markEntryDown(entry, down) {
+  entry.down = down;
+  if (isActive(entry)) markDown(down);
+}
+
+function attachTerminal(w, t, entry) {
+  entry.term = t;
   setTimeout(() => {
-    if ($('t-down').hidden) resetRetryDelay();
+    if (!entry.down) resetRetryDelay();
   }, STABLE_CONNECTION_MS);
   styleTerminal(w, t);
   loadMonoFont(w, t);
-  t.onResize(fitTmux);
-  S.lastData = Date.now();
-  (t.onWriteParsed || t.onRender).call(t, () => {
-    S.lastData = Date.now();
-  });
-  fitTmux();
+  t.onResize(() => isActive(entry) && fitTmux());
+  trackData(entry);
+  (t.onWriteParsed || t.onRender).call(t, () => trackData(entry));
+  if (isActive(entry)) {
+    setTerm('ok');
+    fitTmux();
+  }
   touchScroll(w, t);
   t.parser?.registerOscHandler(CLIPBOARD_OSC, copyFromTmux);
-  watchDisconnect(t);
+  watchDisconnect(t, down => markEntryDown(entry, down));
   w.document.addEventListener('pointerdown', fitTmux, true);
   w.document.addEventListener('keydown', fitTmux, true);
   w.document.addEventListener('keydown', paletteKey, true);
 }
 
-function waitForTerminal(w) {
+function waitForTerminal(w, entry) {
   let tries = 0;
   const wait = setInterval(() => {
     const t = w.term;
     if (!t?.element && ++tries < READY_TRIES) return;
     clearInterval(wait);
-    if (!t?.element) return markDown(true);
-    attachTerminal(w, t);
+    if (!t?.element) return markEntryDown(entry, true);
+    attachTerminal(w, t, entry);
   }, READY_POLL_MS);
 }
 
@@ -141,12 +182,12 @@ function framePath(w) {
   }
 }
 
-function onFrameLoad() {
-  const w = termWin();
+function onFrameLoad(entry) {
+  const w = entry.frame.contentWindow;
   const page = framePath(w);
-  if (page === null && S.termName) return markDown(true);
+  if (page === null) return markEntryDown(entry, true);
   if (!page?.includes('/term/')) return;
-  waitForTerminal(w);
+  waitForTerminal(w, entry);
 }
 
 export function setupTerminal() {
@@ -154,5 +195,4 @@ export function setupTerminal() {
   document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && fitTmux());
   window.addEventListener('focus', fitTmux);
   document.addEventListener('pointerdown', fitTmux, true);
-  $('frame').addEventListener('load', onFrameLoad);
 }

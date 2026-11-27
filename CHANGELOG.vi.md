@@ -8,6 +8,14 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Chuyển phiên giữ sẵn tối đa bốn terminal đang kết nối ở nền, quay lại là hiện ngay, không tải lại.
+- Chấm kết nối trên header (xanh / vàng / đỏ) cho biết máy chủ và terminal có kết nối không và dữ liệu mới nhất cách đây bao lâu.
+- Tin gửi lúc mất mạng được giữ lại, hiện phía trên ô nhắn và tự gửi khi có mạng lại.
+
+### Thay đổi
+- Có bản termi mới không còn tự tải lại trang khi bạn đang dùng; thay vào đó hiện thanh "Có bản termi mới · Tải lại".
+
 ## [1.1.0] - 2026-11-27
 
 ### Thêm

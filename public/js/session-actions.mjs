@@ -13,6 +13,7 @@ export async function renameSession(name) {
   await poll();
   if (name !== st().s) return;
   S.termName = null;
+  S.termKey = null;
   go({ s: to });
 }
 
