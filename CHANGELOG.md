@@ -6,6 +6,13 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Pipelines is its own tab (Chat · Terminal · File · Git · Pipelines) with its own repository picker; the Git / Pipelines switch inside the Git tab is gone.
+- Phones: the bottom bar is Sessions · Chat · Terminal · Code; Code opens the last of File, Git or Pipelines, switched by a sub-tab bar at the top.
+- Each session remembers the tab it was last viewed in.
+- Tab badges: Chat shows a dot for an unseen reply, Git the number of uncommitted files, Pipelines a red dot when the latest run on the current branch failed or a blue dot while one runs (checked every minute in the background).
+- Desktop shortcuts Alt+1…5 for Chat, Terminal, File, Git and Pipelines, also inside the terminal.
+
 ## [1.8.0] - 2026-11-27
 
 ### Added
@@ -17,7 +24,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Interface language: Vietnamese or English, switched in Settings → Ngôn ngữ · Language (the page reloads). Dates, voice input and push notifications follow the choice; server messages shown in the app are translated too. New UI text is written in Vietnamese inside `t()` with its English in `public/js/en-*.mjs`, enforced by `test/i18n.test.mjs`.
 
 ### Changed
-- Architecture overview updated to `docs/ARCH-v1.2-overview.md` with the modules added since 1.0.
+- Architecture overview updated to `docs/ARCH-v1.3-overview.md` with the modules added since 1.0.
 
 ## [1.6.0] - 2026-11-27
 
@@ -108,7 +115,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.9-implementation-notes.md`. The rule-check allowlist is empty.
 - Every function is at most 40 lines; client modules no longer touch the browser while loading, so their logic has unit tests.
 - The shell scripts are executable in the repository.
-- `docs/ARCH-v1.2-overview.md` describes the module map.
+- `docs/ARCH-v1.3-overview.md` describes the module map.
 
 ### Performance
 - The session list is built at most once per second and shared by every open device and the notification watcher; five concurrent requests with 10 agent sessions dropped from about 65 ms to 19 ms.

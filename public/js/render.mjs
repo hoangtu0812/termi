@@ -13,8 +13,12 @@ import { S, cur, go, st } from './state.mjs';
 import { ensureTerm } from './terminal.mjs';
 import { renderTop } from './topbar.mjs';
 import { loadRestore, welcome } from './welcome.mjs';
+import { loadPipelines } from './pipelines.mjs';
+import { renderTabBadges } from './tab-badges.mjs';
+import { CODE_TABS, codeTab, rememberTab } from './tab-memory.mjs';
 
-const PANES = ['none', 'term', 'files', 'git', 'chat'];
+const PANES = ['none', 'term', 'files', 'git', 'ci', 'chat'];
+const SPLIT_TABS = new Set(['files', 'git', 'ci']);
 const SESSION_TABS = new Set(['term', 'files', 'chat']);
 
 function switchMachine(machine) {
@@ -40,15 +44,17 @@ function switchMachine(machine) {
 }
 
 function currentTab(s) {
-  const tab = s.t || (s.s ? 'term' : 'sessions');
+  const tab = s.t === 'code' ? codeTab() : s.t || (s.s ? 'term' : 'sessions');
   return wide() && tab === 'sessions' ? 'term' : tab;
 }
 
 function showTab(tab, viewing) {
   document.body.dataset.tab = tab;
-  for (const b of document.querySelectorAll('#tabbar button, #seg button')) {
-    b.classList.toggle('on', b.dataset.t === tab);
+  const inCode = CODE_TABS.includes(tab);
+  for (const b of document.querySelectorAll('#tabbar button, #seg button, #codetabs button')) {
+    b.classList.toggle('on', b.dataset.t === tab || (b.dataset.t === 'code' && inCode));
   }
+  $('codetabs').hidden = wide() || !inCode;
   $('viewer').hidden = !viewing;
   renderSessions();
   renderTop();
@@ -75,6 +81,7 @@ function loadPane(s, show, split) {
   if (show === 'chat') loadChat(true);
   if (show === 'files') loadFiles(s.d || cur()?.dir);
   if (show === 'git') loadGit(s.g || cur()?.dir);
+  if (show === 'ci') loadPipelines();
 }
 
 export function render() {
@@ -85,9 +92,11 @@ export function render() {
   showTab(tab, s.v);
   const gone = s.s && S.loaded && !cur();
   const show = SESSION_TABS.has(tab) && (!s.s || gone) ? 'none' : tab;
-  const split = splitWide() && s.s && !gone && (show === 'files' || show === 'git');
+  const split = splitWide() && s.s && !gone && SPLIT_TABS.has(show);
   showPanes(s, show, split, gone);
   restoreDraft(s, show);
+  if (s.s && !gone) rememberTab(s.s, tab);
+  renderTabBadges();
   if (show === 'none') welcome($('p-none'));
   if (s.v) return;
   loadPane(s, show, split);

@@ -8,6 +8,13 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Pipelines thành tab riêng (Chat · Terminal · File · Git · Pipelines), có ô chọn repo riêng; bỏ nút chuyển Git / Pipelines trong tab Git.
+- Điện thoại: thanh dưới còn Phiên · Chat · Terminal · Code; Code mở lại tab dùng gần nhất trong File, Git, Pipelines, chuyển qua lại bằng thanh tab con ở đầu màn hình.
+- Mỗi phiên nhớ tab đang xem lần cuối.
+- Huy hiệu trên tab: Chat có chấm khi có trả lời chưa xem, Git hiện số file chưa commit, Pipelines có chấm đỏ khi lần chạy gần nhất của nhánh hiện tại lỗi hoặc chấm xanh dương khi đang chạy (kiểm tra nền mỗi phút).
+- Phím tắt trên máy tính Alt+1…5 cho Chat, Terminal, File, Git, Pipelines, dùng được cả khi đang ở trong terminal.
+
 ## [1.8.0] - 2026-11-27
 
 ### Thêm
@@ -19,7 +26,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Ngôn ngữ giao diện: tiếng Việt hoặc tiếng Anh, đổi trong Cài đặt → Ngôn ngữ · Language (trang tự tải lại). Ngày giờ, nhập bằng giọng nói và thông báo đẩy theo ngôn ngữ đã chọn; thông báo từ máy chủ hiện trong app cũng được dịch. Chữ giao diện mới viết bằng tiếng Việt trong `t()` kèm bản tiếng Anh trong `public/js/en-*.mjs`, có `test/i18n.test.mjs` kiểm tra.
 
 ### Thay đổi
-- Tổng quan kiến trúc cập nhật thành `docs/ARCH-v1.2-overview.md`, thêm các module mới từ bản 1.0.
+- Tổng quan kiến trúc cập nhật thành `docs/ARCH-v1.3-overview.md`, thêm các module mới từ bản 1.0.
 
 ## [1.6.0] - 2026-11-27
 
@@ -110,7 +117,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Đã bỏ comment khỏi mọi file mã nguồn, kể cả script cài đặt, service worker và statusline của Claude; lý do được chuyển sang `docs/NOTES-v1.9-implementation-notes.md`. Allowlist của bộ kiểm tra quy tắc đã rỗng.
 - Mọi hàm đều không quá 40 dòng; module client không còn đụng tới trình duyệt lúc nạp, nên phần logic có unit test.
 - Các script shell có quyền thực thi ngay trong repo.
-- `docs/ARCH-v1.2-overview.md` mô tả sơ đồ module.
+- `docs/ARCH-v1.3-overview.md` mô tả sơ đồ module.
 
 ### Hiệu năng
 - Danh sách phiên được dựng tối đa một lần mỗi giây và dùng chung cho mọi thiết bị đang mở cùng bộ theo dõi thông báo; 5 request cùng lúc với 10 phiên agent giảm từ khoảng 65 ms xuống 19 ms.

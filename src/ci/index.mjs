@@ -22,8 +22,10 @@ export function createCi({ fetchRuns = { github: githubRuns, azure: azureRuns } 
       ? fetchRuns.github(remote)
       : fetchRuns.azure(remote, dir));
     const runs = fetched.sort((a, b) => (b.queuedAt || 0) - (a.queuedAt || 0));
+    const branch = (await git(dir, 'rev-parse', '--abbrev-ref', 'HEAD').catch(() => '')).trim();
     return {
       provider: remote.provider,
+      branch: branch === 'HEAD' ? '' : branch,
       repo: repoLabel(remote),
       page: pipelinesPage(remote),
       pipelines: pipelinesOf(runs),

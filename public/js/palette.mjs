@@ -6,6 +6,7 @@ import { S, cur, go } from './state.mjs';
 import { THEMES, setTheme } from './theme.mjs';
 import { quickStart } from './welcome.mjs';
 import { t } from './i18n.mjs';
+import { sessionTab } from './tab-memory.mjs';
 
 const MAX_RESULTS = 40;
 const TABS = [
@@ -13,6 +14,7 @@ const TABS = [
   ['term', 'Terminal', 'term'],
   ['files', 'File', 'folder'],
   ['git', 'Git', 'git'],
+  ['ci', 'Pipelines', 'zap'],
 ];
 
 export const fold = node =>
@@ -32,7 +34,7 @@ const sessionItems = () =>
     icon: 'term',
     label: s.title || s.name,
     hint: t('Phiên · {0}', s.dir.split('/').pop()),
-    run: () => go({ s: s.name, t: 'term', d: null, g: null, v: null }),
+    run: () => go({ s: s.name, t: sessionTab(s.name), d: null, g: null, v: null }),
   }));
 
 function projectItems() {

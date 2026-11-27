@@ -7,6 +7,7 @@ import { S, st } from './state.mjs';
 import { activeEntry, allTerms, isActive, poolKey, pruneFrames, showFrame } from './term-pool.mjs';
 import { termTheme } from './theme.mjs';
 import { t } from './i18n.mjs';
+import { tabKey } from './navigation.mjs';
 
 const termSrc = name => `${base()}term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 
@@ -162,6 +163,7 @@ function attachTerminal(w, t, entry) {
   w.document.addEventListener('pointerdown', fitTmux, true);
   w.document.addEventListener('keydown', fitTmux, true);
   w.document.addEventListener('keydown', paletteKey, true);
+  w.document.addEventListener('keydown', tabKey, true);
 }
 
 function waitForTerminal(w, entry) {

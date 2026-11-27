@@ -11,6 +11,7 @@ import { S, go, st } from './state.mjs';
 import { store } from './storage.mjs';
 import { quickStart, renderRestore, welcome } from './welcome.mjs';
 import { t } from './i18n.mjs';
+import { sessionTab } from './tab-memory.mjs';
 
 export function stateEl(state, agent, since, model) {
   const e = el('span', 'state st-' + state);
@@ -86,7 +87,7 @@ function sessionRow(x, selected) {
   b.type = 'button';
   if (unread) b.title = t('Có câu trả lời mới chưa xem');
   b.append(agentAvatar(x.agent, true), sessionSummary(x), sessionActions(x.name));
-  b.onclick = () => go({ s: x.name, t: 'term', d: null, g: null, v: null });
+  b.onclick = () => go({ s: x.name, t: sessionTab(x.name), d: null, g: null, v: null });
   b.oncontextmenu = e => {
     e.preventDefault();
     openSessionMenu(x.name);
