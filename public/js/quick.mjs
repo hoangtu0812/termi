@@ -62,7 +62,7 @@ function renderQuick(agent) {
         b.onclick = safely(async () => {
           $('d-quick').close();
           if (ask && !confirm(`${name}: gửi yêu cầu này cho ${agentName(agent)}?\n\n${text}`)) return;
-          await api('/api/send', { session: st().s, text, enter: true });
+          await api('api/send', { session: st().s, text, enter: true });
           toast(`Đã gửi: ${name}`);
         });
         return b;
@@ -76,7 +76,7 @@ function openQuick() {
   if (!cur()?.agent) return toast('Phiên này chưa chạy agent nào', true);
   renderQuick(cur().agent);
   $('d-quick').showModal();
-  api('/api/quick')
+  api('api/quick')
     .then(q => {
       S.quickCustom = q;
       if ($('d-quick').open && !S.quickEditing) renderQuick(cur().agent);
@@ -133,14 +133,14 @@ function editorActions(list, agent) {
   add.type = save.type = reset.type = 'button';
   add.onclick = () => list.append(quickRow(BLANK_ACTION));
   save.onclick = safely(async () => {
-    S.quickCustom = await api('/api/quick', { items: [...list.children].map(r => r.read()) });
+    S.quickCustom = await api('api/quick', { items: [...list.children].map(r => r.read()) });
     S.quickEditing = false;
     renderQuick(agent);
     toast('Đã lưu thao tác nhanh');
   });
   reset.onclick = safely(async () => {
     if (!confirm('Dùng lại danh sách mặc định?')) return;
-    await api('/api/quick', { items: null });
+    await api('api/quick', { items: null });
     S.quickCustom = null;
     S.quickEditing = false;
     renderQuick(agent);

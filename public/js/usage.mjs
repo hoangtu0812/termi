@@ -134,7 +134,7 @@ function renderUsageDialog() {
   $('usage-body').replaceChildren(...parts);
 }
 async function loadUsage() {
-  S.usage = await api('/api/usage?session=' + encodeURIComponent(st().s || '')).catch(() => null);
+  S.usage = await api('api/usage?session=' + encodeURIComponent(st().s || '')).catch(() => null);
   renderUsageChip();
   if ($('d-usage').open) renderUsageDialog();
 }

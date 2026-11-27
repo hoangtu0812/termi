@@ -9,7 +9,7 @@ const KILL_VIBRATION_MS = 20;
 export async function renameSession(name) {
   const to = prompt('Tên mới (chữ, số, - và _):', name);
   if (!to || to === name) return;
-  await api('/api/sessions/rename', { name, to });
+  await api('api/sessions/rename', { name, to });
   await poll();
   if (name !== st().s) return;
   S.termName = null;
@@ -19,7 +19,7 @@ export async function renameSession(name) {
 
 export async function killSession(name) {
   if (!confirm(`Đóng phiên "${name}"? Agent và mọi tiến trình trong phiên sẽ dừng.`)) return;
-  await api('/api/sessions/kill', { name });
+  await api('api/sessions/kill', { name });
   navigator.vibrate?.(KILL_VIBRATION_MS);
   await poll();
   if (name === st().s) go({ s: null, t: wide() ? null : 'sessions' });

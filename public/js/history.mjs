@@ -9,7 +9,7 @@ const showHistory = safely(async all => {
   box.replaceChildren(...skel(5));
   if (!$('d-hist').open) $('d-hist').showModal();
   const dir = all ? null : cur()?.dir;
-  const list = await api('/api/history' + (dir ? '?dir=' + encodeURIComponent(dir) : ''));
+  const list = await api('api/history' + (dir ? '?dir=' + encodeURIComponent(dir) : ''));
   box.replaceChildren(
     ...list.map(h => {
       const b = el('button');
@@ -21,7 +21,7 @@ const showHistory = safely(async all => {
         const base = (h.cwd.split('/').pop() || 'claude').replace(/[^A-Za-z0-9_-]+/g, '-').slice(0, 30) || 'claude';
         const name = prompt('Tên phiên mới để mở lại hội thoại:', base);
         if (!name) return;
-        await api('/api/sessions', { name, dir: h.cwd, agent: h.agent, resume: h.id });
+        await api('api/sessions', { name, dir: h.cwd, agent: h.agent, resume: h.id });
         $('d-hist').close();
         await poll();
         go({ s: name, t: 'term', d: null, g: null });

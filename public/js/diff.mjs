@@ -33,7 +33,7 @@ function plusMinusBar(add, del) {
   return bar;
 }
 export const openDiff = safely(async (title, qs) => {
-  const r = await api('/api/show?' + new URLSearchParams(qs));
+  const r = await api('api/show?' + new URLSearchParams(qs));
   if (wide()) openViewer(title, diffBox(r, true), null, ['Một cột', diffBox(r, false), 'Hai cột']);
   else openViewer(title, diffBox(r, false));
 });

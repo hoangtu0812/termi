@@ -7,7 +7,7 @@ import { S, st } from './state.mjs';
 import { activeEntry, allTerms, isActive, poolKey, pruneFrames, showFrame } from './term-pool.mjs';
 import { termTheme } from './theme.mjs';
 
-const termSrc = name => `${base()}/term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
+const termSrc = name => `${base()}term/?arg=${encodeURIComponent(name)}&fontSize=${fontSize}`;
 
 function revealTerminal(entry) {
   S.lastData = entry.lastData;
@@ -54,7 +54,7 @@ export function fitTmux() {
   fitTimer = setTimeout(() => {
     const t = termWin()?.term;
     if (t?.cols && st().s === S.termName)
-      api('/api/resize', { session: S.termName, cols: t.cols, rows: t.rows }).catch(() => {});
+      api('api/resize', { session: S.termName, cols: t.cols, rows: t.rows }).catch(() => {});
   }, 300);
 }
 const FONT_KEY = 'termi-font';
@@ -105,7 +105,7 @@ function styleTerminal(w, t) {
 function loadMonoFont(w, t) {
   const link = w.document.createElement('link');
   link.rel = 'stylesheet';
-  link.href = '/fonts/fonts.css';
+  link.href = '../fonts/fonts.css';
   const useFont = () => {
     t.options.fontFamily = MONO_FONT;
     t.fit();
@@ -186,7 +186,7 @@ function onFrameLoad(entry) {
   const w = entry.frame.contentWindow;
   const page = framePath(w);
   if (page === null) return markEntryDown(entry, true);
-  if (!page?.includes('/term/')) return;
+  if (!page?.includes('term/')) return;
   waitForTerminal(w, entry);
 }
 

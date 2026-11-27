@@ -39,6 +39,6 @@ test('outbox ignores broken storage and routes to the right machine', () => {
   assert.deepEqual(readOutbox('[{"session":"s","text":"hi"},{"text":"no session"},null]'), [
     { session: 's', text: 'hi' },
   ]);
-  assert.equal(sendPath(''), '/api/send');
-  assert.equal(sendPath('desktop-1'), '/m/desktop-1/api/send');
+  assert.equal(sendPath(''), 'api/send');
+  assert.equal(sendPath('desktop-1'), 'm/desktop-1/api/send');
 });

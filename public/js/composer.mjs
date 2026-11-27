@@ -10,9 +10,9 @@ const send = safely(async () => {
   const t = $('text');
   if (S.atts.some(a => !a.path)) throw new Error('Đợi tải lên xong đã');
   const text = [t.value.trim(), ...S.atts.map(a => a.path)].filter(Boolean).join(' ');
-  if (!text) return api('/api/send', { session: st().s, key: 'Enter' });
+  if (!text) return api('api/send', { session: st().s, key: 'Enter' });
   try {
-    await api('/api/send', { session: st().s, text, enter: true });
+    await api('api/send', { session: st().s, text, enter: true });
   } catch (e) {
     if (!e.offline) throw e;
     queueMessage(st().m || '', st().s, text);

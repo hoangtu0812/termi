@@ -74,7 +74,7 @@ const ROUTE_TABLES = [
 ];
 
 function createServer(context) {
-  const guard = createGuard(context.machines.allowedUsers);
+  const guard = createGuard(context.machines.allowedUsers, context.config.token);
   const dispatch = createRouter(ROUTE_TABLES.map(routes => routes(context)), context.statics.buildId);
   const { machines, statics } = context;
   const ttydPort = context.config.ttydPort;

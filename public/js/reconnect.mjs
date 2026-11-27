@@ -105,7 +105,7 @@ function probeTerm() {
   setTerm('probe');
   const name = S.termName,
     at = Date.now();
-  api('/api/refresh', { session: name }).catch(() => {});
+  api('api/refresh', { session: name }).catch(() => {});
   setTimeout(() => {
     probing = false;
     if (S.termName !== name) return;

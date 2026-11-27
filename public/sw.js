@@ -1,11 +1,11 @@
-const OFFLINE_PAGE = '/offline.html';
+const OFFLINE_PAGE = 'offline.html';
 const OFFLINE_CACHE = 'termi-offline';
 const GATEWAY_DOWN = new Set([502, 503, 504]);
 const FALLBACK_ALERT = { title: 'termi', body: 'Có cập nhật từ agent', session: '' };
 
 async function latestAlert() {
   try {
-    return await (await fetch('/api/push/alert', { cache: 'no-store' })).json();
+    return await (await fetch('api/push/alert', { cache: 'no-store' })).json();
   } catch {
     return FALLBACK_ALERT;
   }
@@ -16,14 +16,14 @@ async function showAlert() {
   await self.registration.showNotification(notice.title, {
     body: notice.body,
     tag: `${notice.machine || ''}/${notice.session || 'termi'}`,
-    icon: '/icon.svg',
+    icon: 'icon.svg',
     data: { s: notice.session, m: notice.machine },
   });
 }
 
 function sessionUrl({ s, m }) {
-  if (!s) return '/';
-  return '/#' + new URLSearchParams({ s, t: 'term', ...(m ? { m } : {}) });
+  if (!s) return './';
+  return './#' + new URLSearchParams({ s, t: 'term', ...(m ? { m } : {}) });
 }
 
 async function openSession(url) {

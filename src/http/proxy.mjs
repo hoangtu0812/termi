@@ -7,6 +7,7 @@ import { matchPeer } from '../machines.mjs';
 const LOCALHOST = '127.0.0.1';
 const HTTPS_PORT = 443;
 const BUILD_HEADER = 'x-termi-build';
+const TOKEN_HEADER = 'x-termi-token';
 
 export const isTermPath = pathname => pathname === '/term' || pathname.startsWith('/term/');
 
@@ -25,9 +26,15 @@ export function proxyTtyd(req, res, ttydPort) {
   req.pipe(up);
 }
 
+export function peerHeaders(headers, dns) {
+  const out = { ...headers, host: dns };
+  delete out[TOKEN_HEADER];
+  if (out.origin) out.origin = `https://${dns}`;
+  return out;
+}
+
 export function proxyPeer(req, res, dns, rest) {
-  const headers = { ...req.headers, host: dns };
-  if (headers.origin) headers.origin = `https://${dns}`;
+  const headers = peerHeaders(req.headers, dns);
   const options = { host: dns, port: HTTPS_PORT, servername: dns, path: rest, method: req.method, headers };
   const up = https.request(options, answer => {
     const answerHeaders = { ...answer.headers };
@@ -42,10 +49,11 @@ export function proxyPeer(req, res, dns, rest) {
   req.pipe(up);
 }
 
-function upgradeRequestHead(req, path, host) {
+export function upgradeRequestHead(req, path, host) {
   let head = `${req.method} ${path} HTTP/1.1\r\n`;
   for (let i = 0; i < req.rawHeaders.length; i += 2) {
     const key = req.rawHeaders[i].toLowerCase();
+    if (key === TOKEN_HEADER) continue;
     let value = req.rawHeaders[i + 1];
     if (key === 'host') value = host;
     else if (key === 'origin' && host !== req.headers.host) value = `https://${host}`;

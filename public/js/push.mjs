@@ -16,16 +16,16 @@ export const enablePush = safely(async () => {
     );
   if ((await Notification.requestPermission()) !== 'granted') throw new Error('Bạn chưa cho phép thông báo');
   const reg = await navigator.serviceWorker.ready;
-  const { key } = await api('/api/push/key');
+  const { key } = await api('api/push/key');
   const subscribe = () => reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: b64(key) });
   let sub = (await reg.pushManager.getSubscription()) || (await subscribe());
-  await api('/api/push/sub', sub.toJSON());
-  let { results = [] } = await api('/api/push/test', {});
+  await api('api/push/sub', sub.toJSON());
+  let { results = [] } = await api('api/push/test', {});
   if (results.some(r => r.status === 404 || r.status === 410)) {
     await sub.unsubscribe().catch(() => {});
     sub = await subscribe();
-    await api('/api/push/sub', sub.toJSON());
-    ({ results = [] } = await api('/api/push/test', {}));
+    await api('api/push/sub', sub.toJSON());
+    ({ results = [] } = await api('api/push/test', {}));
   }
   const bad = results.filter(r => r.status < 200 || r.status > 299);
   if (!results.length) throw new Error('Server chưa nhận được đăng ký của máy này');
@@ -39,7 +39,7 @@ export const enablePush = safely(async () => {
 });
 export function setupPush() {
   navigator.serviceWorker
-    ?.register('/sw.js')
+    ?.register('sw.js')
     .then(pushState)
     .catch(() => {});
 }

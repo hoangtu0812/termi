@@ -257,6 +257,8 @@ Editing `public/index.html` needs no restart: open pages reload themselves when 
 | `TERMI_TTYD_PORT` | `7681` | ttyd port |
 | `TERMI_DATA` | `~/.termi` | Data directory (keys, subscriptions, uploads) |
 | `TERMI_ALLOWED_USERS` | Machine owner | Tailscale logins allowed in, comma-separated |
+| `TERMI_HOST` | `127.0.0.1` | Listen address; change it only together with `TERMI_TOKEN` |
+| `TERMI_TOKEN` | unset | Embedded mode: requests must carry this value in `X-Termi-Token` instead of a Tailscale identity (see `docs/GUIDE-v1.5-embedded-mode.md`) |
 
 Local data lives in `~/.termi/`: the VAPID key, the list of devices receiving notifications, and uploaded files (`uploads/`, never cleaned automatically). Logs are in `~/Library/Logs/termi.*.log`.
 

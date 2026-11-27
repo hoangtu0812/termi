@@ -29,9 +29,9 @@ export function openViewer(title, node, insertPath, alt) {
   }
   go({ v: 1 });
 }
-export const rawUrl = p => location.origin + base() + '/api/raw?path=' + encodeURIComponent(p);
+export const rawUrl = p => new URL(base() + 'api/raw?path=' + encodeURIComponent(p), location.href).href;
 export const openFile = safely(async p => {
-  const r = await api('/api/file?path=' + encodeURIComponent(p));
+  const r = await api('api/file?path=' + encodeURIComponent(p));
   if (r.image) {
     const img = el('img');
     img.src = rawUrl(p);

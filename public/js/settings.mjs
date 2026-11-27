@@ -93,7 +93,7 @@ async function openSettings() {
   $('d-settings').showModal();
   const body = $('settings-body');
   body.replaceChildren(...skel(4));
-  const [info, registration] = await Promise.all([api('/api/info'), navigator.serviceWorker?.getRegistration()]);
+  const [info, registration] = await Promise.all([api('api/info'), navigator.serviceWorker?.getRegistration()]);
   body.replaceChildren(...(await settingRows(info, await pushEnabled(registration))));
 }
 

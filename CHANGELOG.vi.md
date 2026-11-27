@@ -8,6 +8,13 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Chế độ nhúng: khi đặt `TERMI_TOKEN`, termi nhận request mang token trong `X-Termi-Token` thay cho danh tính Tailscale, để chạy được sau reverse proxy của một ứng dụng khác (ví dụ mỗi người một container sandbox). Xem `docs/GUIDE-v1.5-embedded-mode.md`.
+- Chế độ nhúng: token phải dài ít nhất 32 ký tự và không bao giờ được chuyển tiếp sang máy khác hay sang ttyd.
+
+### Thay đổi
+- Web app dùng URL tương đối nên chạy được khi đặt dưới một tiền tố đường dẫn như `/sandbox/ui/`.
+
 ## [1.4.0] - 2026-11-27
 
 ### Thay đổi

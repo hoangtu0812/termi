@@ -43,7 +43,7 @@
 <script>
   const RETRY_MS = 3000;
   const reloadWhenUp = res => res.ok && location.reload();
-  setInterval(() => fetch('/manifest.json', { cache: 'no-store' }).then(reloadWhenUp, () => {}), RETRY_MS);
+  setInterval(() => fetch('manifest.json', { cache: 'no-store' }).then(reloadWhenUp, () => {}), RETRY_MS);
 </script>
 </body>
 </html>

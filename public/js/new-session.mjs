@@ -8,7 +8,7 @@ const NF = () => $('d-new').querySelector('form');
 let pkName = '';
 const pickDir = safely(async dir => {
   const f = NF();
-  const r = await api('/api/ls?dir=' + encodeURIComponent(dir));
+  const r = await api('api/ls?dir=' + encodeURIComponent(dir));
   f.dir.value = r.dir;
   $('pk-crumb').textContent = ltr(short(r.dir));
   $('pk-up').disabled = !r.parent;
@@ -37,7 +37,7 @@ export async function newSession() {
   NF().reset();
   pkName = '';
   $('d-new').showModal();
-  const agents = await api('/api/agents').catch(() => []);
+  const agents = await api('api/agents').catch(() => []);
   NF().agent.replaceChildren(
     ...agents.map(a => Object.assign(el('option', null, a.name), { value: a.id })),
     Object.assign(el('option', null, 'Không, chỉ mở shell'), { value: '' }),
@@ -78,7 +78,7 @@ export function setupNewSession() {
   $('d-new').onclose = safely(async () => {
     if ($('d-new').returnValue !== 'ok') return;
     const f = $('d-new').querySelector('form');
-    await api('/api/sessions', { name: f.name.value, dir: f.dir.value, agent: f.agent.value || undefined });
+    await api('api/sessions', { name: f.name.value, dir: f.dir.value, agent: f.agent.value || undefined });
     const name = f.name.value;
     f.reset();
     await poll();

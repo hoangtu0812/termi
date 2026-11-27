@@ -19,7 +19,7 @@ export function readOutbox(raw) {
 const load = () => readOutbox(store.get(KEY));
 const save = list => store.set(KEY, list.length ? JSON.stringify(list.slice(-MAX_ITEMS)) : null);
 
-export const sendPath = machine => (machine ? `/m/${encodeURIComponent(machine)}` : '') + '/api/send';
+export const sendPath = machine => (machine ? `m/${encodeURIComponent(machine)}/` : '') + 'api/send';
 
 async function deliver(item) {
   const r = await fetch(sendPath(item.machine), {

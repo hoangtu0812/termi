@@ -238,7 +238,7 @@ export function renderSessions() {
   renderOthers(box);
 }
 export async function loadProjects() {
-  const p = await api('/api/projects').catch(() => null);
+  const p = await api('api/projects').catch(() => null);
   if (p) {
     S.projects = p;
     renderSessions();
