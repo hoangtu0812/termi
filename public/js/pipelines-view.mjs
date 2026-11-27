@@ -49,11 +49,45 @@ function stateBadge(state) {
   return badge;
 }
 
-function runRow(run) {
+export function runActions(run) {
+  const state = runState(run);
+  const actions = ['web'];
+  if (run.status === 'completed') actions.push('rerun');
+  else actions.push('cancel');
+  if (state === 'failure') actions.push('log');
+  return actions;
+}
+
+const ACTION_LABELS = {
+  web: () => t('Mở trên web'),
+  rerun: () => t('Chạy lại'),
+  cancel: () => t('Huỷ'),
+  log: () => t('Log lỗi'),
+};
+const ACTION_ICONS = { web: 'send', rerun: 'refresh', cancel: 'x', log: 'doc' };
+
+function actionBar(run, handlers) {
+  const bar = el('div', 'ciacts');
+  for (const action of runActions(run)) {
+    const b = el('button', 'btn sm' + (action === 'cancel' ? ' danger' : ''));
+    b.type = 'button';
+    b.innerHTML = icon(ACTION_ICONS[action]);
+    b.append(ACTION_LABELS[action]());
+    b.onclick = () => handlers[action](run);
+    bar.append(b);
+  }
+  return bar;
+}
+
+function runRow(run, handlers) {
+  const wrap = el('div', 'ciwrap');
   const row = el('button', 'cirun');
   row.type = 'button';
-  row.title = run.url;
-  row.onclick = () => window.open(run.url, '_blank', 'noopener');
+  row.onclick = () => {
+    const open = wrap.classList.toggle('open');
+    if (open && !wrap.querySelector('.ciacts')) wrap.append(actionBar(run, handlers));
+  };
+  wrap.append(row);
   const body = el('div', 'cib');
   body.append(el('div', 'cit', `${run.number} · ${run.title}`));
   const meta = el('div', 'cim');
@@ -64,15 +98,15 @@ function runRow(run) {
   const when = el('div', 'ciw');
   when.append(el('span', null, ago(run.finishedAt || run.startedAt || run.queuedAt)), el('span', null, duration(run)));
   row.append(stateBadge(runState(run)), body, when);
-  return row;
+  return wrap;
 }
 
-export function groupNodes(runs) {
+export function groupNodes(runs, handlers) {
   return GROUPS.flatMap(([status, title, empty]) => {
     const list = runs.filter(run => run.status === status);
     const head = el('div', 'grp');
     head.append(el('span', null, `${title()} (${list.length})`));
-    return [head, ...(list.length ? list.map(runRow) : [el('div', 'cinone', empty())])];
+    return [head, ...(list.length ? list.map(run => runRow(run, handlers)) : [el('div', 'cinone', empty())])];
   });
 }
 

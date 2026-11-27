@@ -1,12 +1,14 @@
-import { api, safely } from './api.mjs';
+import { api, safely, toast } from './api.mjs';
 import { $, el, skel } from './dom.mjs';
 import { t } from './i18n.mjs';
 import { groupNodes, pipelineChip, runState, visibleRuns } from './pipelines-view.mjs';
 import { loadRepos } from './poll.mjs';
 import { S, cur, go, st } from './state.mjs';
+import { openViewer } from './viewer.mjs';
 
 const REFRESH_MS = 15_000;
 const BADGE_REFRESH_MS = 60_000;
+const ACTION_REFRESH_MS = 2000;
 
 const ciDir = () => st().g || cur()?.dir || '';
 
@@ -52,8 +54,33 @@ function renderPipelines() {
     return box.replaceChildren(el('div', 'empty', t('Repo này không dùng GitHub hoặc Azure DevOps')));
   }
   const filters = { pipeline: S.ciPipeline, branch: S.ciBranchOnly ? data.branch : null };
-  box.replaceChildren(header(data), filterRow(data), ...groupNodes(visibleRuns(data.runs, filters)));
+  box.replaceChildren(header(data), filterRow(data), ...groupNodes(visibleRuns(data.runs, filters), runHandlers));
 }
+
+const CONFIRM = {
+  rerun: run => t('Chạy lại {0} · {1}?', run.pipeline, run.number),
+  cancel: run => t('Huỷ lần chạy {0} · {1}?', run.pipeline, run.number),
+};
+
+const runAction = action => safely(async run => {
+  if (!confirm(CONFIRM[action](run))) return;
+  await api('api/ci/action', { dir: S.ci.dir, run: run.id, action });
+  toast(action === 'rerun' ? t('Đã gửi yêu cầu chạy lại') : t('Đã gửi yêu cầu huỷ'));
+  setTimeout(() => loadPipelines({ fresh: true }), ACTION_REFRESH_MS);
+});
+
+const showLog = safely(async run => {
+  const query = `dir=${encodeURIComponent(S.ci.dir)}&run=${encodeURIComponent(run.id)}`;
+  const { text } = await api(`api/ci/log?${query}`);
+  openViewer(`${run.pipeline} ${run.number}`, el('pre', 'copytext', t(text)));
+});
+
+const runHandlers = {
+  web: run => window.open(run.url, '_blank', 'noopener'),
+  rerun: runAction('rerun'),
+  cancel: runAction('cancel'),
+  log: showLog,
+};
 
 export function ciBadge(data) {
   if (!data?.runs?.length) return null;

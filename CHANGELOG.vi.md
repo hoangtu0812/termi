@@ -8,6 +8,18 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Thẻ công cụ trong Chat liệt kê các file agent đã sửa hoặc tạo; bấm để mở diff (hoặc mở file nếu là file mới).
+- Pipelines: bấm một lần chạy để mở trên web, chạy lại (GitHub chỉ chạy lại job lỗi), huỷ lần đang chạy, hoặc xem log của bước lỗi (GitHub và Azure DevOps).
+- Xem lại hội thoại cũ ngay trong app mà không cần mở lại: nút con mắt trên dòng hội thoại ở panel bên, hoặc "Xem" trong Lịch sử.
+- Thao tác nhanh riêng cho từng project: trình sửa có nút chọn "Dùng chung" / "Riêng project", thao tác riêng hiện trước.
+
+### Sửa
+- Trình sửa thao tác nhanh không còn bị ép thành hai cột, nút và ô chọn nằm ngang trên máy tính.
+
+### Tài liệu
+- Tổng quan kiến trúc nay là `docs/ARCH-v1.6-overview.md`, thêm thao tác CI, chip file thay đổi và trình xem hội thoại.
+
 ## [1.11.0] - 2026-11-27
 
 ### Thêm

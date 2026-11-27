@@ -40,14 +40,14 @@
   #side > .bar .brand { flex:none; margin-bottom:8px; }
   #side > .bar .brand span { display:none; }
   #side > .bar .ibtn { width:38px; height:38px; border-radius:10px; }
-  .acts { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
-  .acts .ibtn { position:relative; color:var(--faint); }
-  .acts .ibtn.on { color:var(--fg); background:var(--hover); }
-  .acts .ibtn.on::before {
+  #acts { flex:1; display:flex; flex-direction:column; align-items:center; gap:4px; }
+  #acts .ibtn { position:relative; color:var(--faint); }
+  #acts .ibtn.on { color:var(--fg); background:var(--hover); }
+  #acts .ibtn.on::before {
     content:''; position:absolute; left:-7px; top:9px; bottom:9px; width:3px; border-radius:0 3px 3px 0;
     background:var(--acc);
   }
-  .acts .tbadge { top:2px; right:0; }
+  #acts .tbadge { top:2px; right:0; }
   #sidebody .pane { background:var(--panel); }
   #sidebody .toolbar { padding-top:8px; }
   #top { min-height:44px; }

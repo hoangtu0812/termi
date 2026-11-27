@@ -13,6 +13,7 @@ import { welcome } from './home.mjs';
 import { quickStart, renderRestore } from './welcome.mjs';
 import { t } from './i18n.mjs';
 import { sessionTab } from './tab-memory.mjs';
+import { openConversation, viewButton } from './conversation.mjs';
 
 export function stateEl(state, agent, since, model) {
   const e = el('span', 'state st-' + state);
@@ -102,9 +103,15 @@ function convRow(dir, c) {
   b.type = 'button';
   const body = el('div', 'sib');
   body.append(el('div', 'cit', c.title), el('div', 'cim', `${agentName(c.agent)} · ${ago(c.mtime)}`));
-  b.append(agentAvatar(c.agent, true), body);
+  const acts = el('span', 'sacts');
+  acts.append(viewButton(c.id));
+  b.append(agentAvatar(c.agent, true), body, acts);
   b.title = t('Mở lại hội thoại này');
   b.onclick = safely(() => quickStart(dir, c.agent, c.id));
+  b.oncontextmenu = e => {
+    e.preventDefault();
+    openConversation(c.id);
+  };
   return b;
 }
 

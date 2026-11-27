@@ -1,6 +1,13 @@
+import { chatItems } from '../agents/chat.mjs';
+import { readTail } from '../agents/jsonl.mjs';
+import { fail } from '../errors.mjs';
+import { validUuid } from '../validate.mjs';
+
 const PROJECT_HISTORY = 250;
 const CONVERSATIONS_PER_PROJECT = 20;
 const SECOND_MS = 1000;
+const CONVERSATION_TAIL_BYTES = 4 * 1024 * 1024;
+const CONVERSATION_ITEMS = 200;
 
 function groupByDir(sessions, conversations) {
   const projects = new Map();
@@ -36,6 +43,16 @@ export function projectRoutes({ sessions, history, repos, paths, agents }) {
     },
 
     'GET /api/history': query => history(query.get('dir') || undefined),
+
+    async 'GET /api/conversation'(query) {
+      const id = query.get('id');
+      if (!validUuid(id)) throw fail(400, 'Mã hội thoại không hợp lệ');
+      const found = await history.find(id);
+      if (!found || !(await paths.inside(found.conversation.cwd))) throw fail(404, 'Không tìm thấy hội thoại');
+      const lines = await readTail(found.file, CONVERSATION_TAIL_BYTES);
+      const { agent, title, cwd, mtime } = found.conversation;
+      return { agent, title, cwd, mtime, items: chatItems(found.adapter, lines, CONVERSATION_ITEMS) };
+    },
 
     async 'GET /api/projects'() {
       const [open, past] = await Promise.all([sessions.list(), history(undefined, PROJECT_HISTORY)]);

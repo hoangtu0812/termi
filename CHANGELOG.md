@@ -6,6 +6,18 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Chat tool cards list the files the agent edited or created; tap one to open its diff (or the file when it is new).
+- Pipelines: tap a run to open it on the web, rerun it (only failed jobs on GitHub), cancel a running one, or read the log of the failed steps (GitHub and Azure DevOps).
+- Read an old conversation inside the app without reopening it: the eye button on a conversation row in the side panel, or "Xem" in History.
+- Quick actions per project: the editor has a "Shared" / "This project" switch, and project actions are listed first.
+
+### Fixed
+- The quick action editor no longer squeezes into two columns, and its buttons and checkbox lay out in a row on desktop.
+
+### Documentation
+- Architecture overview is now `docs/ARCH-v1.6-overview.md` with the CI actions, changed-file chips and conversation viewer.
+
 ## [1.11.0] - 2026-11-27
 
 ### Added

@@ -57,3 +57,9 @@
 .cipanel { display:block; padding-bottom:24px; }
 .cihead a.btn { text-decoration:none; color:var(--fg); }
 .codetabs .tbadge { position:static; margin-left:2px; }
+.ciwrap { border-bottom:1px solid var(--line); }
+.ciwrap .cirun { border-bottom:0; }
+.ciwrap.open { background:var(--hover); }
+.ciacts { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 10px 44px; }
+.ciacts .btn svg.i { width:13px; height:13px; }
+.ciacts .btn.danger { color:var(--del); }
