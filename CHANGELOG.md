@@ -6,13 +6,16 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Pipelines in the Git tab (Git / Pipelines switch): GitHub Actions and Azure Pipelines runs of the selected repository, read with the `gh` and `az` CLIs already signed in on the machine (`GET /api/ci`). Filter by pipeline (with its last three results) and by the current branch, runs grouped as queued, running and completed with trigger, author, branch, commit, age and duration; a run opens on the web. Refreshes every 15 s while shown.
+
 ## [1.7.0] - 2026-11-27
 
 ### Added
 - Interface language: Vietnamese or English, switched in Settings → Ngôn ngữ · Language (the page reloads). Dates, voice input and push notifications follow the choice; server messages shown in the app are translated too. New UI text is written in Vietnamese inside `t()` with its English in `public/js/en-*.mjs`, enforced by `test/i18n.test.mjs`.
 
 ### Changed
-- Architecture overview updated to `docs/ARCH-v1.1-overview.md` with the modules added since 1.0.
+- Architecture overview updated to `docs/ARCH-v1.2-overview.md` with the modules added since 1.0.
 
 ## [1.6.0] - 2026-11-27
 
@@ -103,7 +106,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.9-implementation-notes.md`. The rule-check allowlist is empty.
 - Every function is at most 40 lines; client modules no longer touch the browser while loading, so their logic has unit tests.
 - The shell scripts are executable in the repository.
-- `docs/ARCH-v1.1-overview.md` describes the module map.
+- `docs/ARCH-v1.2-overview.md` describes the module map.
 
 ### Performance
 - The session list is built at most once per second and shared by every open device and the notification watcher; five concurrent requests with 10 agent sessions dropped from about 65 ms to 19 ms.

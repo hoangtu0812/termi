@@ -20,6 +20,8 @@ import { createPusher } from './push/webpush.mjs';
 import { createLiveFeed } from './live.mjs';
 import { createLogRotator, launchdLogFiles } from './log-rotate.mjs';
 import { createRepoFinder } from './repos.mjs';
+import { createCi } from './ci/index.mjs';
+import { ciRoutes } from './routes/ci.mjs';
 import { fileRoutes } from './routes/files.mjs';
 import { gitRoutes } from './routes/git.mjs';
 import { notifyRoutes } from './routes/notify.mjs';
@@ -67,6 +69,7 @@ export async function init(config) {
   });
   return {
     incidents,
+    ci: createCi(),
     runMarker: createRunMarker(store),
     config, paths, uploadDir, store, agents, sessions, machines, pusher, prefs, watcher, statics,
     home: config.home,
@@ -81,6 +84,7 @@ export async function init(config) {
 
 const ROUTE_TABLES = [
   sessionRoutes, terminalRoutes, projectRoutes, fileRoutes, gitRoutes, notifyRoutes, usageRoutes, settingsRoutes,
+  ciRoutes,
 ];
 
 function createServer(context) {

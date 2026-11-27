@@ -136,3 +136,18 @@ test('line numbers ignore the final newline', () => {
   assert.equal(lineCount('a\nb\n'), 2);
   assert.equal(lineCount('a'), 1);
 });
+
+test('pipeline runs are filtered, timed and given a state', async () => {
+  const { duration, runState, visibleRuns } = await import('../public/js/pipelines-view.mjs');
+  const runs = [
+    { pipelineId: '1', branch: 'main', status: 'completed', result: 'success', startedAt: 0, finishedAt: 177_000 },
+    { pipelineId: '2', branch: 'dev', status: 'running', result: null, startedAt: 0, finishedAt: null },
+  ];
+  assert.deepEqual(visibleRuns(runs, { pipeline: '1', branch: null }), [runs[0]]);
+  assert.deepEqual(visibleRuns(runs, { pipeline: null, branch: 'dev' }), [runs[1]]);
+  assert.equal(runState(runs[0]), 'success');
+  assert.equal(runState(runs[1]), 'running');
+  assert.equal(duration(runs[0]), '2m 57s');
+  assert.equal(duration(runs[1], 4_000_000), '1h 6m');
+  assert.equal(duration({ startedAt: null }), '');
+});
