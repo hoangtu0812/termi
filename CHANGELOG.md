@@ -6,6 +6,9 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- WSL: the installer keeps the Linux distribution running at Windows logon, so the machine no longer disappears from the list when the Ubuntu window is closed.
+
 ### Changed
 - Implementation notes renamed to `docs/NOTES-v1.7-implementation-notes.md` with the rationale for this release.
 - While termi restarts (for example during an upgrade) the app shows the "connecting" page and returns by itself instead of a browser 502 error; API calls treat it as a lost connection.
