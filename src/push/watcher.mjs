@@ -52,5 +52,10 @@ export function createWatcher({ sessions, machines, agents, pusher, prefs, now =
     }
   }
 
-  return { tick, events: () => events };
+  function record(event) {
+    events.unshift(event);
+    events.splice(MAX_EVENTS);
+  }
+
+  return { tick, record, events: () => events };
 }

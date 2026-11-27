@@ -23,7 +23,7 @@ function restartTtyd() {
   return run('systemctl', ['--user', 'restart', SYSTEMD_UNIT]);
 }
 
-export function createTtydWatchdog(ttydPort) {
+export function createTtydWatchdog(ttydPort, onRestart = () => {}) {
   return async function checkTtyd() {
     const pid = (await stdoutOrEmpty(run('pgrep', ['-f', `ttyd .*-p ${ttydPort}`]))).trim().split('\n')[0];
     if (!pid) return;
@@ -34,5 +34,6 @@ export function createTtydWatchdog(ttydPort) {
     if (orphans < IDLE_ORPHAN_LIMIT || (attached.size && orphans < BUSY_ORPHAN_LIMIT)) return;
     console.log(`ttyd: ${orphans} stuck clients, ${attached.size} in use; restarting ttyd`);
     await restartTtyd();
+    await onRestart(orphans);
   };
 }

@@ -55,6 +55,7 @@ export async function notifyForm() {
   box.append(
     checkbox('Agent cần bạn xác nhận', () => prefs, 'waiting', save),
     checkbox('Agent đã xong việc', () => prefs, 'done', save),
+    checkbox('Sự cố: máy mất kết nối, ổ đĩa sắp đầy, termi tự khởi động lại', () => prefs, 'system', save),
     quietHours(prefs, save),
   );
   if (prefs.muted.length) box.append(mutedSessions(prefs, save));

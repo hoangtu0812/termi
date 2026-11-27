@@ -14,6 +14,7 @@ import { createMachines } from './machines.mjs';
 import { createPaths } from './paths.mjs';
 import { loadNotifyPrefs } from './push/prefs.mjs';
 import { loadVapidKeys } from './push/vapid.mjs';
+import { createIncidents } from './push/incidents.mjs';
 import { createWatcher } from './push/watcher.mjs';
 import { createPusher } from './push/webpush.mjs';
 import { createLiveFeed } from './live.mjs';
@@ -28,8 +29,10 @@ import { settingsRoutes } from './routes/settings.mjs';
 import { terminalRoutes } from './routes/terminal.mjs';
 import { usageRoutes } from './routes/usage.mjs';
 import { createSessions } from './sessions.mjs';
+import { createRunMarker } from './run-marker.mjs';
 import { createSnapshots } from './snapshot.mjs';
 import { createStore } from './store.mjs';
+import { machineUsage } from './system.mjs';
 import { createTtydWatchdog } from './ttyd-watchdog.mjs';
 
 const PRIVATE_DIR = 0o700;
@@ -38,6 +41,8 @@ const SNAPSHOT_MS = 30_000;
 const FIRST_SNAPSHOT_MS = 5000;
 const WATCHDOG_MS = 120_000;
 const LOG_ROTATE_MS = 3_600_000;
+const MACHINE_CHECK_MS = 60_000;
+const DISK_CHECK_MS = 600_000;
 
 async function prepareDataDir(dataDir) {
   const uploadDir = path.join(dataDir, 'uploads');
@@ -57,13 +62,18 @@ export async function init(config) {
   const prefs = await loadNotifyPrefs(store);
   const watcher = createWatcher({ sessions, machines, agents, pusher, prefs });
   const statics = createStaticServer(config.publicDir, await loadStaticFiles(config.publicDir));
+  const incidents = createIncidents({
+    pusher, prefs, machines, record: watcher.record, usage: () => machineUsage(config.home),
+  });
   return {
+    incidents,
+    runMarker: createRunMarker(store),
     config, paths, uploadDir, store, agents, sessions, machines, pusher, prefs, watcher, statics,
     home: config.home,
     history: createHistory(agents),
     repos: createRepoFinder(paths.roots),
     snapshots: createSnapshots({ store, sessions }),
-    checkTtyd: createTtydWatchdog(config.ttydPort),
+    checkTtyd: createTtydWatchdog(config.ttydPort, incidents.ttydRestarted),
     rotateLogs: createLogRotator({ files: launchdLogFiles(process.platform, config.home) }),
     live: createLiveFeed({ list: () => sessions.list() }),
   };
@@ -85,8 +95,11 @@ function createServer(context) {
 
 const logged = (name, task) => () => task().catch(error => console.error(name, error.message));
 
-function startTimers({ watcher, snapshots, checkTtyd, rotateLogs }) {
+function startTimers({ watcher, snapshots, checkTtyd, rotateLogs, incidents }) {
   return [
+    setInterval(logged('machines', incidents.checkMachines), MACHINE_CHECK_MS),
+    setInterval(logged('disk', incidents.checkDisk), DISK_CHECK_MS),
+    setTimeout(logged('disk', incidents.checkDisk), FIRST_SNAPSHOT_MS),
     setInterval(logged('log', rotateLogs), LOG_ROTATE_MS),
     setTimeout(logged('log', rotateLogs), FIRST_SNAPSHOT_MS),
     setInterval(logged('watch', watcher.tick), WATCH_MS),
@@ -102,13 +115,15 @@ export async function start(config) {
   await new Promise((resolve, reject) => server.once('error', reject).listen(config.port, config.host, resolve));
   console.log(`termi: http://${config.host}:${config.port}  roots=${context.paths.roots.join(', ')}`);
   const timers = startTimers(context);
+  if (await context.runMarker.begin()) logged('crash', context.incidents.crashed)();
   return {
     server,
     close: () => {
       timers.forEach(clearTimeout);
       context.live.stop();
+      const marked = context.runMarker.end().catch(error => console.error('run marker', error.message));
       server.closeAllConnections();
-      return new Promise(resolve => server.close(resolve));
+      return Promise.all([marked, new Promise(resolve => server.close(resolve))]);
     },
   };
 }
