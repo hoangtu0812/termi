@@ -88,4 +88,13 @@ export const EN_UI_3 = {
   'Dùng chung': 'Shared',
   'Xoá danh sách riêng': 'Remove project list',
   'Pipeline của các project đang mở chạy xong hoặc lỗi': 'Pipelines of open projects succeed or fail',
+  'Tiếp tục hội thoại này': 'Continue this conversation',
+  'Tìm theo nội dung hội thoại…': 'Search conversation text…',
+  'Tìm theo nội dung hội thoại': 'Search conversation text',
+  'Không tìm thấy hội thoại nào có "{0}"': 'No conversation mentions "{0}"',
+  'Địa chỉ VS Code web': 'VS Code web address',
+  'Đã lưu địa chỉ VS Code web': 'VS Code web address saved',
+  'Đã tắt nút mở VS Code': 'VS Code button turned off',
+  'Mở thư mục này trong VS Code': 'Open this folder in VS Code',
+  'VS Code web': 'VS Code web',
 };

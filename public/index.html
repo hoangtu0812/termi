@@ -100,6 +100,7 @@
           <button class="ibtn" id="f-home" aria-label="Về thư mục phiên" data-i="home"></button>
           <div class="crumb bc" id="f-crumb"></div>
           <button class="ibtn" id="f-find" aria-label="Tìm file theo tên" data-i="search"></button>
+          <button class="ibtn" id="f-code" aria-label="Mở thư mục này trong VS Code" data-i="code" hidden></button>
           <button class="ibtn" id="f-reload" aria-label="Tải lại" data-i="refresh"></button>
         </div>
         <div class="ffind" id="f-findbox" hidden>
@@ -209,6 +210,8 @@
 <dialog id="d-hist">
   <form method="dialog">
     <h3>Mở lại hội thoại</h3>
+    <input id="hist-q" type="search" placeholder="Tìm theo nội dung hội thoại…" aria-label="Tìm theo nội dung hội thoại"
+      autocapitalize="off" autocomplete="off" spellcheck="false">
     <div id="hist-list"></div>
     <div class="acts"><button class="btn" value="cancel">Đóng</button></div>
   </form>

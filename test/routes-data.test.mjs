@@ -154,6 +154,18 @@ test('quick actions and settings info', async () => {
   assert.equal(info.host, os.hostname());
   assert.equal(info.claudeUsage, false);
   assert.ok(Array.isArray(info.agents));
+  assert.equal(info.editorUrl, null);
+});
+
+test('the VS Code web address is kept and checked', async () => {
+  const url = 'https://mac.tail.ts.net:9443/';
+  assert.deepEqual((await app.post('/api/editor', { url })).json(), { url });
+  assert.equal((await app.get('/api/info')).json().editorUrl, url);
+  for (const bad of ['javascript:alert(1)', 'not a url', 'https://x/' + 'a'.repeat(300), 5]) {
+    assert.equal((await app.post('/api/editor', { url: bad })).status, 400, String(bad));
+  }
+  assert.deepEqual((await app.post('/api/editor', { url: '' })).json(), { url: null });
+  assert.equal((await app.get('/api/info')).json().editorUrl, null);
 });
 
 test('file search by name ranks name matches first and stays inside roots', async () => {

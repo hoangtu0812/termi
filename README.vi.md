@@ -66,7 +66,7 @@ termi là một web app nhỏ chạy ngay trên Mac của bạn, mở từ đi�
 | 🖼️ | **Gửi ảnh và file** | Chọn từ bộ sưu tập hoặc file bất kỳ, hiện ô thu nhỏ; đường dẫn tự ghép vào tin nhắn khi gửi để Claude đọc được. |
 | 📊 | **Usage** | Chip trên header: hạn mức gói của agent (Claude 5 giờ / 7 ngày, Codex), ngữ cảnh của phiên, CPU / RAM / ổ đĩa; chạm để xem chi tiết và lúc reset. |
 | 🔔 | **Thông báo đẩy** | Web Push (VAPID, không cần dịch vụ trung gian) khi Claude xong việc hoặc đang chờ xác nhận, và khi pipeline của project đang mở chạy xong hoặc lỗi. |
-| 📁 | **Duyệt file** | Icon và màu theo loại file, đánh dấu file/thư mục đang thay đổi theo git; xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt. |
+| 📁 | **Duyệt file** | Icon và màu theo loại file, đánh dấu file/thư mục đang thay đổi theo git; xem thư mục, đọc file và ảnh, xem trước Markdown như trên GitHub (kể cả sơ đồ Mermaid), chèn đường dẫn vào prompt; có thể mở thư mục trong VS Code web (xem `docs/GUIDE-v1.0-vscode-web.md`). |
 | 🌳 | **Git** | Cây commit dạng đồ thị (làn màu, đường merge, nhãn branch/tag); stage, bỏ stage, commit, fetch, pull, push, đổi branch; xem diff theo file hoặc theo commit. |
 | 📱 | **Responsive** | Máy tính: sidebar và các tab. Điện thoại: thanh tab dưới. Giao diện Tự động / Sáng / Tối (nút ☀ ở đầu sidebar); giữ màn hình sáng khi đang mở app (Screen Wake Lock); cài được như app (PWA). |
 | 🌐 | **Tiếng Việt / English** | Đổi ngôn ngữ giao diện trong Cài đặt → Ngôn ngữ · Language; thông báo đẩy dùng theo ngôn ngữ đã chọn. |
