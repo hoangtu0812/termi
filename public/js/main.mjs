@@ -35,6 +35,8 @@ import { setupVoice } from './voice.mjs';
 import { setupWake } from './wake.mjs';
 import { loadRestore } from './welcome.mjs';
 import { renderTabBadges } from './tab-badges.mjs';
+import { setupSidePanel } from './side-panel.mjs';
+import { renderStatus, setupStatus } from './status.mjs';
 
 setupI18n();
 setupIcons();
@@ -64,7 +66,12 @@ setupFileFind();
 setupViewer();
 setupGit();
 setupPipelines();
-S.onCiChange = renderTabBadges;
+setupSidePanel();
+S.onCiChange = () => {
+  renderTabBadges();
+  renderStatus();
+};
+setupStatus();
 setupPush();
 setupInbox();
 setupMachines();

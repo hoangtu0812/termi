@@ -24,12 +24,15 @@ export function ageLabel(lastData, now = Date.now()) {
   return t('terminal nhận dữ liệu {0} phút trước', Math.round(seconds / MINUTE_S));
 }
 
+export const currentLevel = () => connLevel(state);
+
 export function connText() {
   const age = state.term === 'none' ? '' : ageLabel(S.lastData);
   return [LABELS[connLevel(state)], age].filter(Boolean).join(' · ');
 }
 
 function renderConn() {
+  S.onConn?.();
   const dot = $('conn');
   if (!dot) return;
   const level = connLevel(state);

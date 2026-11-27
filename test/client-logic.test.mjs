@@ -185,3 +185,15 @@ test('desktop picks the side panel from p or a code tab, and the main view from 
   assert.equal(mainView({ t: 'files' }), 'term');
   assert.equal(mainView({}), 'term');
 });
+
+test('side panel width is clamped and the home page picks the latest session', async () => {
+  const { clampWidth } = await import('../public/js/side-panel.mjs');
+  assert.equal(clampWidth(100), 240);
+  assert.equal(clampWidth(400.4), 400);
+  assert.equal(clampWidth(5000), 720);
+  const { greeting, latestSession } = await import('../public/js/home.mjs');
+  assert.equal(greeting(8), 'Chào buổi sáng');
+  assert.equal(greeting(23), 'Chào buổi tối');
+  assert.equal(latestSession([{ name: 'a', activity: 1 }, { name: 'b', activity: 5 }]).name, 'b');
+  assert.equal(latestSession([]), null);
+});

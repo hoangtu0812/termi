@@ -154,3 +154,9 @@ dialog.sheet[open] { display:flex; flex-direction:column; }
   white-space:pre-wrap;
 }
 #toast.err { background:var(--del); color:#fff; }
+.swatches { display:flex; gap:10px; }
+.swatch {
+  width:30px; height:30px; padding:0; border-radius:50%; border:2px solid var(--panel); background:var(--sw);
+  box-shadow:0 0 0 1px var(--line2);
+}
+.swatch.on { box-shadow:0 0 0 2px var(--fg); }

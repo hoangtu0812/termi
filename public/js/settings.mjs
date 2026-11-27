@@ -4,7 +4,7 @@ import { agentAvatar, icon } from './icons.mjs';
 import { notifyForm } from './notify-form.mjs';
 import { enablePush } from './push.mjs';
 import { fontSize, setFont } from './terminal.mjs';
-import { THEMES, setTheme, themePref } from './theme.mjs';
+import { ACCENTS, THEMES, accentPref, setAccent, setTheme, themePref } from './theme.mjs';
 import { LANGS, LANG_LABEL, LANG_NAMES, currentLang, setLang, t } from './i18n.mjs';
 
 function settingRow(title, ...children) {
@@ -33,6 +33,30 @@ function langPicker() {
     seg.append(b);
   }
   return seg;
+}
+
+const ACCENT_NAMES = {
+  orange: () => t('Cam'),
+  violet: () => t('Tím'),
+  blue: () => t('Xanh dương'),
+  green: () => t('Xanh lục'),
+};
+
+function accentPicker() {
+  const row = el('div', 'swatches');
+  for (const [accent, color] of Object.entries(ACCENTS)) {
+    const b = el('button', 'swatch' + (accentPref() === accent ? ' on' : ''));
+    b.type = 'button';
+    b.title = ACCENT_NAMES[accent]();
+    b.setAttribute('aria-label', b.title);
+    b.style.setProperty('--sw', color);
+    b.onclick = () => {
+      setAccent(accent);
+      row.querySelectorAll('.swatch').forEach(x => x.classList.toggle('on', x === b));
+    };
+    row.append(b);
+  }
+  return row;
 }
 
 function themePicker() {
@@ -99,6 +123,7 @@ async function settingRows(info, pushOn) {
   return [
     settingRow(LANG_LABEL, langPicker()),
     settingRow(t('Giao diện'), themePicker()),
+    settingRow(t('Màu nhấn'), accentPicker()),
     settingRow(t('Cỡ chữ terminal'), fontPicker()),
     settingRow(t('Thông báo đẩy'), pushButton(pushOn)),
     settingRow(t('Báo khi'), await notifyForm()),

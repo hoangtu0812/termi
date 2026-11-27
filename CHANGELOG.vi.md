@@ -8,6 +8,12 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Thêm
+- Panel bên trên máy tính kéo mép để đổi độ rộng (bấm đúp để về mặc định), thu lại bằng Ctrl/Cmd+B hoặc bấm lại icon đang chọn; nhớ trên từng máy.
+- Thanh trạng thái trên máy tính: kết nối, máy, nhánh, số file chưa commit, trạng thái pipeline, hạn mức hoặc ngữ cảnh và phiên bản. Chấm kết nối và chip usage rời khỏi header.
+- Theme "Xanh đêm" (nền xanh-đen) và mục chọn màu nhấn (cam, tím, xanh dương, xanh lục) trong Cài đặt; con trỏ terminal theo màu nhấn.
+- Trang chào mới: tiếp tục phiên gần nhất, project gần đây dạng dòng gọn kèm nút agent, danh sách bắt đầu nhanh (thông báo đẩy, hạn mức Claude, thêm máy) có thể ẩn, và dòng phiên bản.
+
 ## [1.10.0] - 2026-11-27
 
 ### Thay đổi
@@ -39,7 +45,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Ngôn ngữ giao diện: tiếng Việt hoặc tiếng Anh, đổi trong Cài đặt → Ngôn ngữ · Language (trang tự tải lại). Ngày giờ, nhập bằng giọng nói và thông báo đẩy theo ngôn ngữ đã chọn; thông báo từ máy chủ hiện trong app cũng được dịch. Chữ giao diện mới viết bằng tiếng Việt trong `t()` kèm bản tiếng Anh trong `public/js/en-*.mjs`, có `test/i18n.test.mjs` kiểm tra.
 
 ### Thay đổi
-- Tổng quan kiến trúc cập nhật thành `docs/ARCH-v1.4-overview.md`, thêm các module mới từ bản 1.0.
+- Tổng quan kiến trúc cập nhật thành `docs/ARCH-v1.5-overview.md`, thêm các module mới từ bản 1.0.
 
 ## [1.6.0] - 2026-11-27
 
@@ -130,7 +136,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Đã bỏ comment khỏi mọi file mã nguồn, kể cả script cài đặt, service worker và statusline của Claude; lý do được chuyển sang `docs/NOTES-v1.9-implementation-notes.md`. Allowlist của bộ kiểm tra quy tắc đã rỗng.
 - Mọi hàm đều không quá 40 dòng; module client không còn đụng tới trình duyệt lúc nạp, nên phần logic có unit test.
 - Các script shell có quyền thực thi ngay trong repo.
-- `docs/ARCH-v1.4-overview.md` mô tả sơ đồ module.
+- `docs/ARCH-v1.5-overview.md` mô tả sơ đồ module.
 
 ### Hiệu năng
 - Danh sách phiên được dựng tối đa một lần mỗi giây và dùng chung cho mọi thiết bị đang mở cùng bộ theo dõi thông báo; 5 request cùng lúc với 10 phiên agent giảm từ khoảng 65 ms xuống 19 ms.

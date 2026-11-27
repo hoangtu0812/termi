@@ -6,6 +6,7 @@ import { stateEl } from './sessions.mjs';
 import { cur, st } from './state.mjs';
 import { t } from './i18n.mjs';
 import { renderTabBadges } from './tab-badges.mjs';
+import { renderStatus } from './status.mjs';
 
 export function renderTop() {
   const x = cur(),
@@ -28,6 +29,7 @@ export function renderTop() {
   renderConfirm();
   renderDoing();
   renderTabBadges();
+  renderStatus();
 }
 function renderDoing() {
   const x = cur(),

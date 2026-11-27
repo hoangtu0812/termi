@@ -1,7 +1,15 @@
 import { allTerms } from './term-pool.mjs';
 import { t } from './i18n.mjs';
 
-export const THEMES = { auto: [t('Tự động'), 'contrast'], light: [t('Sáng'), 'sun'], dark: [t('Tối'), 'moon'] };
+export const THEMES = {
+  auto: [t('Tự động'), 'contrast'],
+  light: [t('Sáng'), 'sun'],
+  dark: [t('Tối'), 'moon'],
+  slate: [t('Xanh đêm'), 'layers'],
+};
+export const ACCENTS = { orange: '#e07a55', violet: '#8b5cf6', blue: '#3b82f6', green: '#22c55e' };
+const ACCENT_KEY = 'termi-accent';
+const THEME_COLORS = { light: '#ffffff', dark: '#0d0e11', slate: '#090d16' };
 let colorScheme = null;
 const lightQuery = () => colorScheme ?? matchMedia('(prefers-color-scheme: light)');
 export function themePref() {
@@ -15,7 +23,7 @@ function applyTheme() {
   const pref = themePref(),
     theme = pref === 'auto' ? (lightQuery().matches ? 'light' : 'dark') : pref;
   document.documentElement.dataset.theme = theme;
-  document.querySelector('meta[name=theme-color]').content = theme === 'light' ? '#ffffff' : '#0d0e11';
+  document.querySelector('meta[name=theme-color]').content = THEME_COLORS[theme];
   try {
     termTheme();
   } catch {}
@@ -68,8 +76,34 @@ const TERM_THEMES = {
     brightWhite: '#b8bcc6',
   },
 };
+export function accentPref() {
+  try {
+    return ACCENTS[localStorage.getItem(ACCENT_KEY)] ? localStorage.getItem(ACCENT_KEY) : 'orange';
+  } catch {
+    return 'orange';
+  }
+}
+
+export function setAccent(accent) {
+  try {
+    localStorage.setItem(ACCENT_KEY, accent);
+  } catch {
+    return;
+  }
+  document.documentElement.dataset.accent = accent;
+  termTheme();
+}
+
+function terminalTheme() {
+  const name = document.documentElement.dataset.theme;
+  const base = TERM_THEMES[name === 'light' ? 'light' : 'dark'];
+  const background = name === 'slate' ? '#090d16' : base.background;
+  const cursor = getComputedStyle(document.documentElement).getPropertyValue('--acc').trim() || base.cursor;
+  return { ...base, background, cursorAccent: background, cursor, selectionBackground: `${cursor}44` };
+}
+
 export function termTheme() {
-  const theme = TERM_THEMES[document.documentElement.dataset.theme === 'light' ? 'light' : 'dark'];
+  const theme = terminalTheme();
   for (const term of allTerms()) {
     term.options.theme = theme;
     term.element.ownerDocument.body.style.background = theme.background;

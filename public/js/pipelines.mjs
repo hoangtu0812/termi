@@ -82,7 +82,7 @@ export const loadPipelines = safely(async ({ fresh = false } = {}) => {
   const data = await fetchCi(dir, fresh);
   if (ciDir() !== dir) return;
   S.ci = data;
-  S.ciState = { dir, badge: ciBadge(data) };
+  S.ciState = { dir, badge: ciBadge(data), branch: data.branch, provider: data.provider };
   renderPipelines();
   S.onCiChange?.();
 });
@@ -91,7 +91,7 @@ const refreshBadge = safely(async () => {
   const dir = cur()?.dir;
   if (!dir || st().t === 'ci') return;
   const data = await fetchCi(dir, false);
-  S.ciState = { dir, badge: ciBadge(data) };
+  S.ciState = { dir, badge: ciBadge(data), branch: data.branch, provider: data.provider };
   S.onCiChange?.();
 });
 

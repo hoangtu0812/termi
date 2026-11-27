@@ -5,6 +5,7 @@ import { S, go, st } from './state.mjs';
 import { t } from './i18n.mjs';
 import { CODE_TABS, codeTab } from './tab-memory.mjs';
 import { SIDE_PANELS } from './layout.mjs';
+import { panelCollapsed, togglePanel } from './side-panel.mjs';
 
 const TAB_VIBRATION_MS = 6;
 const SHORTCUT_TABS = { Digit1: 'chat', Digit2: 'term', Digit3: 'files', Digit4: 'git', Digit5: 'ci' };
@@ -45,6 +46,8 @@ export function setupNavigation() {
 
 function openTab(tab) {
   if (wide() && SIDE_PANELS.includes(tab)) {
+    if (tab === document.body.dataset.panel && !panelCollapsed()) return togglePanel(true);
+    if (panelCollapsed()) togglePanel(false);
     const keepMain = CODE_TABS.includes(st().t) ? { t: null } : {};
     return go({ p: tab, ...keepMain });
   }
