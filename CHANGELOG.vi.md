@@ -14,6 +14,11 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 ### Thay đổi
 - Web app dùng URL tương đối nên chạy được khi đặt dưới một tiền tố đường dẫn như `/sandbox/ui/`.
 
+## [1.4.0] - 2026-11-27
+
+### Thay đổi
+- Trạng thái phiên được máy chủ đẩy xuống qua luồng (`GET /api/stream`): phiên mới, "chờ bạn" và câu trả lời xong hiện trong khoảng một giây; app chỉ hỏi định kỳ 15 giây một lần để dự phòng, đỡ tốn pin điện thoại.
+
 ## [1.3.0] - 2026-11-27
 
 ### Thêm
@@ -21,7 +26,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - macOS: máy chủ tự xoay vòng `~/Library/Logs/termi.*.log` khi quá 5 MB.
 
 ### Thay đổi
-- Ghi chú cài đặt đổi tên thành `docs/NOTES-v1.7-implementation-notes.md`, thêm lý do của các thay đổi trong bản này.
+- Ghi chú cài đặt đổi tên thành `docs/NOTES-v1.8-implementation-notes.md`, thêm lý do của các thay đổi trong bản này.
 - Lúc termi đang khởi động lại (ví dụ khi nâng cấp), app hiện trang "đang kết nối" rồi tự vào lại thay vì trang lỗi 502 của trình duyệt; các lệnh gọi API coi đó là mất kết nối.
 
 ## [1.2.0] - 2026-11-27
@@ -60,7 +65,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 ### Thêm
 - Quy tắc kỹ thuật cho agent viết code trong `AGENTS.md` (tiếng Việt: `AGENTS.vi.md`), Claude Code nạp qua `CLAUDE.md`.
 - Kế hoạch refactor kiến trúc `plan/PLAN-v1.8-architecture-refactor.md`.
-- Ghi chú cài đặt `docs/NOTES-v1.7-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
+- Ghi chú cài đặt `docs/NOTES-v1.8-implementation-notes.md`, chứa lý do trước đây nằm trong comment.
 - `npm run check`: kiểm tra comment, độ dài file và dòng, cú pháp và tên tài liệu, không cần dependency; có allowlist cho file cũ và danh sách này chỉ được thu hẹp.
 - `npm run verify` (kiểm tra + test) và CI trên GitHub Actions cho Ubuntu và macOS.
 - `.editorconfig`.
@@ -81,7 +86,7 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Không còn `src/app.mjs`: lớp HTTP nằm trong `src/http/`, API chia mỗi nhóm một file trong `src/routes/`, Web Push trong `src/push/`; phiên, bản lưu phiên, máy trong tailnet và watchdog ttyd có module riêng; `src/start.mjs` nối chúng lại.
 - Log của server viết bằng tiếng Anh.
 - Giao diện web tách thành `public/css/` (10 file CSS) và `public/js/` (ES module gốc của trình duyệt); `index.html` chỉ còn markup. Sửa bất kỳ file giao diện nào cũng làm các trang đang mở tự tải lại.
-- Đã bỏ comment khỏi mọi file mã nguồn, kể cả script cài đặt, service worker và statusline của Claude; lý do được chuyển sang `docs/NOTES-v1.7-implementation-notes.md`. Allowlist của bộ kiểm tra quy tắc đã rỗng.
+- Đã bỏ comment khỏi mọi file mã nguồn, kể cả script cài đặt, service worker và statusline của Claude; lý do được chuyển sang `docs/NOTES-v1.8-implementation-notes.md`. Allowlist của bộ kiểm tra quy tắc đã rỗng.
 - Mọi hàm đều không quá 40 dòng; module client không còn đụng tới trình duyệt lúc nạp, nên phần logic có unit test.
 - Các script shell có quyền thực thi ngay trong repo.
 - `docs/ARCH-v1.0-overview.md` mô tả sơ đồ module.
@@ -268,7 +273,8 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 - Font terminal trên Android (bỏ Courier khỏi danh sách font).
 - Bỏ qua file rác `._*` của macOS trên ổ NTFS.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0

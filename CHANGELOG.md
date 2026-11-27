@@ -12,6 +12,11 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Changed
 - The web app uses relative URLs, so it works when served under a path prefix such as `/sandbox/ui/`.
 
+## [1.4.0] - 2026-11-27
+
+### Changed
+- Session states update over a server push stream (`GET /api/stream`): new sessions, "waiting for you" and finished replies show within about a second, and the app polls only every 15 s as a fallback, which saves battery on phones.
+
 ## [1.3.0] - 2026-11-27
 
 ### Added
@@ -19,7 +24,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - macOS: the server rotates `~/Library/Logs/termi.*.log` above 5 MB.
 
 ### Changed
-- Implementation notes renamed to `docs/NOTES-v1.7-implementation-notes.md` with the rationale for this release.
+- Implementation notes renamed to `docs/NOTES-v1.8-implementation-notes.md` with the rationale for this release.
 - While termi restarts (for example during an upgrade) the app shows the "connecting" page and returns by itself instead of a browser 502 error; API calls treat it as a lost connection.
 
 ## [1.2.0] - 2026-11-27
@@ -58,7 +63,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 ### Added
 - Engineering rules for coding agents in `AGENTS.md` (Vietnamese: `AGENTS.vi.md`), loaded by Claude Code through `CLAUDE.md`.
 - Architecture refactor plan `plan/PLAN-v1.8-architecture-refactor.md`.
-- Implementation notes `docs/NOTES-v1.7-implementation-notes.md` for rationale moved out of code comments.
+- Implementation notes `docs/NOTES-v1.8-implementation-notes.md` for rationale moved out of code comments.
 - `npm run check`: zero-dependency checks for comments, file and line length, syntax and document names, with an allowlist for legacy files that can only shrink.
 - `npm run verify` (check + tests) and a GitHub Actions CI workflow on Ubuntu and macOS.
 - `.editorconfig`.
@@ -79,7 +84,7 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - `src/app.mjs` is gone: the HTTP layer lives in `src/http/`, the API in one file per area under `src/routes/`, Web Push in `src/push/`, and sessions, snapshots, machines and the ttyd watchdog in their own modules; `src/start.mjs` wires them together.
 - Server logs are in English.
 - The web client is split into `public/css/` (10 stylesheets) and `public/js/` (native ES modules); `index.html` is markup only. Any change to a UI file now makes open pages reload.
-- Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.7-implementation-notes.md`. The rule-check allowlist is empty.
+- Comments were removed from every source file, including the installers, the service worker and the Claude statusline; their rationale lives in `docs/NOTES-v1.8-implementation-notes.md`. The rule-check allowlist is empty.
 - Every function is at most 40 lines; client modules no longer touch the browser while loading, so their logic has unit tests.
 - The shell scripts are executable in the repository.
 - `docs/ARCH-v1.0-overview.md` describes the module map.
@@ -266,7 +271,8 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 - Terminal font on Android (Courier removed from the font list).
 - macOS `._*` junk files on NTFS drives are ignored.
 
-[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.3.0...HEAD
+[Unreleased]: https://github.com/hoangtu0812/termi/compare/v1.4.0...HEAD
+[1.4.0]: https://github.com/hoangtu0812/termi/compare/v1.3.0...v1.4.0
 [1.3.0]: https://github.com/hoangtu0812/termi/compare/v1.2.0...v1.3.0
 [1.2.0]: https://github.com/hoangtu0812/termi/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/hoangtu0812/termi/compare/v1.0.1...v1.1.0

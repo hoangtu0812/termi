@@ -1,3 +1,5 @@
+import { ownsResponse } from '../http/router.mjs';
+
 async function restoreAll({ sessions, snapshots }) {
   const done = [];
   const failed = [];
@@ -14,9 +16,11 @@ async function restoreAll({ sessions, snapshots }) {
   return { done, failed };
 }
 
-export function sessionRoutes({ sessions, snapshots }) {
+export function sessionRoutes({ sessions, snapshots, live }) {
   return {
     'GET /api/sessions': () => sessions.list(),
+
+    'GET /api/stream': ownsResponse((_, req, res) => live.subscribe(req, res)),
 
     async 'POST /api/sessions'(_, body) {
       await sessions.create(body);
