@@ -21,7 +21,7 @@
   flex:1; min-width:0; color:var(--faint); font-size:12.5px; overflow:hidden; text-overflow:ellipsis;
   white-space:nowrap;
 }
-.cifilters { display:flex; gap:6px; padding:0 14px 8px; overflow-x:auto; scrollbar-width:none; }
+.cifilters { display:flex; flex-wrap:wrap; gap:6px; padding:0 14px 8px; }
 .cidots { display:inline-flex; gap:3px; }
 .cidots i { width:7px; height:7px; border-radius:50%; background:var(--faint); }
 .cidots i.success { background:var(--ok); } .cidots i.failure { background:var(--del); }
@@ -49,7 +49,7 @@
 .cibr, .cisha {
   padding:1px 7px; border-radius:6px; border:1px solid var(--line2); font-family:var(--mono); font-size:11.5px;
 }
-.cibr { color:var(--blue); } .cisha { color:var(--acc); }
+.cibr { color:var(--blue); max-width:100%; overflow:hidden; text-overflow:ellipsis; } .cisha { color:var(--acc); }
 .ciw {
   flex:none; display:flex; flex-direction:column; align-items:flex-end; gap:4px; font-size:11.5px;
   color:var(--faint);

@@ -8,6 +8,10 @@ Mọi thay đổi đáng chú ý của termi được ghi ở đây. Định d�
 
 ## [Unreleased]
 
+### Sửa
+- Pipelines: hàng lọc pipeline xuống dòng để thấy đủ mọi pipeline, tên nhánh dài được cắt gọn thay vì làm panel rộng ra.
+- Ô tìm phiên khi focus chỉ đổi viền sang màu nhấn, không còn viền dày đè sát hàng lọc.
+
 ## [1.12.0] - 2026-11-27
 
 ### Thêm
