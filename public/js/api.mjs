@@ -1,3 +1,4 @@
+import { setServer } from './conn.mjs';
 import { $ } from './dom.mjs';
 import { S, st } from './state.mjs';
 
@@ -16,22 +17,26 @@ export async function api(path, body) {
           }
         : {},
     );
-  } catch (e) {
+  } catch {
     $('netbar').hidden = false;
-    throw new Error('Mất kết nối tới máy chủ');
+    setServer(false);
+    throw Object.assign(new Error('Mất kết nối tới máy chủ'), { offline: true });
   }
   $('netbar').hidden = true;
+  setServer(true);
   checkBuild(r.headers.get('x-termi-build'));
   const j = await r.json().catch(() => ({ error: r.statusText }));
   if (!r.ok) throw new Error(j.error || r.status);
   return j;
 }
 let build;
+const busy = () => $('text').value || $('g-msg').value || S.atts.length || document.querySelector('dialog[open]');
 function checkBuild(b) {
   if (!b) return;
   build ??= b;
-  if (b !== build && !$('text').value && !$('g-msg').value && !S.atts.length && !document.querySelector('dialog[open]'))
-    location.reload();
+  if (b === build) return;
+  if (document.visibilityState === 'hidden' && !busy()) return location.reload();
+  $('updbar').hidden = false;
 }
 let toastT;
 export function toast(msg, err) {

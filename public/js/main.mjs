@@ -1,5 +1,8 @@
+import { toast } from './api.mjs';
 import { setupAttachments } from './attachments.mjs';
 import { setupComposer } from './composer.mjs';
+import { setupConn } from './conn.mjs';
+import { setupOutbox } from './outbox.mjs';
 import { $, skel } from './dom.mjs';
 import { setupFileFind } from './file-find.mjs';
 import { setupFiles } from './files.mjs';
@@ -48,6 +51,9 @@ setupVoice();
 setupSettings();
 setupQuick();
 setupComposer();
+setupOutbox();
+setupConn(toast);
+$('b-update').onclick = () => location.reload();
 setupAttachments();
 setupFiles();
 setupFileFind();

@@ -5,6 +5,7 @@ import { loadEvents } from './inbox.mjs';
 import { checkStale } from './reconnect.mjs';
 import { renderSessions } from './sessions.mjs';
 import { S, st } from './state.mjs';
+import { pruneTerms } from './terminal.mjs';
 import { renderTop } from './topbar.mjs';
 
 export async function poll() {
@@ -18,6 +19,7 @@ export async function poll() {
     loadEvents();
     S.list = list;
     S.loaded = true;
+    pruneTerms();
     checkStale();
     if (st().t === 'chat' && st().s) loadChat();
     renderSessions();

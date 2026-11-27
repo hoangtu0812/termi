@@ -24,6 +24,7 @@ function switchMachine(machine) {
     loaded: false,
     dirs: null,
     termName: null,
+    termKey: null,
     seen: {},
     git: null,
     restore: [],

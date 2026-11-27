@@ -6,6 +6,14 @@ All notable changes to termi are documented here. The format follows [Keep a Cha
 
 ## [Unreleased]
 
+### Added
+- Switching sessions keeps up to four terminals connected in the background, so going back is instant and does not reload.
+- A connection dot in the header (green / amber / red) shows whether the server and terminal are reachable and how long ago data arrived.
+- Messages sent while offline are kept in an outbox, shown above the composer, and sent automatically when the connection returns.
+
+### Changed
+- A new termi build no longer reloads the page by itself while you use it; a "Có bản termi mới · Tải lại" bar appears instead.
+
 ## [1.1.0] - 2026-11-27
 
 ### Added
